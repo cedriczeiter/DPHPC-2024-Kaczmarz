@@ -37,8 +37,8 @@ void run_tests() {
     for (int i = 0; i < rows; i++) {
         if (fabs(sys->x[i] - expected_solution[i]) > 1e-3) {
             passed = 0;
-            break;
         }
+        printf("x[%d] = %f\n", i, sys->x[i]);
     }
 
     if (passed) {

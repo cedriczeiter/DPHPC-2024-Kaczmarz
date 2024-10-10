@@ -3,6 +3,6 @@
 
 int main() {
     run_tests();
-    simple_pde_solver();
+    //simple_pde_solver();
     return 0;
 }
