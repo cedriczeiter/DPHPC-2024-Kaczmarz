@@ -3,6 +3,6 @@
 
 #include "linear_system.h"
 
-void kaczmarz_solver(LinearSystem *sys);
+void kaczmarz_solver(LinearSystem *sys, int n);
 
 #endif // KACZMARZ_H

@@ -14,7 +14,6 @@ include_directories(include)
 set(SOURCES
     src/linear_system.c
     src/kaczmarz.c
-    #src/pde_solver.c
     src/tests.c
     main.c
 )

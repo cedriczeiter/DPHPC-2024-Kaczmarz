@@ -1,8 +1,8 @@
 #include "tests.h"
-#include "pde_solver.h"
 
 int main() {
-    run_tests();
-    //simple_pde_solver();
+    for(int i = 10; i < 100000; i += 10000){
+        run_tests(i);
+    }
     return 0;
 }

@@ -4,7 +4,7 @@
 #include "kaczmarz.h"
 #include "tests.h"
 
-void run_tests() {
+void run_tests(int n) {
     printf("Running tests...\n");
 
     // Test 1: Small system with known solution
@@ -30,7 +30,7 @@ void run_tests() {
     }
 
     // Call parallelized Kaczmarz solver
-    kaczmarz_solver(sys);
+    kaczmarz_solver(sys, n);
 
     // Check results
     int passed = 1;

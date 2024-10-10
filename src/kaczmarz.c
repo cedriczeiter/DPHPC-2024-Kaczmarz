@@ -1,10 +1,8 @@
 #include <math.h>
 #include "kaczmarz.h"
 
-#define MAX_ITER 1000
-
-void kaczmarz_solver(LinearSystem *sys) {
-    for (int iter = 0; iter < MAX_ITER; iter++) {
+void kaczmarz_solver(LinearSystem *sys, int n) {
+    for (int iter = 0; iter < n; iter++) {
         for (int i = 0; i < sys->rows; i++) {
             double dot_product = 0.0;
             for (int j = 0; j < sys->cols; j++) {
