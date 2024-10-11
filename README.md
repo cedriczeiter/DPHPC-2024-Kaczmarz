@@ -29,8 +29,12 @@ This project implements a Kaczmarz method for solving systems of linear equation
    ```
    make
    ```
-
-5. **Run the Executable**:
+5. **Run Tests**:
+   After successful build, run:
+   ```
+    make test
+   ```
+6. **Run the Executable**:
    After a successful build, run the executable.
    ```
    ./parallel_kaczmarz_pde

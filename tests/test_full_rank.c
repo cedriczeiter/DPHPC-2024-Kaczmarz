@@ -2,12 +2,13 @@
 #include <math.h>
 #include "linear_system.h"
 #include "kaczmarz.h"
-#include "tests.h"
 
-void run_tests(int n) {
-    printf("Running tests...\n");
+  
+int main() {
+    const int n = 10000;
+    printf("starting full rank test...\n");
 
-    // Test 1: Small system with known solution
+    // Test small system with known solution
     int rows = 3;
     int cols = 3;
     LinearSystem *sys = allocate_system(rows, cols);
@@ -41,14 +42,9 @@ void run_tests(int n) {
         printf("x[%d] = %f\n", i, sys->x[i]);
     }
 
-    if (passed) {
-        printf("Test 1 passed.\n");
-    } else {
-        printf("Test 1 failed.\n");
-    }
-
     // Deallocate system
     deallocate_system(sys);
 
-    printf("Tests completed.\n");
+    //return test result
+    return !passed;
 }
