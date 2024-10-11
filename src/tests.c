@@ -30,7 +30,7 @@ void run_tests(int n) {
     }
 
     // Call parallelized Kaczmarz solver
-    kaczmarz_solver(sys, n);
+    kaczmarz_solver(sys, n, 1e-10);
 
     // Check results
     int passed = 1;
