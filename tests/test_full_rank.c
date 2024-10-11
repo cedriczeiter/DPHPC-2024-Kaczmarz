@@ -8,7 +8,7 @@ int main() {
     const int n = 10000;
     printf("starting full rank test...\n");
 
-    // Test 1: Small system with known solution
+    // Test small system with known solution
     int rows = 3;
     int cols = 3;
     LinearSystem *sys = allocate_system(rows, cols);
