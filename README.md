@@ -31,6 +31,7 @@ This project implements a Kaczmarz method for solving systems of linear equation
    ```
 5. **Run Tests**:
    After successful build, run:
+   (Must have run the "make" first)
    ```
     make test
    ```
