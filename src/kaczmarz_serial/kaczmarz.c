@@ -3,7 +3,7 @@
 #include <stdlib.h>
 
 void kaczmarz_solver(double *A, double *b, double *x, unsigned rows, unsigned cols, unsigned max_iterations, double precision) {
-  printf("Starting Kaczmarz Solver...\n");
+  //printf("Starting Kaczmarz Solver...\n");
   //set result to 0 vector as starting guess
   for (unsigned i = 0; i < cols; i++){
     x[i] = 0;
@@ -25,7 +25,7 @@ void kaczmarz_solver(double *A, double *b, double *x, unsigned rows, unsigned co
         *(x+j) += *(A +i*cols + j) * correction;
       }
       if (fabs(correction) < precision) {
-        printf("Algorithm converged in %d iterations.\n", iter);
+        //printf("Algorithm converged in %d iterations.\n", iter);
         return;
       }
     }

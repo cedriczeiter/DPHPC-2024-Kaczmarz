@@ -9,7 +9,6 @@ void get_dense_linear_system(double* A, double* b, double* x, unsigned dim){//se
   Eigen::Map<Eigen::Vector<double, Eigen::Dynamic>> b_m(b, dim);
   Eigen::Map<Eigen::Vector<double, Eigen::Dynamic>> x_m(x, dim);
   
-  std::cout << "Dimension: " << dim << std::endl;
 
   unsigned full_rank = 0;
   
@@ -23,7 +22,7 @@ void get_dense_linear_system(double* A, double* b, double* x, unsigned dim){//se
     if (A_m.fullPivLu().rank() == dim) full_rank = 1; //check if matrix is full-rank
   }
   x_m = A_m.fullPivLu().solve(b_m);
-  std::cout << A_m << std::endl;
+  //std::cout << A_m << std::endl;
   /*A = A_m.data();
   b = b_m.data();
   x = x_m.data();*/
