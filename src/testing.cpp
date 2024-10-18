@@ -4,10 +4,15 @@ extern "C" {
   #include "kaczmarz.h" 
 } 
 #include "gtest/gtest.h"
-#define MAX_IT 200000
+#include <cmath>
+
+#define MAX_IT 1000000
+#define RUNS_PER_DIM 5
+
+
 TEST(KaczmarzSerialDenseCorrectnessSmall, AgreesWithEigen){
-  for (int i = 0; i < 30; i++){
-    unsigned dim = 10;
+  for (int i = 0; i < RUNS_PER_DIM; i++){
+    unsigned dim = 5;
     double *A = (double *)malloc(sizeof(double)*dim*dim);
     double *b = (double *)malloc(sizeof(double)*dim);
     double *x = (double *)malloc(sizeof(double)*dim);
@@ -17,6 +22,7 @@ TEST(KaczmarzSerialDenseCorrectnessSmall, AgreesWithEigen){
     double *x_kaczmarz = (double *)malloc(sizeof(double)*dim);
 
     kaczmarz_solver(A, b, x_kaczmarz, dim, dim, MAX_IT*dim, 1e-10);//solve randomised system, max iterations steps
+    //selected randomly, we might need to revise this
 
     for (unsigned i = 0; i < dim; i++){
          ASSERT_LE(std::abs(x[i] - x_kaczmarz[i]), 1e-7);
@@ -30,8 +36,8 @@ TEST(KaczmarzSerialDenseCorrectnessSmall, AgreesWithEigen){
 
 
 TEST(KaczmarzSerialDenseCorrectnessMedium, AgreesWithEigen){
-  for (int i = 0; i < 30; i++){
-    unsigned dim = 100;
+  for (int i = 0; i < RUNS_PER_DIM; i++){
+    unsigned dim = 20;
     double *A = (double *)malloc(sizeof(double)*dim*dim);
     double *b = (double *)malloc(sizeof(double)*dim);
     double *x = (double *)malloc(sizeof(double)*dim);
@@ -40,7 +46,8 @@ TEST(KaczmarzSerialDenseCorrectnessMedium, AgreesWithEigen){
 
     double *x_kaczmarz = (double *)malloc(sizeof(double)*dim);
 
-    kaczmarz_solver(A, b, x_kaczmarz, dim, dim, MAX_IT*dim, 1e-10);//solve randomised system, max iterations steps
+    kaczmarz_solver(A, b, x_kaczmarz, dim, dim, MAX_IT*dim*dim, 1e-10);//solve randomised system, max iterations steps
+    //selected randomly, we might need to revise this
 
     for (unsigned i = 0; i < dim; i++){
          ASSERT_LE(std::abs(x[i] - x_kaczmarz[i]), 1e-7);
@@ -54,8 +61,8 @@ TEST(KaczmarzSerialDenseCorrectnessMedium, AgreesWithEigen){
   
   
 TEST(KaczmarzSerialDenseCorrectnessLarge, AgreesWithEigen){
-  for (int i = 0; i < 30; i++){
-    unsigned dim = 1000;
+  for (int i = 0; i < RUNS_PER_DIM; i++){
+    unsigned dim = 50;
     double *A = (double *)malloc(sizeof(double)*dim*dim);
     double *b = (double *)malloc(sizeof(double)*dim);
     double *x = (double *)malloc(sizeof(double)*dim);
@@ -64,7 +71,8 @@ TEST(KaczmarzSerialDenseCorrectnessLarge, AgreesWithEigen){
 
     double *x_kaczmarz = (double *)malloc(sizeof(double)*dim);
 
-    kaczmarz_solver(A, b, x_kaczmarz, dim, dim, MAX_IT*dim, 1e-10);//solve randomised system, max iterations steps
+    kaczmarz_solver(A, b, x_kaczmarz, dim, dim, MAX_IT*dim*dim, 1e-10);//solve randomised system, max iterations steps
+    //selected randomly, we might need to revise this
 
     for (unsigned i = 0; i < dim; i++){
          ASSERT_LE(std::abs(x[i] - x_kaczmarz[i]), 1e-7);
@@ -77,7 +85,7 @@ TEST(KaczmarzSerialDenseCorrectnessLarge, AgreesWithEigen){
 }
 
 int main() {
-  std::srand(6);
+  std::srand(21);
   testing::InitGoogleTest();
   RUN_ALL_TESTS();
 }

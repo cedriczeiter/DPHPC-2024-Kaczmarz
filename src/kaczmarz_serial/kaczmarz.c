@@ -9,6 +9,7 @@ void kaczmarz_solver(double *A, double *b, double *x, unsigned rows, unsigned co
     x[i] = 0;
   }
   for (unsigned iter = 0; iter < max_iterations; iter++) {
+    unsigned converged = 1;
     for (unsigned i = 0; i < rows; i++) {
       double dot_product = 0.0;
       double a_norm = 0.0;
@@ -24,11 +25,11 @@ void kaczmarz_solver(double *A, double *b, double *x, unsigned rows, unsigned co
       for (unsigned j = 0; j < cols; j++) {
         *(x+j) += *(A +i*cols + j) * correction;
       }
-      if (fabs(correction) < precision) {
-        //printf("Algorithm converged in %d iterations.\n", iter);
-        return;
+      if (fabs(correction) > precision) {
+        converged = 0; //signal, that algorithm hasnt converged yet
       }
     }
+    if (converged) return; //exit loop if fully converged
   }
   printf("Algorithm did not converge in %d iterations.\n", max_iterations);
 }

@@ -18,27 +18,28 @@ set(SOURCES
   ${SOURCE_DIR}/kaczmarz_serial/kaczmarz.c
 )
 
-include(ExternalProject)
-ExternalProject_Add(googletest
-    GIT_REPOSITORY    https://github.com/google/googletest.git
-    GIT_TAG           main
-    SOURCE_DIR        "${CMAKE_BINARY_DIR}/googletest-src"
-    BINARY_DIR        "${CMAKE_BINARY_DIR}/googletest-build"
-    CONFIGURE_COMMAND ""
-    BUILD_COMMAND     ""
-    INSTALL_COMMAND   ""
-    TEST_COMMAND      ""
+# Fetch GoogleTest from the official GitHub repository
+include(FetchContent)
+FetchContent_Declare(
+  googletest
+  GIT_REPOSITORY https://github.com/google/googletest.git
+  GIT_TAG        main # Use the latest stable version tag, or you can use "main" for the latest commit
 )
 
-add_subdirectory("${CMAKE_BINARY_DIR}/googletest-src"
-                 "${CMAKE_BINARY_DIR}/googletest-build"
-)
+# This will make sure the content is downloaded and added
+FetchContent_MakeAvailable(googletest)
+
 
 add_executable(kaczmarz_example ${SOURCE_DIR}/kaczmarz_example.cpp ${SOURCES})
 add_executable(testing ${SOURCE_DIR}/testing.cpp ${SOURCES})
 
 target_include_directories(kaczmarz_example PRIVATE ${SOURCE_DIR}/random_dense_system ${SOURCE_DIR}/kaczmarz_serial)
 target_include_directories(testing PRIVATE ${SOURCE_DIR}/random_dense_system ${SOURCE_DIR}/kaczmarz_serial)
+
+
+#add_subdirectory("${CMAKE_BINARY_DIR}/googletest-src"
+#                 "${CMAKE_BINARY_DIR}/googletest-build"
+#)
 
 target_link_libraries(kaczmarz_example Eigen3::Eigen)
 target_link_libraries(testing Eigen3::Eigen)
