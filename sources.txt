@@ -1,0 +1,3 @@
+Strohmer, Thomas, and Roman Vershynin. “A Randomized Kaczmarz Algorithm with Exponential Convergence.” Journal of Fourier Analysis and Applications, vol. 15, no. 2, 25 Apr. 2008, pp. 262–278, https://doi.org/10.1007/s00041-008-9030-4. Accessed 19 May 2022.
+
+Used MLA 8 format for citations
