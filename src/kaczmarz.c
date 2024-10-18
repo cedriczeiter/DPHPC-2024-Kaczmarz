@@ -28,26 +28,33 @@ void kaczmarz_solver(LinearSystem *sys, int max_iterations, double precision) {
   printf("Algorithm did not converge in %d iterations.", max_iterations);
 }
 
+// helper function: select the row in the random scheme
 int random_row_selection(double *row_norms, int num_rows) {
+  // Calculation of the norm of the rows
   double total_norm = 0.0;
   for (int i = 0; i < num_rows; i++) {
     total_norm += row_norms[i];
   }
 
+  // r chosen proportional to ||a_{r(i)}||_2^2 (see paper)
   double r = ((double)rand() / RAND_MAX) * total_norm;
   double cumulative_norm = 0.0;
 
+  // iterate through it based on the random number
   for (int i = 0; i < num_rows; i++) {
     cumulative_norm += row_norms[i];
     if (r <= cumulative_norm) {
       return i;
     }
   }
-  return num_rows - 1; // Fallback in case of rounding errors
+  return num_rows - 1; // in case of an error
 }
 
 void kaczmarz_random_solver(LinearSystem *sys, int max_iterations, double precision) {
-  // Step 1: Precompute row norms (squared)
+  // seeding! 
+  srand(1);
+
+  // precompute row norms (squared) ->> can be parallelized ?
   double *row_norms = (double *)malloc(sys->rows * sizeof(double));
   for (int i = 0; i < sys->rows; i++) {
     double norm = 0.0;
@@ -57,32 +64,26 @@ void kaczmarz_random_solver(LinearSystem *sys, int max_iterations, double precis
     row_norms[i] = norm;
   }
 
-  // Step 2: Perform iterations
+  // perform iterations
   for (int iter = 0; iter < max_iterations; iter++) {
-    // Randomly select a row based on the squared norms
+    // call helper function to know which one to call
     int i = random_row_selection(row_norms, sys->rows);
 
-    // Compute dot product between the selected row and the current solution
+    // regular method
     double dot_product = 0.0;
     double a_norm = row_norms[i];
     for (int j = 0; j < sys->cols; j++) {
       dot_product += sys->A[i][j] * sys->x[j];
     }
-
-    // Compute the correction for the solution vector
     if (a_norm < 1e-10) {
       printf("Matrix column with 0 norm, iteration not possible.");
       free(row_norms);
       return;
     }
     double correction = (sys->b[i] - dot_product) / (a_norm);
-
-    // Update the solution vector
     for (int j = 0; j < sys->cols; j++) {
       sys->x[j] += sys->A[i][j] * correction;
     }
-
-    // Check for convergence
     if (fabs(correction) < precision) {
       free(row_norms);
       return;
