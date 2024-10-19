@@ -91,5 +91,5 @@ TEST(KaczmarzSerialDenseCorrectnessLarge, AgreesWithEigen){
 int main() {
   std::srand(21);
   testing::InitGoogleTest();
-  RUN_ALL_TESTS();
+  return RUN_ALL_TESTS();
 }
