@@ -1,8 +1,10 @@
+#include "kaczmarz.h"
+
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 
-void kaczmarz_solver(double *A, double *b, double *x, unsigned rows, unsigned cols, unsigned max_iterations, double precision) {
+void kaczmarz_solver(const double *A, const double *b, double *x, unsigned rows, unsigned cols, unsigned max_iterations, double precision) {
   //printf("Starting Kaczmarz Solver...\n");
   for (unsigned iter = 0; iter < max_iterations; iter++) {
     unsigned converged = 1;
