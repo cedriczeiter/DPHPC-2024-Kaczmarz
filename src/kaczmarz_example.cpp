@@ -1,8 +1,7 @@
 #include "random_dense_system.hpp"
+#include "kaczmarz.hpp"
+
 #include <iostream>
-extern "C" { 
-  #include "kaczmarz.h" 
-} 
 
 //this is an example, demonstrating how to call the kaczmarz solver (serial version) on a randomly generated dense matrix
 
@@ -14,12 +13,15 @@ int main() {
   double *x = (double *)malloc(sizeof(double)*dim);
   
   std::srand(21);
-  get_dense_linear_system(A, b, x, dim);
+  generate_random_dense_linear_system(A, b, x, dim);
 
 
   double *x_kaczmarz = (double *)malloc(sizeof(double)*dim);
 
-  kaczmarz_solver(A, b, x_kaczmarz, dim, dim, 100000, 1e-10);
+  const auto status = kaczmarz_solver(A, b, x_kaczmarz, dim, dim, 100000, 1e-10);
+  if (status != KaczmarzSolverStatus::Converged) {
+    std::cout << "The Kaczmarz solver didn't converge!" << std::endl;
+  }
 
   std::cout << "Eigen solution: \n";
   for (int i = 0; i < dim; i++){
