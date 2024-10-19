@@ -22,7 +22,7 @@ void run_random_system_tests(const unsigned dim, const unsigned no_runs) {
     double *x_kaczmarz = (double *)malloc(sizeof(double)*dim);
     std::memset(x_kaczmarz, 0, sizeof(double) * dim); //set everything to zero in x_kaczmnarz
 
-    kaczmarz_solver(A, b, x_kaczmarz, dim, dim, MAX_IT*dim, 1e-10);//solve randomised system, max iterations steps
+    dense_kaczmarz(A, b, x_kaczmarz, dim, dim, MAX_IT*dim, 1e-10);//solve randomised system, max iterations steps
     //selected arbitratly, we might need to revise this
 
     for (unsigned j = 0; j < dim; j++){

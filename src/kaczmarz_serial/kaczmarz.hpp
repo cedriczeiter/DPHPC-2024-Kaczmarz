@@ -1,11 +1,12 @@
 #ifndef KACZMARZ_HPP
 #define KACZMARZ_HPP
 
+#include <Eigen/Sparse>
+
 /**
  * @brief Enumeration to describe the result of the Kaczmarz solver.
  */
-enum class KaczmarzSolverStatus
-{
+enum class KaczmarzSolverStatus{
   Converged,
   ZeroNormRow,
   OutOfIterations
@@ -30,6 +31,22 @@ enum class KaczmarzSolverStatus
  *         - KaczmarzSolverStatus::ZeroNormRow: A row in the matrix A has zero norm, making the system unsolvable.
  *         - KaczmarzSolverStatus::OutOfIterations: The algorithm reached the maximum number of iterations without converging.
  */
-KaczmarzSolverStatus kaczmarz_solver(const double *A, const double *b, double *x, unsigned rows, unsigned cols, unsigned max_iterations, double precision);
+KaczmarzSolverStatus dense_kaczmarz(const double *A, const double *b, double *x, unsigned rows, unsigned cols, unsigned max_iterations, double precision);
+
+typedef Eigen::SparseMatrix<double, Eigen::RowMajor> SparseMatrix;
+typedef Eigen::VectorXd Vector;
+
+class SparseLinearSystem {
+private:
+  SparseMatrix A_;
+  Eigen::VectorXd b_;
+public:
+  const SparseMatrix& A() const;
+  const Vector& b() const;
+  unsigned row_count() const;
+  unsigned column_count() const;
+};
+
+KaczmarzSolverStatus sparse_kaczmarz(const SparseLinearSystem&, Eigen::VectorXd& x, unsigned max_iterations, double precision);
 
 #endif // KACZMARZ_HPP
