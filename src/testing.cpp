@@ -14,7 +14,7 @@ void run_random_system_tests(const unsigned dim, const unsigned no_runs) {
     double *b = (double *)malloc(sizeof(double)*dim);
     double *x = (double *)malloc(sizeof(double)*dim);
     
-    get_dense_linear_system(A, b, x, dim); //get randomised system
+    generate_random_dense_linear_system(A, b, x, dim); //get randomised system
 
     double *x_kaczmarz = (double *)malloc(sizeof(double)*dim);
     std::memset(x_kaczmarz, 0, sizeof(double) * dim);

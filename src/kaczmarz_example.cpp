@@ -13,7 +13,7 @@ int main() {
   double *x = (double *)malloc(sizeof(double)*dim);
   
   std::srand(21);
-  get_dense_linear_system(A, b, x, dim);
+  generate_random_dense_linear_system(A, b, x, dim);
 
 
   double *x_kaczmarz = (double *)malloc(sizeof(double)*dim);
