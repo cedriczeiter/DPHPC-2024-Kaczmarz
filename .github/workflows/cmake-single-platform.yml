@@ -1,6 +1,5 @@
-name: CMake automated Main-testing
+name: CMake auto test
 
-# Triggers the workflow on pushes to main and on pull requests to main.
 on:
   push:
     branches: [ "main" ]
@@ -15,18 +14,18 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    # Step to check out the latest commit in the repo.
     - uses: actions/checkout@v4
 
-    # Step to set up CMake
+    # Install Eigen3
+    - name: Install Eigen3
+      run: sudo apt-get install libeigen3-dev
+
     - name: Configure CMake
       run: cmake -S . -B build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
     
-    # Step to build the project
     - name: Build
       run: cmake --build build --config ${{env.BUILD_TYPE}}
 
-    # Step to run tests
     - name: Run Tests
       working-directory: ./build
       run: ctest --output-on-failure -C ${{env.BUILD_TYPE}}
