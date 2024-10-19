@@ -7,9 +7,9 @@ KaczmarzSolverStatus kaczmarz_solver(const double *A, const double *b, double *x
     // the algorithm has converged iff none of the rows in an iteration caused a substantial correction
     bool substantial_correction = false;
     for (unsigned i = 0; i < rows; i++) {
+      const double *const a_row = A + i * cols;
       double dot_product = 0.0;
       double row_sq_norm = 0.0;
-      const double *const a_row = A + i * cols;
       for (unsigned j = 0; j < cols; j++) {
         dot_product += a_row[j] * x[j];
         row_sq_norm += a_row[j] * a_row[j];
@@ -19,7 +19,7 @@ KaczmarzSolverStatus kaczmarz_solver(const double *A, const double *b, double *x
       }
       const double correction = (b[i] - dot_product) / row_sq_norm;
       for (unsigned j = 0; j < cols; j++) {
-        x[j] += A[i*cols + j] * correction;
+        x[j] += a_row[j] * correction;
       }
       if (std::fabs(correction) > precision) {
         substantial_correction = true;
