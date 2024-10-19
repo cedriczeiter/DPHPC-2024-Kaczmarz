@@ -4,17 +4,19 @@
 #include "gtest/gtest.h"
 #include <cmath>
 #include <cstring>
+#include <random>
 
 #define MAX_IT 1000000
 #define RUNS_PER_DIM 5
 
 void run_random_system_tests(const unsigned dim, const unsigned no_runs) {
+  std::mt19937 rng(21);
   for (int i = 0; i < no_runs; i++){
     double *A = (double *)malloc(sizeof(double)*dim*dim);
     double *b = (double *)malloc(sizeof(double)*dim);
     double *x = (double *)malloc(sizeof(double)*dim);
     
-    generate_random_dense_linear_system(A, b, x, dim); //get randomised system
+    generate_random_dense_linear_system(rng, A, b, x, dim); //get randomised system
 
     double *x_kaczmarz = (double *)malloc(sizeof(double)*dim);
     std::memset(x_kaczmarz, 0, sizeof(double) * dim);
@@ -48,7 +50,6 @@ TEST(KaczmarzSerialDenseCorrectnessLarge, AgreesWithEigen){
 }
 
 int main() {
-  std::srand(21);
   testing::InitGoogleTest();
   return RUN_ALL_TESTS();
 }

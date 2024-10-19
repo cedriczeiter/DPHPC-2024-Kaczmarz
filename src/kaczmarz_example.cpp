@@ -2,6 +2,7 @@
 #include "kaczmarz.hpp"
 
 #include <iostream>
+#include <random>
 
 //this is an example, demonstrating how to call the kaczmarz solver (serial version) on a randomly generated dense matrix
 
@@ -12,8 +13,8 @@ int main() {
   double *b = (double *)malloc(sizeof(double)*dim);
   double *x = (double *)malloc(sizeof(double)*dim);
   
-  std::srand(21);
-  generate_random_dense_linear_system(A, b, x, dim);
+  std::mt19937 rng(21);
+  generate_random_dense_linear_system(rng, A, b, x, dim);
 
 
   double *x_kaczmarz = (double *)malloc(sizeof(double)*dim);
