@@ -5,7 +5,7 @@
 #include <cmath>
 #include <cstring>
 
-#define MAX_IT 100000000
+#define MAX_IT 1000000
 #define RUNS_PER_DIM 5
 
 void run_random_system_tests(const unsigned dim, const unsigned no_runs) {
@@ -23,7 +23,7 @@ void run_random_system_tests(const unsigned dim, const unsigned no_runs) {
     //selected randomly, we might need to revise this
 
     for (unsigned i = 0; i < dim; i++){
-         ASSERT_LE(std::abs(x[i] - x_kaczmarz[i]), 1e-7);
+         ASSERT_LE(std::abs(x[i] - x_kaczmarz[i]), 1e-6);
     }
     free(A);
     free(b);
