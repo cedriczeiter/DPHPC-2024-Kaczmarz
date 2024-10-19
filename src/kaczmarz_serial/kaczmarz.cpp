@@ -1,10 +1,8 @@
 #include "kaczmarz.hpp"
 
 #include <cmath>
-#include <cstdio>
 
-void kaczmarz_solver(const double *A, const double *b, double *x, unsigned rows, unsigned cols, unsigned max_iterations, double precision) {
-  //printf("Starting Kaczmarz Solver...\n");
+KaczmarzSolverStatus kaczmarz_solver(const double *A, const double *b, double *x, unsigned rows, unsigned cols, unsigned max_iterations, double precision) {
   for (unsigned iter = 0; iter < max_iterations; iter++) {
     unsigned converged = 1;
     for (unsigned i = 0; i < rows; i++) {
@@ -15,8 +13,7 @@ void kaczmarz_solver(const double *A, const double *b, double *x, unsigned rows,
         a_norm += A[i*cols + j] * A[i*cols + j];
       }
       if (a_norm < 1e-10) {
-        printf("Matrix row with 0 norm, iteration not possible.\n");
-        return;
+        return KaczmarzSolverStatus::ZeroNormRow;
       }
       double correction = (b[i] - dot_product) / (a_norm);
       for (unsigned j = 0; j < cols; j++) {
@@ -26,8 +23,10 @@ void kaczmarz_solver(const double *A, const double *b, double *x, unsigned rows,
         converged = 0; //signal, that algorithm hasnt converged yet
       }
     }
-    if (converged) return; //exit loop if fully converged
+    if (converged) {
+      return KaczmarzSolverStatus::Converged;
+    }
   }
-  printf("Algorithm did not converge in %d iterations.\n", max_iterations);
+  return KaczmarzSolverStatus::OutOfIterations;
 }
 

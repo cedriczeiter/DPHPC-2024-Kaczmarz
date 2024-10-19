@@ -18,7 +18,10 @@ int main() {
 
   double *x_kaczmarz = (double *)malloc(sizeof(double)*dim);
 
-  kaczmarz_solver(A, b, x_kaczmarz, dim, dim, 100000, 1e-10);
+  const auto status = kaczmarz_solver(A, b, x_kaczmarz, dim, dim, 100000, 1e-10);
+  if (status != KaczmarzSolverStatus::Converged) {
+    std::cout << "The Kaczmarz solver didn't converge!" << std::endl;
+  }
 
   std::cout << "Eigen solution: \n";
   for (int i = 0; i < dim; i++){
