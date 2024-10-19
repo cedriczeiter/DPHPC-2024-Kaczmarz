@@ -5,7 +5,7 @@
 #include <cmath>
 #include <cstring>
 
-#define MAX_IT 1000000
+#define MAX_IT 100000000
 #define RUNS_PER_DIM 5
 
 void run_random_system_tests(const unsigned dim, const unsigned no_runs) {
