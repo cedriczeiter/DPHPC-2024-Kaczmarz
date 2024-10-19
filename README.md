@@ -5,40 +5,42 @@ This project implements a Kaczmarz method for solving systems of linear equation
 
 ### Steps to Build and Run
 
-1. **Clone the Repository**:
+1. **Install Dependencies**
+   Install CMake and Eigen if not already installed.
+
+2. **Clone the Repository**:
    ```
    git clone <repository_url>
    cd parallel_kaczmarz_pde
    ```
 
-2. **Create a Build Directory**:
+3. **Create a Build Directory**:
    It is recommended to create a separate directory for the build files.
    ```
    mkdir build
    cd build
    ```
 
-3. **Run CMake**:
+4. **Run CMake**:
    Generate the build configuration files.
    ```
    cmake ..
    ```
 
-4. **Compile the Project**:
+5. **Compile the Project**:
    Use the generated Makefiles to compile the project.
    ```
    make
    ```
-5. **Run Tests**:
-   After successful build, run:
-   (Must have run the "make" first)
+6. **Run Tests**:
+   After a successful build, run the testing executable.
    ```
-    make test
+   ./testing
    ```
-6. **Run the Executable**:
-   After a successful build, run the executable.
+7. **Run the Example**:
+   After a successful build, run the example executable.
    ```
-   ./parallel_kaczmarz_pde
+   ./kaczmarz_example
    ```
 
 ### Clean Build
