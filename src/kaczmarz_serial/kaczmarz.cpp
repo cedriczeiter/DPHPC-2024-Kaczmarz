@@ -1,8 +1,7 @@
-#include "kaczmarz.h"
+#include "kaczmarz.hpp"
 
-#include <math.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include <cmath>
+#include <cstdio>
 
 void kaczmarz_solver(const double *A, const double *b, double *x, unsigned rows, unsigned cols, unsigned max_iterations, double precision) {
   //printf("Starting Kaczmarz Solver...\n");
@@ -23,7 +22,7 @@ void kaczmarz_solver(const double *A, const double *b, double *x, unsigned rows,
       for (unsigned j = 0; j < cols; j++) {
         x[j] += A[i*cols + j] * correction;
       }
-      if (fabs(correction) > precision) {
+      if (std::fabs(correction) > precision) {
         converged = 0; //signal, that algorithm hasnt converged yet
       }
     }

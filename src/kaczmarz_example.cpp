@@ -1,8 +1,7 @@
 #include "random_dense_system.hpp"
+#include "kaczmarz.hpp"
+
 #include <iostream>
-extern "C" { 
-  #include "kaczmarz.h" 
-} 
 
 //this is an example, demonstrating how to call the kaczmarz solver (serial version) on a randomly generated dense matrix
 

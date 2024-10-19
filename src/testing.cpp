@@ -1,8 +1,6 @@
 #include "random_dense_system.hpp"
-#include <iostream>
-extern "C" { 
-  #include "kaczmarz.h" 
-} 
+#include "kaczmarz.hpp"
+
 #include "gtest/gtest.h"
 #include <cmath>
 #include <cstring>

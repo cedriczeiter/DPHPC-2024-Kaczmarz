@@ -15,7 +15,7 @@ find_package (Eigen3 3.3 REQUIRED NO_MODULE)
 set(SOURCE_DIR ${CMAKE_SOURCE_DIR}/src)
 set(SOURCES
   ${SOURCE_DIR}/random_dense_system/random_dense_system.cpp
-  ${SOURCE_DIR}/kaczmarz_serial/kaczmarz.c
+  ${SOURCE_DIR}/kaczmarz_serial/kaczmarz.cpp
 )
 
 # Fetch GoogleTest from the official GitHub repository
