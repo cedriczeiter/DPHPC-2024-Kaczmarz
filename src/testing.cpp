@@ -5,6 +5,7 @@ extern "C" {
 } 
 #include "gtest/gtest.h"
 #include <cmath>
+#include <cstring>
 
 #define MAX_IT 1000000
 #define RUNS_PER_DIM 5
@@ -20,6 +21,7 @@ TEST(KaczmarzSerialDenseCorrectnessSmall, AgreesWithEigen){
     get_dense_linear_system(A, b, x, dim); //get randomised system
 
     double *x_kaczmarz = (double *)malloc(sizeof(double)*dim);
+    std::memset(x_kaczmarz, 0, sizeof(double) * dim);
 
     kaczmarz_solver(A, b, x_kaczmarz, dim, dim, MAX_IT*dim, 1e-10);//solve randomised system, max iterations steps
     //selected randomly, we might need to revise this
@@ -45,6 +47,7 @@ TEST(KaczmarzSerialDenseCorrectnessMedium, AgreesWithEigen){
     get_dense_linear_system(A, b, x, dim); //get randomised system
 
     double *x_kaczmarz = (double *)malloc(sizeof(double)*dim);
+    std::memset(x_kaczmarz, 0, sizeof(double) * dim);
 
     kaczmarz_solver(A, b, x_kaczmarz, dim, dim, MAX_IT*dim*dim, 1e-10);//solve randomised system, max iterations steps
     //selected randomly, we might need to revise this
@@ -70,6 +73,7 @@ TEST(KaczmarzSerialDenseCorrectnessLarge, AgreesWithEigen){
     get_dense_linear_system(A, b, x, dim); //get randomised system
 
     double *x_kaczmarz = (double *)malloc(sizeof(double)*dim);
+    std::memset(x_kaczmarz, 0, sizeof(double) * dim);
 
     kaczmarz_solver(A, b, x_kaczmarz, dim, dim, MAX_IT*dim*dim, 1e-10);//solve randomised system, max iterations steps
     //selected randomly, we might need to revise this

@@ -4,10 +4,6 @@
 
 void kaczmarz_solver(double *A, double *b, double *x, unsigned rows, unsigned cols, unsigned max_iterations, double precision) {
   //printf("Starting Kaczmarz Solver...\n");
-  //set result to 0 vector as starting guess
-  for (unsigned i = 0; i < cols; i++){
-    x[i] = 0;
-  }
   for (unsigned iter = 0; iter < max_iterations; iter++) {
     unsigned converged = 1;
     for (unsigned i = 0; i < rows; i++) {
