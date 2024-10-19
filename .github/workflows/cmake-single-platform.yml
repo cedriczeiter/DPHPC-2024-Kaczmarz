@@ -16,6 +16,10 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
+    # Install Eigen3
+    - name: Install Eigen3
+      run: sudo apt-get install libeigen3-dev
+
     # Configure CMake
     - name: Configure CMake
       run: cmake -S . -B build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
