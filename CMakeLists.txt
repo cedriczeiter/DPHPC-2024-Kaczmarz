@@ -1,46 +1,46 @@
 cmake_minimum_required(VERSION 3.10)
-project(parallel_kaczmarz_pde)
+project(parallel_kaczmarz_pde C CXX)
 
 # Set C standard
 set(CMAKE_C_STANDARD 11)
+#set Cpp standard
+set(CMAKE_CXX_STANDARD 11)
 
 # Enable all warnings and extra warnings
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -pthread")
 
-# Include directories
-include_directories(include)
+find_package (Eigen3 3.3 REQUIRED NO_MODULE)
 
-# Source files
+
+set(SOURCE_DIR ${CMAKE_SOURCE_DIR}/src)
 set(SOURCES
-    src/linear_system.c
-    src/kaczmarz.c
-    src/tests.c
-    main.c
+  ${SOURCE_DIR}/random_dense_system/random_dense_system.cpp
+  ${SOURCE_DIR}/kaczmarz_serial/kaczmarz.cpp
 )
 
-# Add executable target
-add_executable(parallel_kaczmarz_pde ${SOURCES})
-
-# Add tests
-set(TESTSOURCES
-    src/kaczmarz.c
-    src/linear_system.c
-)
-set(TEST_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/tests)
-enable_testing()
-
-#add test for simple full rank matrix
-add_executable(full_rank_test ${TESTSOURCES} tests/test_full_rank.c)
-set_target_properties(full_rank_test PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${TEST_OUTPUT_DIRECTORY})
-add_test(
-	NAME full_rank_test 
- 	COMMAND full_rank_test
+# Fetch GoogleTest from the official GitHub repository
+include(FetchContent)
+FetchContent_Declare(
+  googletest
+  GIT_REPOSITORY https://github.com/google/googletest.git
+  GIT_TAG        main # Use the latest stable version tag, or you can use "main" for the latest commit
 )
 
-#add test for zero matrix
-add_executable(zero_matrix_test ${TESTSOURCES} tests/test_zero_matrix.c)
-set_target_properties(zero_matrix_test PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${TEST_OUTPUT_DIRECTORY})
-add_test(
-	NAME zero_matrix_test
-	COMMAND zero_matrix_test
-)
+# This will make sure the content is downloaded and added
+FetchContent_MakeAvailable(googletest)
+
+
+add_executable(kaczmarz_example ${SOURCE_DIR}/kaczmarz_example.cpp ${SOURCES})
+add_executable(testing ${SOURCE_DIR}/testing.cpp ${SOURCES})
+
+target_include_directories(kaczmarz_example PRIVATE ${SOURCE_DIR}/random_dense_system ${SOURCE_DIR}/kaczmarz_serial)
+target_include_directories(testing PRIVATE ${SOURCE_DIR}/random_dense_system ${SOURCE_DIR}/kaczmarz_serial)
+
+
+#add_subdirectory("${CMAKE_BINARY_DIR}/googletest-src"
+#                 "${CMAKE_BINARY_DIR}/googletest-build"
+#)
+
+target_link_libraries(kaczmarz_example Eigen3::Eigen)
+target_link_libraries(testing Eigen3::Eigen)
+target_link_libraries(testing gtest)
