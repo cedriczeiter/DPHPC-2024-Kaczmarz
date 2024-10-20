@@ -24,8 +24,8 @@ void run_random_system_tests(const unsigned dim, const unsigned no_runs) {
     kaczmarz_solver(A, b, x_kaczmarz, dim, dim, MAX_IT*dim, 1e-10);//solve randomised system, max iterations steps
     //selected randomly, we might need to revise this
 
-    for (unsigned i = 0; i < dim; i++){
-         ASSERT_LE(std::abs(x[i] - x_kaczmarz[i]), 1e-6);
+    for (unsigned j = 0; j < dim; j++){
+         ASSERT_LE(std::abs(x[j] - x_kaczmarz[j]), 1e-6);
     }
     free(A);
     free(b);
