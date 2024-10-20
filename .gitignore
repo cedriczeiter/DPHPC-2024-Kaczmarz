@@ -56,3 +56,6 @@ build/
 
 #swap files
 *.swp
+
+# vscode settings
+.vscode/
