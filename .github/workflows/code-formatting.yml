@@ -1,0 +1,14 @@
+name: Format C++ code
+on: [push, pull_request]
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install clang-format
+      run: sudo apt-get install clang-format
+    - name: Run clang-format
+      run: |
+        find . -iname '*.hpp' -o -iname '*.cpp' | xargs clang-format -i --style=Google
+    - name: Check for unformatted code
+      run: git diff --exit-code
