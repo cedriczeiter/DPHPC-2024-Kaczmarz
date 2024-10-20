@@ -16,13 +16,14 @@ void run_random_system_tests(const unsigned dim, const unsigned no_runs) {
     double *b = (double *)malloc(sizeof(double)*dim);
     double *x = (double *)malloc(sizeof(double)*dim);
     
-    generate_random_dense_linear_system(rng, A, b, x, dim); //get randomised system
+    generate_random_dense_linear_system(rng, A, b, x, dim); //get randomised system including solution in x
 
+    //Allocate memory to save kaczmarz solution
     double *x_kaczmarz = (double *)malloc(sizeof(double)*dim);
-    std::memset(x_kaczmarz, 0, sizeof(double) * dim);
+    std::memset(x_kaczmarz, 0, sizeof(double) * dim); //set everything to zero in x_kaczmnarz
 
     kaczmarz_solver(A, b, x_kaczmarz, dim, dim, MAX_IT*dim, 1e-10);//solve randomised system, max iterations steps
-    //selected randomly, we might need to revise this
+    //selected arbitratly, we might need to revise this
 
     for (unsigned j = 0; j < dim; j++){
          ASSERT_LE(std::abs(x[j] - x_kaczmarz[j]), 1e-6);
