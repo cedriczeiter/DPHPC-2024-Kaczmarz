@@ -15,6 +15,7 @@ find_package (Eigen3 3.3 REQUIRED NO_MODULE)
 set(SOURCE_DIR ${CMAKE_SOURCE_DIR}/src)
 set(SOURCES
   ${SOURCE_DIR}/linear_systems/dense.cpp
+  ${SOURCE_DIR}/linear_systems/sparse.cpp
   ${SOURCE_DIR}/kaczmarz_serial/kaczmarz.cpp
 )
 

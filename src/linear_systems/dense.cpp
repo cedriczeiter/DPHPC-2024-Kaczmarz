@@ -22,8 +22,9 @@ DenseLinearSystem DenseLinearSystem::generate_random_regular(std::mt19937& rng, 
 
   do {
     std::generate(lse._A.begin(), lse._A.end(), generate_element);
-    std::generate(lse._b.begin(), lse._b.end(), generate_element);
   } while (A_m.fullPivLu().rank() != dim); // check if matrix is full-rank (will be full-rank practically always, but still)
+
+  std::generate(lse._b.begin(), lse._b.end(), generate_element);
    
   return lse;
 }
