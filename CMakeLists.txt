@@ -16,6 +16,7 @@ set(SOURCE_DIR ${CMAKE_SOURCE_DIR}/src)
 set(SOURCES
   ${SOURCE_DIR}/random_dense_system/random_dense_system.cpp
   ${SOURCE_DIR}/kaczmarz_serial/kaczmarz.cpp
+  ${SOURCE_DIR}/kaczmarz_serial/random_kaczmarz.cpp
 )
 
 # Fetch GoogleTest from the official GitHub repository
