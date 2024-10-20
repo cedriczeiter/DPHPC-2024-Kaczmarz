@@ -1,15 +1,7 @@
 #ifndef KACZMARZ_HPP
 #define KACZMARZ_HPP
 
-/**
- * @brief Enumeration to describe the result of the Kaczmarz solver.
- */
-enum class KaczmarzSolverStatus
-{
-  Converged,
-  ZeroNormRow,
-  OutOfIterations
-};
+#include "kaczmarz_common.hpp"
 
 /**
  * @brief Solves the Ax = b LSE by running the serial Kaczmarz algorithm with in-order row updates.
