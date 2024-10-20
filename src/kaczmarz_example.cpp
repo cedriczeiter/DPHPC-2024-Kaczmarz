@@ -1,18 +1,20 @@
-#include "linear_systems/dense.hpp"
-#include "kaczmarz.hpp"
-
 #include <iostream>
 #include <random>
 
-//this is an example, demonstrating how to call the kaczmarz solver (serial version) on a randomly generated dense matrix
+#include "kaczmarz.hpp"
+#include "linear_systems/dense.hpp"
+
+// this is an example, demonstrating how to call the kaczmarz solver (serial
+// version) on a randomly generated dense matrix
 
 // Rather refer to the actual testing code instead, slight changes there!
 
 int main() {
   const unsigned dim = 5;
-  
+
   std::mt19937 rng(21);
-  const DenseLinearSystem lse =  DenseLinearSystem::generate_random_regular(rng, dim);
+  const DenseLinearSystem lse =
+      DenseLinearSystem::generate_random_regular(rng, dim);
 
   std::vector<double> x_kaczmarz(dim, 0.0);
 
@@ -22,7 +24,7 @@ int main() {
   }
 
   std::cout << "Kaczmarz solution: \n";
-  for (unsigned i = 0; i < dim; i++){
+  for (unsigned i = 0; i < dim; i++) {
     std::cout << x_kaczmarz[i] << std::endl;
   }
 
@@ -31,7 +33,7 @@ int main() {
   const Vector x_eigen = lse.eigen_solve();
 
   std::cout << "Eigen solution: \n";
-  for (unsigned i = 0; i < dim; i++){
+  for (unsigned i = 0; i < dim; i++) {
     std::cout << x_eigen[i] << std::endl;
   }
 }
