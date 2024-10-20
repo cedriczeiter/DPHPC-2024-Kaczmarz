@@ -6,12 +6,23 @@
 class SparseLinearSystem {
 private:
   SparseMatrix A_;
-  Eigen::VectorXd b_;
+  Vector b_;
 public:
-  const SparseMatrix& A() const;
-  const Vector& b() const;
-  unsigned row_count() const;
-  unsigned column_count() const;
+  const SparseMatrix& A() const {
+    return this->A_;
+  }
+
+  const Vector& b() const {
+    return this->b_;
+  }
+
+  unsigned row_count() const {
+    return this->A_.rows();
+  }
+
+  unsigned column_count() const {
+    return this->A_.cols();
+  }
 };
 
 #endif // SPARSE_HPP

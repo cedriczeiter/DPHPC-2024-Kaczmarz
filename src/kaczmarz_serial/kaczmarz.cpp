@@ -49,10 +49,14 @@ KaczmarzSolverStatus dense_kaczmarz(const DenseLinearSystem& lse, double *x, uns
 
 KaczmarzSolverStatus sparse_kaczmarz(const SparseLinearSystem& lse, Eigen::VectorXd& x, const unsigned max_iterations, const double precision) {
   const unsigned rows = lse.row_count();
+
+  // squared norms of rows of A (so that we don't need to recompute them in each iteration
   Vector sq_norms(rows);
   for (unsigned i = 0; i < rows; i++) {
     sq_norms[i] = lse.A().row(i).dot(lse.A().row(i));
   }
+
+  // same algorithm as in the dense case
   for (unsigned iter = 0; iter < max_iterations; iter++) {
     bool substantial_update = false;
     for (unsigned i = 0; i < rows; i++) {
