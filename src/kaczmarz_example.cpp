@@ -6,8 +6,10 @@
 
 //this is an example, demonstrating how to call the kaczmarz solver (serial version) on a randomly generated dense matrix
 
+// Rather refer to the actual testing code instead, slight changes there!
 
 int main() {
+  // Initialize the space that we need.
   int dim = 5;
   double *A = (double *)malloc(sizeof(double)*dim*dim);
   double *b = (double *)malloc(sizeof(double)*dim);
@@ -15,7 +17,6 @@ int main() {
   
   std::mt19937 rng(21);
   generate_random_dense_linear_system(rng, A, b, x, dim);
-
 
   double *x_kaczmarz = (double *)malloc(sizeof(double)*dim);
 
@@ -34,4 +35,10 @@ int main() {
   for (int i = 0; i < dim; i++){
     std::cout << x_kaczmarz[i] << std::endl;
   }
+
+  // Free the allocated memory
+  free(A);
+  free(b);
+  free(x);
+  free(x_kaczmarz);
 }
