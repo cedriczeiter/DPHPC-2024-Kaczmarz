@@ -21,7 +21,10 @@ KaczmarzSolverStatus kaczmarz_random_solver(const double *A, const double *b, do
     for (unsigned j = 0; j < cols; j++) {
       row_sq_norm += a_row[j] * a_row[j];
     }
-    row_norms[i] = row_sq_norm;
+
+
+
+    row_norms[i] =     row_sq_norm;
   }
 
   // Iterate through a maximum of max_iterations
