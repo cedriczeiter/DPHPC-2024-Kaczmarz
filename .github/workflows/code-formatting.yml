@@ -6,10 +6,15 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Install clang-format
-      run: sudo apt-get install clang-format
+      run: |
+        sudo apt-get update
+        sudo apt-get install clang-format -y
+        clang-format --version  # Check the version installed for debugging
     - name: Run clang-format
       run: |
         find . -iname '*.hpp' -o -iname '*.cpp' | xargs clang-format -i --style=Google
+        # Show what files were changed by clang-format for debugging
+        git --no-pager diff
     - name: Commit changes if needed
       run: |
         git config --global user.name "GitHub Actions"
