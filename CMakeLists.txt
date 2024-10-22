@@ -30,13 +30,16 @@ FetchContent_Declare(
 # This will make sure the content is downloaded and added
 FetchContent_MakeAvailable(googletest)
 
-add_executable(benchmark_executable ${SOURCE_DIR}/benchmark.cpp ${SOURCES})
+add_executable(benchmark_executable ${SOURCE_DIR}/benchmarking.cpp ${SOURCES})
 add_executable(kaczmarz_example ${SOURCE_DIR}/kaczmarz_example.cpp ${SOURCES})
 add_executable(testing ${SOURCE_DIR}/testing.cpp ${SOURCES})
 
 target_include_directories(kaczmarz_example PRIVATE ${SOURCE_DIR}/random_dense_system ${SOURCE_DIR}/kaczmarz_serial)
 target_include_directories(testing PRIVATE ${SOURCE_DIR}/random_dense_system ${SOURCE_DIR}/kaczmarz_serial)
+target_include_directories(benchmark_executable PRIVATE ${SOURCE_DIR}/random_dense_system ${SOURCE_DIR}/kaczmarz_serial)
 
+
+CONFIGURE_FILE(${SOURCE_DIR}/plot.py ${PATH_TO_BUILD} plot.py COPYONLY)
 
 #add_subdirectory("${CMAKE_BINARY_DIR}/googletest-src"
 #                 "${CMAKE_BINARY_DIR}/googletest-build"

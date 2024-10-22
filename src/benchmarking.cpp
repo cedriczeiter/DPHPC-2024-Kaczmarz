@@ -74,7 +74,7 @@ int main() {
     outFile << "Dim,AvgTime,StdDev\n"; // Write the header for the CSV file
     
     // Loop over problem sizes, benchmark, and write to file
-    for (int dim = 1; dim <= 100; dim *= 2) {
+    for (int dim = 1; dim <= 32; dim *= 2) {
         double stdDev;
         double avgTime = benchmark(dim, numIterations, stdDev);
         
