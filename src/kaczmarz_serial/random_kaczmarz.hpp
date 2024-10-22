@@ -1,9 +1,9 @@
 #ifndef KACZMARZ_RANDOM_HPP
 #define KACZMARZ_RANDOM_HPP
 
-#include "kaczmarz_common.hpp"
-
 #include <vector>
+
+#include "kaczmarz_common.hpp"
 
 /**
  * @brief Solves the Ax = b linear system using the randomized Kaczmarz
@@ -53,4 +53,4 @@ KaczmarzSolverStatus kaczmarz_random_solver(const double *A, const double *b,
  */
 unsigned random_row_selection(const double *row_norms, unsigned num_rows);
 
-#endif // KACZMARZ_RANDOM_HPP
+#endif  // KACZMARZ_RANDOM_HPP

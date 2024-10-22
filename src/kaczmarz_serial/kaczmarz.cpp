@@ -2,10 +2,14 @@
 
 #include <cmath>
 
-KaczmarzSolverStatus kaczmarz_solver(const double *A, const double *b, double *x, unsigned rows, unsigned cols, unsigned max_iterations, double precision) {
+KaczmarzSolverStatus kaczmarz_solver(const double *A, const double *b,
+                                     double *x, unsigned rows, unsigned cols,
+                                     unsigned max_iterations,
+                                     double precision) {
   // Iterate through a maximum of max_iterations
   for (unsigned iter = 0; iter < max_iterations; iter++) {
-    // the algorithm has converged iff none of the rows in an iteration caused a substantial correction
+    // the algorithm has converged iff none of the rows in an iteration caused a
+    // substantial correction
     bool substantial_correction = false;
 
     // Process each row of matrix A
@@ -35,13 +39,13 @@ KaczmarzSolverStatus kaczmarz_solver(const double *A, const double *b, double *x
       }
     }
 
-    // If no substantial correction was made, the solution has converged and algorithm ends
+    // If no substantial correction was made, the solution has converged and
+    // algorithm ends
     if (!substantial_correction) {
       return KaczmarzSolverStatus::Converged;
     }
   }
 
-  //If it didnt return earlier, then max iterations reached and not converged.
+  // If it didnt return earlier, then max iterations reached and not converged.
   return KaczmarzSolverStatus::OutOfIterations;
 }
-

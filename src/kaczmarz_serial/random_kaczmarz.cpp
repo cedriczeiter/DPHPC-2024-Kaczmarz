@@ -1,18 +1,25 @@
-#include "kaczmarz.hpp"
 #include <cmath>
 #include <cstdlib>
-#include <vector>
 #include <random>
+#include <vector>
+
+#include "kaczmarz.hpp"
 
 // Helper function to randomly select a row based on row norms
-unsigned random_row_selection(const double *row_norms, unsigned num_rows, std::mt19937 &rng) {
-  std::discrete_distribution<> dist(row_norms, row_norms + num_rows); // Distribution based on row norms
-  return dist(rng);  // Randomly select a row
+unsigned random_row_selection(const double *row_norms, unsigned num_rows,
+                              std::mt19937 &rng) {
+  std::discrete_distribution<> dist(
+      row_norms, row_norms + num_rows);  // Distribution based on row norms
+  return dist(rng);                      // Randomly select a row
 }
 
-KaczmarzSolverStatus kaczmarz_random_solver(const double *A, const double *b, double *x, unsigned rows, unsigned cols, unsigned max_iterations, double precision) {
+KaczmarzSolverStatus kaczmarz_random_solver(const double *A, const double *b,
+                                            double *x, unsigned rows,
+                                            unsigned cols,
+                                            unsigned max_iterations,
+                                            double precision) {
   std::mt19937 rng(1);
-  
+
   // Precompute row norms (squared)
   std::vector<double> row_norms(rows);
   for (unsigned i = 0; i < rows; i++) {
@@ -22,9 +29,7 @@ KaczmarzSolverStatus kaczmarz_random_solver(const double *A, const double *b, do
       row_sq_norm += a_row[j] * a_row[j];
     }
 
-
-
-    row_norms[i] =     row_sq_norm;
+    row_norms[i] = row_sq_norm;
   }
 
   // Iterate through a maximum of max_iterations
@@ -58,12 +63,13 @@ KaczmarzSolverStatus kaczmarz_random_solver(const double *A, const double *b, do
       substantial_correction = true;
     }
 
-    // If no substantial correction was made, the solution has converged and algorithm ends
+    // If no substantial correction was made, the solution has converged and
+    // algorithm ends
     if (!substantial_correction) {
       return KaczmarzSolverStatus::Converged;
     }
   }
 
-  //If it didnt return earlier, then max iterations reached and not converged.
+  // If it didnt return earlier, then max iterations reached and not converged.
   return KaczmarzSolverStatus::OutOfIterations;
 }
