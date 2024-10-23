@@ -19,26 +19,28 @@ jobs:
         sudo apt-get install clang-format -y
         clang-format --version  # Check the version installed for debugging
     - name: Run clang-format and check for unformatted code
+      id: clang_format_check
       run: |
         find . -iname '*.hpp' -o -iname '*.cpp' | xargs clang-format --dry-run --Werror --style=Google
-      continue-on-error: true # Continue even if unformatted code is found
+      continue-on-error: true # Continue the workflow even if there are formatting issues
 
   warn-unformatted:
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref != 'refs/heads/main'
     needs: format-check
     steps:
-    - name: Warn the user
+    - name: Warn the user about unformatted code
+      if: steps.clang_format_check.outcome == 'failure'
       run: |
         echo "Warning: Code is not formatted according to clang-format. Please consider formatting the code."
-      if: failure() # Only run if the format-check job fails
 
   block-unformatted:
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request' && github.base_ref == 'main'
     needs: format-check
     steps:
-    - name: Fail on unformatted code
+    - name: Fail pull request on unformatted code
+      if: steps.clang_format_check.outcome == 'failure'
       run: |
         echo "Error: Code is not formatted according to clang-format. The pull request cannot be merged into the main branch."
-      if: failure() # Fail the PR if the format-check job fails
+        exit 1  # Explicitly fail the job if the code is not formatted
