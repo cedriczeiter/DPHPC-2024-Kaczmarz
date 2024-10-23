@@ -42,7 +42,17 @@ This project implements a Kaczmarz method for solving systems of linear equation
    ```
    ./kaczmarz_example
    ```
-
+   
+   8. **Run the Benchmarking**:
+   After a successful build, run the benchmark executable.
+   ```
+   ./benchmark_executable
+   ```
+   9. **Plot the Benchmarking**:
+   After a successful build and benchmarking plot the results of the benchmark.
+   ```
+   python plot.py
+   ```
 ### Clean Build
 To clean the build, simply remove the `build` directory and recreate it, or use:
 ```

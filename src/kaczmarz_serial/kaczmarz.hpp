@@ -1,27 +1,9 @@
 #ifndef KACZMARZ_HPP
 #define KACZMARZ_HPP
 
-#include "../linear_systems/sparse.hpp"
-#include "../linear_systems/dense.hpp"
-
-/**
- * @brief Enumeration to describe the result of the Kaczmarz solver.
- */
-enum class KaczmarzSolverStatus {
-  /**
-   * The algorithm has converged to a solution.
-   */
-  Converged,
-  /**
-   * A row in the matrix A has zero norm, making the system unsolvable.
-   */
-  ZeroNormRow,
-  /**
-   * The algorithm reached the maximum number of iterations without converging.
-   */
-  OutOfIterations
-};
-
+#include "kaczmarz_common.hpp"
+#include "dense.hpp"
+#include "sparse.hpp"
 /**
  * @brief Solves the Ax = b LSE by running the serial Kaczmarz algorithm with in-order row updates.
  *
