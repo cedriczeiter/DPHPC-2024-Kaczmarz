@@ -1,7 +1,15 @@
-name: Format C++ code
-on: [push]
+name: Check C++ code formatting
+
+on:
+  push:
+    branches:
+      - '**' # Trigger on push to any branch
+  pull_request:
+    branches:
+      - main # Trigger on pull requests targeting the main branch
+
 jobs:
-  format:
+  format-check:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
@@ -10,18 +18,27 @@ jobs:
         sudo apt-get update
         sudo apt-get install clang-format -y
         clang-format --version  # Check the version installed for debugging
-    - name: Run clang-format
+    - name: Run clang-format and check for unformatted code
       run: |
-        find . -iname '*.hpp' -o -iname '*.cpp' | xargs clang-format -i --style=Google
-        git --no-pager diff
-    - name: Commit changes if needed
+        find . -iname '*.hpp' -o -iname '*.cpp' | xargs clang-format --dry-run --Werror --style=Google
+      continue-on-error: true # Continue even if unformatted code is found
+
+  warn-unformatted:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref != 'refs/heads/main'
+    needs: format-check
+    steps:
+    - name: Warn the user
       run: |
-        git config --global user.name "GitHub Actions"
-        git config --global user.email "actions@github.com"
-        git add .
-        git commit -m "Apply clang-format changes" || echo "No changes to commit"
-    - name: Push changes back to the repository
-      run: git push
-      env:
-        # Use GitHub's token for authentication
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        echo "Warning: Code is not formatted according to clang-format. Please consider formatting the code."
+      if: failure() # Only run if the format-check job fails
+
+  block-unformatted:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && github.base_ref == 'main'
+    needs: format-check
+    steps:
+    - name: Fail on unformatted code
+      run: |
+        echo "Error: Code is not formatted according to clang-format. The pull request cannot be merged into the main branch."
+      if: failure() # Fail the PR if the format-check job fails
