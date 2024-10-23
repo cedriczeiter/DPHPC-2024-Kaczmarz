@@ -10,13 +10,15 @@ unsigned random_row_selection(const double *row_norms, unsigned num_rows, std::m
   return dist(rng);  // Randomly select a row
 }
 
-KaczmarzSolverStatus kaczmarz_random_solver(const double *A, const double *b, double *x, unsigned rows, unsigned cols, unsigned max_iterations, double precision) {
+KaczmarzSolverStatus kaczmarz_random_solver(const DenseLinearSystem& lse, double *x, unsigned max_iterations, double precision) {
   std::mt19937 rng(1);
-  
+  const unsigned rows = lse.row_count();
+  const unsigned cols = lse.column_count();
+
   // Precompute row norms (squared)
   std::vector<double> row_norms(rows);
   for (unsigned i = 0; i < rows; i++) {
-    const double *const a_row = A + i * cols;
+    const double *const a_row = lse.A() + i * cols;
     double row_sq_norm = 0.0;
     for (unsigned j = 0; j < cols; j++) {
       row_sq_norm += a_row[j] * a_row[j];
@@ -32,7 +34,7 @@ KaczmarzSolverStatus kaczmarz_random_solver(const double *A, const double *b, do
     unsigned i = random_row_selection(row_norms.data(), rows, rng);
 
     // Access the selected row
-    const double *const a_row = A + i * cols;
+    const double *const a_row = lse.A() + i * cols;
 
     // Compute the dot product and row squared norm
     double dot_product = 0.0;
@@ -47,7 +49,7 @@ KaczmarzSolverStatus kaczmarz_random_solver(const double *A, const double *b, do
     }
 
     // Check if the correction is substantial
-    const double correction = (b[i] - dot_product) / a_norm;
+    const double correction = (lse.b()[i] - dot_product) / a_norm;
     for (unsigned j = 0; j < cols; j++) {
       x[j] += a_row[j] * correction;
     }

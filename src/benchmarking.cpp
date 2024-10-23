@@ -1,47 +1,33 @@
-#include "random_dense_system.hpp"
 #include "kaczmarz.hpp"
+#include "kaczmarz_common.hpp"
+#include "dense.hpp"
 #include <cassert>
 #include <iostream>
 #include <chrono>
 #include <vector>
 #include <fstream>
-//#include "gtest/gtest.h"
 #include <cmath>
 #include <cstring>
 #include <random>
 
 #define MAX_IT 1000000
-double benchmark(int dim, int numIterations, double &stdDev) {
+double benchmark(int dim, int numIterations, double &stdDev, std::mt19937& rng) {
     std::vector<double> times;
     for (int i = 0; i < numIterations; ++i) {
         
-        std::mt19937 rng(21);
-        double *A = (double *)malloc(sizeof(double)*dim*dim);
-        double *b = (double *)malloc(sizeof(double)*dim);
-        double *x = (double *)malloc(sizeof(double)*dim);
-        
-        generate_random_dense_linear_system(rng, A, b, x, dim); //get randomised system including solution in x
-
+        const DenseLinearSystem lse =  DenseLinearSystem::generate_random_regular(rng, dim);
+    
         //Allocate memory to save kaczmarz solution
-        double *x_kaczmarz = (double *)malloc(sizeof(double)*dim);
-        std::memset(x_kaczmarz, 0, sizeof(double) * dim); //set everything to zero in x_kaczmnarz
-
-        
+        std::vector<double> x_kaczmarz(dim, 0.0);
         
         auto start = std::chrono::high_resolution_clock::now();
         
         
-        // Run the heat diffusion simulation
-        kaczmarz_solver(A, b, x_kaczmarz, dim, dim, MAX_IT*dim, 1e-10);//solve randomised system, max iterations steps
-        //selected arbitratly, we might need to revise this
+       dense_kaczmarz(lse, &x_kaczmarz[0], MAX_IT*dim, 1e-10);//solve randomised system, max iterations steps selected arbitratly, we might need to revise this
 
         
         auto end = std::chrono::high_resolution_clock::now();
         
-        free(A);
-        free(b);
-        free(x);
-        free(x_kaczmarz);
         
         std::chrono::duration<double> elapsed = end - start;
         
@@ -68,6 +54,7 @@ double benchmark(int dim, int numIterations, double &stdDev) {
 
 int main() {
     int numIterations = 10; // Number of iterations to reduce noise
+    std::mt19937 rng(21);
     
     // Open the file for output
     std::ofstream outFile("results.csv");
@@ -76,7 +63,7 @@ int main() {
     // Loop over problem sizes, benchmark, and write to file
     for (int dim = 1; dim <= 32; dim *= 2) {
         double stdDev;
-        double avgTime = benchmark(dim, numIterations, stdDev);
+        double avgTime = benchmark(dim, numIterations, stdDev, rng);
         
         // Write results to the file
         outFile << dim << "," << avgTime << "," << stdDev << "\n";

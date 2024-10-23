@@ -2,7 +2,9 @@
 
 #include <cmath>
 
-KaczmarzSolverStatus kaczmarz_solver(const double *A, const double *b, double *x, unsigned rows, unsigned cols, unsigned max_iterations, double precision) {
+KaczmarzSolverStatus dense_kaczmarz(const DenseLinearSystem& lse, double *x, unsigned max_iterations, double precision) {
+  const unsigned rows = lse.row_count();
+  const unsigned cols = lse.column_count();
   // Iterate through a maximum of max_iterations
   for (unsigned iter = 0; iter < max_iterations; iter++) {
     // the algorithm has converged iff none of the rows in an iteration caused a substantial correction
@@ -10,7 +12,7 @@ KaczmarzSolverStatus kaczmarz_solver(const double *A, const double *b, double *x
 
     // Process each row of matrix A
     for (unsigned i = 0; i < rows; i++) {
-      const double *const a_row = A + i * cols;
+      const double *const a_row = lse.A() + i * cols;
       double dot_product = 0.0;
       double row_sq_norm = 0.0;
 
@@ -26,7 +28,7 @@ KaczmarzSolverStatus kaczmarz_solver(const double *A, const double *b, double *x
       }
 
       // Check if the correction is substantial
-      const double correction = (b[i] - dot_product) / row_sq_norm;
+      const double correction = (lse.b()[i] - dot_product) / row_sq_norm;
       for (unsigned j = 0; j < cols; j++) {
         x[j] += a_row[j] * correction;
       }
@@ -45,3 +47,29 @@ KaczmarzSolverStatus kaczmarz_solver(const double *A, const double *b, double *x
   return KaczmarzSolverStatus::OutOfIterations;
 }
 
+KaczmarzSolverStatus sparse_kaczmarz(const SparseLinearSystem& lse, Eigen::VectorXd& x, const unsigned max_iterations, const double precision) {
+  const unsigned rows = lse.row_count();
+
+  // squared norms of rows of A (so that we don't need to recompute them in each iteration
+  Vector sq_norms(rows);
+  for (unsigned i = 0; i < rows; i++) {
+    sq_norms[i] = lse.A().row(i).dot(lse.A().row(i));
+  }
+
+  // same algorithm as in the dense case
+  for (unsigned iter = 0; iter < max_iterations; iter++) {
+    bool substantial_update = false;
+    for (unsigned i = 0; i < rows; i++) {
+      const auto row = lse.A().row(i);
+      const double update_coeff = (lse.b()[i] - row.dot(x)) / sq_norms[i];
+      x += update_coeff * row;
+      if (std::fabs(update_coeff) > precision) {
+        substantial_update = true;
+      }
+    }
+    if (!substantial_update) {
+      return KaczmarzSolverStatus::Converged;
+    }
+  }
+  return KaczmarzSolverStatus::OutOfIterations;
+}

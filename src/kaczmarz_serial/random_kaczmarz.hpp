@@ -2,6 +2,7 @@
 #define KACZMARZ_RANDOM_HPP
 
 #include "kaczmarz_common.hpp"
+#include "dense.hpp"
 
 #include <vector>
 
@@ -33,11 +34,8 @@
  *         - KaczmarzSolverStatus::OutOfIterations: The algorithm reached the
  * maximum number of iterations without converging.
  */
-KaczmarzSolverStatus kaczmarz_random_solver(const double *A, const double *b,
-                                            double *x, unsigned rows,
-                                            unsigned cols,
-                                            unsigned max_iterations,
-                                            double precision);
+KaczmarzSolverStatus kaczmarz_random_solver(const DenseLinearSystem& lse, double *x, unsigned max_iterations, double precision);
+
 
 /**
  * @brief Helper function to select a random row based on its squared norm.

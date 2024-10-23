@@ -1,53 +1,82 @@
-#include "random_dense_system.hpp"
 #include "kaczmarz.hpp"
+
+#include "linear_systems/dense.hpp"
 
 #include "gtest/gtest.h"
 #include <cmath>
-#include <cstring>
 #include <random>
 
-#define MAX_IT 1000000
-#define RUNS_PER_DIM 5
+constexpr unsigned MAX_IT = 1000000;
+constexpr unsigned RUNS_PER_DIM = 5;
 
-void run_random_system_tests(const unsigned dim, const unsigned no_runs) {
+void run_dense_tests(const unsigned dim, const unsigned no_runs) {
   std::mt19937 rng(21);
-  for (int i = 0; i < no_runs; i++){
-    double *A = (double *)malloc(sizeof(double)*dim*dim);
-    double *b = (double *)malloc(sizeof(double)*dim);
-    double *x = (double *)malloc(sizeof(double)*dim);
+  for (unsigned i = 0; i < no_runs; i++){
+
+    const DenseLinearSystem lse = DenseLinearSystem::generate_random_regular(rng, dim);
     
-    generate_random_dense_linear_system(rng, A, b, x, dim); //get randomised system including solution in x
+    // Allocate memory to save kaczmarz solution
+    // Set everything to zero in x_kaczmnarz
+    std::vector<double> x_kaczmarz(dim, 0.0);
 
-    //Allocate memory to save kaczmarz solution
-    double *x_kaczmarz = (double *)malloc(sizeof(double)*dim);
-    std::memset(x_kaczmarz, 0, sizeof(double) * dim); //set everything to zero in x_kaczmnarz
+    // precision and max. iterations selected randomly, we might need to revise this
+    dense_kaczmarz(lse, &x_kaczmarz[0], MAX_IT*dim, 1e-10);
 
-    kaczmarz_solver(A, b, x_kaczmarz, dim, dim, MAX_IT*dim, 1e-10);//solve randomised system, max iterations steps
-    //selected arbitratly, we might need to revise this
+    const Vector x_eigen = lse.eigen_solve();
 
-    for (unsigned j = 0; j < dim; j++){
-         ASSERT_LE(std::abs(x[j] - x_kaczmarz[j]), 1e-6);
+    for (unsigned i = 0; i < dim; i++){
+         ASSERT_LE(std::abs(x_eigen[i] - x_kaczmarz[i]), 1e-6);
     }
-    free(A);
-    free(b);
-    free(x);
-    free(x_kaczmarz);
   }
 }
 
 
 TEST(KaczmarzSerialDenseCorrectnessSmall, AgreesWithEigen){
-  run_random_system_tests(5, RUNS_PER_DIM);
+  run_dense_tests(5, RUNS_PER_DIM);
 }
 
 
 TEST(KaczmarzSerialDenseCorrectnessMedium, AgreesWithEigen){
-  run_random_system_tests(20, RUNS_PER_DIM);
+  run_dense_tests(20, RUNS_PER_DIM);
 }
   
   
 TEST(KaczmarzSerialDenseCorrectnessLarge, AgreesWithEigen){
-  run_random_system_tests(50, RUNS_PER_DIM);
+  run_dense_tests(50, RUNS_PER_DIM);
+}
+
+void run_sparse_tests(const unsigned dim, const unsigned bandwidth, const unsigned no_runs) {
+  std::mt19937 rng(21);
+  for (unsigned i = 0; i < no_runs; i++){
+
+    const SparseLinearSystem lse = SparseLinearSystem::generate_random_banded_regular(rng, dim, bandwidth);
+
+    Vector x_kaczmarz = Vector::Zero(dim);
+
+    // precision and max. iterations selected randomly, we might need to revise this
+    sparse_kaczmarz(lse, x_kaczmarz, MAX_IT*dim, 1e-10);
+
+    const Vector x_eigen = lse.eigen_solve();
+
+    for (unsigned i = 0; i < dim; i++){
+         ASSERT_LE(std::abs(x_eigen[i] - x_kaczmarz[i]), 1e-6);
+    }
+  }
+}
+
+
+TEST(KaczmarzSerialSparseCorrectnessSmall, AgreesWithEigen){
+  run_sparse_tests(5, 1, RUNS_PER_DIM);
+}
+
+
+TEST(KaczmarzSerialSparseCorrectnessMedium, AgreesWithEigen){
+  run_sparse_tests(20, 2, RUNS_PER_DIM);
+}
+
+
+TEST(KaczmarzSerialSparseCorrectnessLarge, AgreesWithEigen){
+  run_sparse_tests(50, 2, RUNS_PER_DIM);
 }
 
 int main() {

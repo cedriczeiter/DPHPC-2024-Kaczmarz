@@ -1,49 +1,36 @@
-#include "random_dense_system.hpp"
+#include "kaczmarz_serial/kaczmarz_common.hpp"
+#include "kaczmarz_serial/random_kaczmarz.hpp"
+#include "linear_systems/dense.hpp"
 #include "kaczmarz.hpp"
 #include "random_kaczmarz.hpp"
 
 #include <iostream>
+#include <iterator>
 #include <random>
 
 int main() {
-  // Initialize the space that we need.
-  int dim = 5;
-  double *A = (double *)malloc(sizeof(double)*dim*dim);
-  double *b = (double *)malloc(sizeof(double)*dim);
-  double *x = (double *)malloc(sizeof(double)*dim);
+  const unsigned dim = 5;
   
   // Initialize the random number generator
   std::mt19937 rng(21);
 
-  // Generate a random dense linear system
-  generate_random_dense_linear_system(rng, A, b, x, dim);
+  const DenseLinearSystem lse =  DenseLinearSystem::generate_random_regular(rng, dim);
 
-  // Allocate space for the solutions
-  double *x_kaczmarz = (double *)malloc(sizeof(double)*dim);
-  double *x_kaczmarz_random = (double *)malloc(sizeof(double)*dim);
+  std::vector<double> x_kaczmarz(dim, 0.0);
+  std::vector<double> x_kaczmarz_random(dim, 0.0);
 
-  // Test the serial Kaczmarz solver
-  const auto status = kaczmarz_solver(A, b, x_kaczmarz, dim, dim, 100000, 1e-10);
-  if (status != KaczmarzSolverStatus::Converged) {
+  const auto status_dense = dense_kaczmarz(lse, &x_kaczmarz[0], 100000, 1e-10);
+  if (status_dense != KaczmarzSolverStatus::Converged) {
     std::cout << "The serial Kaczmarz solver didn't converge!" << std::endl;
   }
 
-  // Test the randomized Kaczmarz solver
-  const auto random_status = kaczmarz_random_solver(A, b, x_kaczmarz_random, dim, dim, 100000, 1e-10);
-  if (random_status != KaczmarzSolverStatus::Converged) {
-    std::cout << "The randomized Kaczmarz solver didn't converge!" << std::endl;
+  const auto status_random = kaczmarz_random_solver(lse, &x_kaczmarz_random[0], 100000, 1e-10);
+  if (status_random != KaczmarzSolverStatus::Converged){
+    std::cout << "The random Kaczmarz solver didn't converge!" << std::endl;
   }
 
-  // Print the original solution from Eigen
-  std::cout << "Eigen solution: \n";
-  for (int i = 0; i < dim; i++){
-    std::cout << x[i] << std::endl;
-  }
-  std::cout << "\n\n";
-
-  // Print the solution from the serial Kaczmarz solver
-  std::cout << "Serial Kaczmarz solution: \n";
-  for (int i = 0; i < dim; i++){
+  std::cout << "Kaczmarz solution: \n";
+  for (unsigned i = 0; i < dim; i++){
     std::cout << x_kaczmarz[i] << std::endl;
   }
   std::cout << "\n\n";
@@ -54,10 +41,12 @@ int main() {
     std::cout << x_kaczmarz_random[i] << std::endl;
   }
 
-  // Free the allocated memory
-  free(A);
-  free(b);
-  free(x);
-  free(x_kaczmarz);
-  free(x_kaczmarz_random);
+  std::cout << "\n\n";
+
+  const Vector x_eigen = lse.eigen_solve();
+
+  std::cout << "Eigen solution: \n";
+  for (unsigned i = 0; i < dim; i++){
+    std::cout << x_eigen[i] << std::endl;
+  }
 }
