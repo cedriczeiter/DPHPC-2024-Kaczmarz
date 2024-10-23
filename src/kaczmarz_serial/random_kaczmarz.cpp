@@ -54,7 +54,7 @@ KaczmarzSolverStatus kaczmarz_random_solver(const DenseLinearSystem& lse, double
       x[j] += a_row[j] * correction;
     }
     if (std::fabs(correction) < precision) {
-      return;
+      substantial_correction = true;
     }
   }
 
