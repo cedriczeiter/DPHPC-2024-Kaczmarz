@@ -59,3 +59,6 @@ build/
 
 # vscode settings
 .vscode/
+
+# .DS_Store added, it's a weird file that only exists in macos and often causes problems
+.DS_Store
