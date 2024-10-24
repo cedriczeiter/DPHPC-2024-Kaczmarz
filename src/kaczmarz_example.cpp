@@ -12,6 +12,16 @@ int main() {
   const unsigned dim = 5;
   
   // Initialize the random number generator
+
+
+
+
+
+
+
+
+
+  
   std::mt19937 rng(21);
 
   const DenseLinearSystem lse =  DenseLinearSystem::generate_random_regular(rng, dim);
