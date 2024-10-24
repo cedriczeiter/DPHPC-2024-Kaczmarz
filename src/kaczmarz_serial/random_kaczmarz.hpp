@@ -1,10 +1,10 @@
 #ifndef KACZMARZ_RANDOM_HPP
 #define KACZMARZ_RANDOM_HPP
 
-#include "kaczmarz_common.hpp"
-#include "dense.hpp"
-
 #include <vector>
+
+#include "dense.hpp"
+#include "kaczmarz_common.hpp"
 
 /**
  * @brief Solves the Ax = b linear system using the randomized Kaczmarz
@@ -34,8 +34,9 @@
  *         - KaczmarzSolverStatus::OutOfIterations: The algorithm reached the
  * maximum number of iterations without converging.
  */
-KaczmarzSolverStatus kaczmarz_random_solver(const DenseLinearSystem& lse, double *x, unsigned max_iterations, double precision);
-
+KaczmarzSolverStatus kaczmarz_random_solver(const DenseLinearSystem &lse,
+                                            double *x, unsigned max_iterations,
+                                            double precision);
 
 /**
  * @brief Helper function to select a random row based on its squared norm.
@@ -51,4 +52,4 @@ KaczmarzSolverStatus kaczmarz_random_solver(const DenseLinearSystem& lse, double
  */
 unsigned random_row_selection(const double *row_norms, unsigned num_rows);
 
-#endif // KACZMARZ_RANDOM_HPP
+#endif  // KACZMARZ_RANDOM_HPP

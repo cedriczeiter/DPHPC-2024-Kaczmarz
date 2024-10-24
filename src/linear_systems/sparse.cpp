@@ -9,12 +9,12 @@ Vector SparseLinearSystem::eigen_solve() const {
   return qr.solve(this->_b);
 }
 
-SparseLinearSystem SparseLinearSystem::generate_random_banded_regular(std::mt19937& rng, const unsigned dim, const unsigned bandwidth) {
+SparseLinearSystem SparseLinearSystem::generate_random_banded_regular(
+    std::mt19937& rng, const unsigned dim, const unsigned bandwidth) {
   std::uniform_real_distribution<double> dist(-1.0, 1.0);
   SparseMatrix A(dim, dim);
   int rank;
-  do
-  {
+  do {
     for (int i = 0; i < (int)dim; i++) {
       const int from_col = std::max(i - (int)bandwidth, 0);
       const int to_col = std::min(i + (int)bandwidth, (int)dim - 1);
@@ -27,6 +27,7 @@ SparseLinearSystem SparseLinearSystem::generate_random_banded_regular(std::mt199
     qr.compute(A);
     rank = qr.rank();
   } while (rank != (int)dim);
-  const Vector b = Vector::NullaryExpr(dim, [&rng, &dist] { return dist(rng); });
+  const Vector b =
+      Vector::NullaryExpr(dim, [&rng, &dist] { return dist(rng); });
   return SparseLinearSystem(A, b);
 }

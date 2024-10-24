@@ -1,16 +1,21 @@
 #include "random_kaczmarz.hpp"
+
 #include <cmath>
 #include <cstdlib>
-#include <vector>
 #include <random>
+#include <vector>
 
 // Helper function to randomly select a row based on row norms
-unsigned random_row_selection(const double *row_norms, unsigned num_rows, std::mt19937 &rng) {
-  std::discrete_distribution<> dist(row_norms, row_norms + num_rows); // Distribution based on row norms
-  return dist(rng);  // Randomly select a row
+unsigned random_row_selection(const double *row_norms, unsigned num_rows,
+                              std::mt19937 &rng) {
+  std::discrete_distribution<> dist(
+      row_norms, row_norms + num_rows);  // Distribution based on row norms
+  return dist(rng);                      // Randomly select a row
 }
 
-KaczmarzSolverStatus kaczmarz_random_solver(const DenseLinearSystem& lse, double *x, unsigned max_iterations, double precision) {
+KaczmarzSolverStatus kaczmarz_random_solver(const DenseLinearSystem &lse,
+                                            double *x, unsigned max_iterations,
+                                            double precision) {
   std::mt19937 rng(1);
   const unsigned rows = lse.row_count();
   const unsigned cols = lse.column_count();
@@ -58,6 +63,6 @@ KaczmarzSolverStatus kaczmarz_random_solver(const DenseLinearSystem& lse, double
     }
   }
 
-  //If it didnt return earlier, then max iterations reached and not converged.
+  // If it didnt return earlier, then max iterations reached and not converged.
   return KaczmarzSolverStatus::OutOfIterations;
 }
