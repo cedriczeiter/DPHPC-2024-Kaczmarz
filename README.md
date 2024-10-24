@@ -6,7 +6,7 @@ This project implements a Kaczmarz method for solving systems of linear equation
 ### Steps to Build and Run
 
 1. **Install Dependencies**
-   Install CMake and Eigen if not already installed.
+   Install CMake and Eigen if not already installed. Install clang-format if you want to format code.
 
 2. **Clone the Repository**:
    ```
