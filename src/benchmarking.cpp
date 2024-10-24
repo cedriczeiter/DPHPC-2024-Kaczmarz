@@ -11,11 +11,6 @@
 #include "kaczmarz.hpp"
 #include "kaczmarz_common.hpp"
 
-
-
-
-
-
 #define MAX_IT 1000000
 double benchmark(int dim, int numIterations, double& stdDev,
                  std::mt19937& rng) {
