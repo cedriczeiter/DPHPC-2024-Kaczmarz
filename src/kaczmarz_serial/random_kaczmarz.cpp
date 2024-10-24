@@ -1,4 +1,4 @@
-#include "kaczmarz.hpp"
+#include "random_kaczmarz.hpp"
 #include <cmath>
 #include <cstdlib>
 #include <vector>
@@ -53,13 +53,8 @@ KaczmarzSolverStatus kaczmarz_random_solver(const DenseLinearSystem& lse, double
     for (unsigned j = 0; j < cols; j++) {
       x[j] += a_row[j] * correction;
     }
-    if (std::fabs(correction) > precision) {
+    if (std::fabs(correction) < precision) {
       substantial_correction = true;
-    }
-
-    // If no substantial correction was made, the solution has converged and algorithm ends
-    if (!substantial_correction) {
-      return KaczmarzSolverStatus::Converged;
     }
   }
 
