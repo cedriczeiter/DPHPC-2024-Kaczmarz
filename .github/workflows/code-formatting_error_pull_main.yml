@@ -1,0 +1,21 @@
+name: Check C++ code formatting on pull request to main and give error
+
+on:
+  pull_request:
+    branches:
+      - main # Trigger on pull requests targeting the main branch
+
+jobs:
+  format-check:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install clang-format
+      run: |
+        sudo apt-get update
+        sudo apt-get install clang-format -y
+        clang-format --version
+    - name: Run clang-format to check for unformatted code
+      id: clang_format_check
+      run: |
+        find . -iname '*.hpp' -o -iname '*.cpp' | xargs clang-format --dry-run --Werror --style=Google

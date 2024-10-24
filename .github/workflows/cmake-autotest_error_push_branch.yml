@@ -1,4 +1,4 @@
-name: CMake auto test
+name: CMake automatic testing on push and pull (error if fails)
 
 on:
   push:

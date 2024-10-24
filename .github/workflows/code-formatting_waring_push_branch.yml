@@ -1,0 +1,26 @@
+name: Check C++ code formatting and just gives warning (but not blocks)
+
+on:
+  push:
+    branches:
+      - '**' # Trigger on push to any branch
+
+jobs:
+  format-check:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install clang-format
+      run: |
+        sudo apt-get update
+        sudo apt-get install clang-format -y
+        clang-format --version
+    - name: Run clang-format to check for unformatted code
+      id: clang_format_check
+      run: |
+        find . -iname '*.hpp' -o -iname '*.cpp' | xargs clang-format --dry-run --Werror --style=Google
+      continue-on-error: true  # Allow other steps to run even if this fails
+    - name: Warn user about unformatted code
+      if: ${{ failure() }} # Only run this step if the previous step failed
+      run: |
+        echo "Warning: Your code is not formatted according to clang-format. Please format the code."
