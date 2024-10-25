@@ -58,6 +58,7 @@ set(SOURCE_DIR ${CMAKE_SOURCE_DIR}/src)
 add_executable(mesh_builder ${SOURCE_DIR}/main.cpp)
 
 target_link_libraries(mesh_builder nlohmann_json::nlohmann_json) 
+target_link_libraries(mesh_builder Eigen3::Eigen) 
 target_link_libraries(mesh_builder LF::lf.io)
 target_link_libraries(mesh_builder LF::lf.mesh.hybrid2d)
 target_link_libraries(mesh_builder LF::lf.mesh)

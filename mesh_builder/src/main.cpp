@@ -1,3 +1,4 @@
+#include <Eigen/SparseCore>
 #include <fstream>
 #include <lf/assemble/assemble.h>
 #include <lf/fe/fe.h>
@@ -10,6 +11,22 @@
 #include <filesystem>
 #include <iostream>
 #include <nlohmann/json.hpp>
+
+int export_matrix(Eigen::SparseMatrix<double> A, std::string path) {
+  const unsigned rows = A.rows();
+  const unsigned cols = A.cols();
+  std::ofstream outFile(path);
+  if (!outFile.is_open()) {
+    std::cerr << "Error opening file for writing!" << std::endl;
+    return 1;
+  }
+  for (int k = 0; k < A.outerSize(); ++k) {
+    for (Eigen::SparseMatrix<double>::InnerIterator it(A, k); it; ++it) {
+      outFile << it.row() << " " << it.col() << " " << it.value() << std::endl;
+    }
+  }
+  return 0;
+}
 
 int main(int argc, char **argv) {
   // Set complete file path to the configuration file;
@@ -67,5 +84,6 @@ int main(int argc, char **argv) {
   // Solve the LSE using the cholesky decomposition
   Eigen::SparseMatrix<double> A = A_COO.makeSparse();
 
-  std::cout << " Hihihiuhuhu " << std::endl;
+  // Save Matrix to use Kaczmarz solver
+  return export_matrix(A, config_data["matrix_file"]);
 }
