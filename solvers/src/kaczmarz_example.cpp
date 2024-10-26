@@ -1,3 +1,5 @@
+#include <filesystem>
+#include <fstream>
 #include <iostream>
 #include <iterator>
 #include <random>
@@ -6,6 +8,7 @@
 #include "kaczmarz_serial/kaczmarz_common.hpp"
 #include "kaczmarz_serial/random_kaczmarz.hpp"
 #include "linear_systems/dense.hpp"
+#include "linear_systems/sparse.hpp"
 #include "random_kaczmarz.hpp"
 
 int main() {
@@ -51,5 +54,43 @@ int main() {
   std::cout << "Eigen solution: \n";
   for (unsigned i = 0; i < dim; i++) {
     std::cout << x_eigen[i] << std::endl;
+  }
+
+  // adding example for sparse matrices
+  std::cout << "\n\nNow solving for a sparse matrix generated from a mesh..."
+            << std::endl;
+
+  // Set complete file path to the sparse sytem file
+  const std::filesystem::path here = __FILE__;
+  auto system_file_path =
+      here.parent_path() / "../../system_matrices/elementmatrix_unitsquare.txt";
+  // read in from file
+  const SparseLinearSystem sparse_lse =
+      SparseLinearSystem::read_from_file(system_file_path.string());
+  // solve
+  Eigen::VectorXd x_kaczmarz_sparse =
+      Eigen::VectorXd::Zero(sparse_lse.column_count());
+  const auto status_sparse =
+      sparse_kaczmarz(sparse_lse, x_kaczmarz_sparse, 10000000, 1e-10);
+  if (status_sparse != KaczmarzSolverStatus::Converged) {
+    std::cout
+        << "The serial Kaczmarz solver for sparse matrices didn't converge!"
+        << std::endl;
+  }
+
+  unsigned cols = sparse_lse.column_count();
+
+  const Vector x_eigen_sparse = sparse_lse.eigen_solve();
+
+  std::cout << "\n\nSparse Kaczmarz solution: \n";
+  for (int i = 0; i < cols; i++) {
+    std::cout << x_kaczmarz_sparse[i] << std::endl;
+  }
+
+  std::cout << "\n\n";
+
+  std::cout << "Eigen solution: \n";
+  for (unsigned i = 0; i < cols; i++) {
+    std::cout << x_eigen_sparse[i] << std::endl;
   }
 }

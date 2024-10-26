@@ -3,8 +3,8 @@ project(parallel_kaczmarz_pde C CXX)
 
 # Set C standard
 set(CMAKE_C_STANDARD 11)
-#set Cpp standard
-set(CMAKE_CXX_STANDARD 11)
+#setup CXX standard 
+set(CMAKE_CXX_STANDARD 20)
 
 # Enable all warnings and extra warnings
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -pthread")

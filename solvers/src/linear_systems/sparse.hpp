@@ -6,16 +6,16 @@
 #include "types.hpp"
 
 class SparseLinearSystem {
- private:
+private:
   SparseMatrix _A;
   Vector _b;
 
-  SparseLinearSystem(const SparseMatrix& A, const Vector& b) : _A(A), _b(b) {}
+  SparseLinearSystem(const SparseMatrix &A, const Vector &b) : _A(A), _b(b) {}
 
- public:
-  const SparseMatrix& A() const { return this->_A; }
+public:
+  const SparseMatrix &A() const { return this->_A; }
 
-  const Vector& b() const { return this->_b; }
+  const Vector &b() const { return this->_b; }
 
   unsigned row_count() const { return this->_A.rows(); }
 
@@ -23,9 +23,11 @@ class SparseLinearSystem {
 
   Vector eigen_solve() const;
 
-  static SparseLinearSystem generate_random_banded_regular(std::mt19937& rng,
+  static SparseLinearSystem generate_random_banded_regular(std::mt19937 &rng,
                                                            unsigned dim,
                                                            unsigned bandwidth);
+
+  static SparseLinearSystem read_from_file(std::string path);
 };
 
-#endif  // SPARSE_HPP
+#endif // SPARSE_HPP

@@ -1,5 +1,6 @@
 {
   "selector": 0,
   "scale": 1.0,
-  "matrix_file": "../../elementmatrix_unitsquare.txt"
+  "degree": 1,
+  "matrix_file": "../../system_matrices/elementmatrix_unitsquare.txt"
 }

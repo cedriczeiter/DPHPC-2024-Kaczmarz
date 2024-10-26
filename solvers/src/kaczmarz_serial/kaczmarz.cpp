@@ -1,8 +1,9 @@
 #include "kaczmarz.hpp"
 
 #include <cmath>
+#include <iostream>
 
-KaczmarzSolverStatus dense_kaczmarz(const DenseLinearSystem& lse, double* x,
+KaczmarzSolverStatus dense_kaczmarz(const DenseLinearSystem &lse, double *x,
                                     unsigned max_iterations, double precision) {
   const unsigned rows = lse.row_count();
   const unsigned cols = lse.column_count();
@@ -14,7 +15,7 @@ KaczmarzSolverStatus dense_kaczmarz(const DenseLinearSystem& lse, double* x,
 
     // Process each row of matrix A
     for (unsigned i = 0; i < rows; i++) {
-      const double* const a_row = lse.A() + i * cols;
+      const double *const a_row = lse.A() + i * cols;
       double dot_product = 0.0;
       double row_sq_norm = 0.0;
 
@@ -50,8 +51,8 @@ KaczmarzSolverStatus dense_kaczmarz(const DenseLinearSystem& lse, double* x,
   return KaczmarzSolverStatus::OutOfIterations;
 }
 
-KaczmarzSolverStatus sparse_kaczmarz(const SparseLinearSystem& lse,
-                                     Eigen::VectorXd& x,
+KaczmarzSolverStatus sparse_kaczmarz(const SparseLinearSystem &lse,
+                                     Eigen::VectorXd &x,
                                      const unsigned max_iterations,
                                      const double precision) {
   const unsigned rows = lse.row_count();
