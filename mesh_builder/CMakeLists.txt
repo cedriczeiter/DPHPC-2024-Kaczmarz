@@ -1,5 +1,10 @@
 cmake_minimum_required(VERSION 3.10)
 
+# Without setting this, CMake gives a warning
+# Setting this policy ensures whenever some content is fetched, it will get a fresh timestamp so
+# that CMake doesn't skip rebuilding any of its dependents
+cmake_policy(SET CMP0135 NEW)
+
 include("cmake/HunterGate.cmake")
 HunterGate(
     URL "https://github.com/cpp-pm/hunter/archive/v0.25.3.tar.gz"
