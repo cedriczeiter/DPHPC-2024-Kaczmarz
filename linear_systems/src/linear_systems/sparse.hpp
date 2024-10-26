@@ -2,6 +2,7 @@
 #define SPARSE_HPP
 
 #include <random>
+#include <cassert>
 
 #include "types.hpp"
 
@@ -10,9 +11,11 @@ class SparseLinearSystem {
   SparseMatrix _A;
   Vector _b;
 
-  SparseLinearSystem(const SparseMatrix &A, const Vector &b) : _A(A), _b(b) {}
-
  public:
+  SparseLinearSystem(const SparseMatrix &A, const Vector &b) : _A(A), _b(b) {
+    assert(A.rows() == b.size() && "Number of rows in coefficient matrix must equal RHS vector dimension!");
+  }
+
   const SparseMatrix &A() const { return this->_A; }
 
   const Vector &b() const { return this->_b; }
@@ -28,6 +31,7 @@ class SparseLinearSystem {
                                                            unsigned bandwidth);
 
   static SparseLinearSystem read_from_file(std::string path);
+  void write_to_file(std::string path) const;
 };
 
 #endif  // SPARSE_HPP

@@ -30,7 +30,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 
 # Enable all warnings and extra warnings
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -pthread")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
 
 
 ## Get Eigen
@@ -42,6 +42,8 @@ hunter_add_package(lehrfempp)
 find_package(lehrfempp CONFIG REQUIRED)
 
 set(SOURCE_DIR ${CMAKE_SOURCE_DIR}/src)
+
+add_subdirectory(../linear_systems linear_systems_build)
 
 
 # define executable
@@ -56,4 +58,5 @@ target_link_libraries(mesh_builder LF::lf.mesh.utils)
 target_link_libraries(mesh_builder LF::lf.mesh.test_utils)
 target_link_libraries(mesh_builder LF::lf.fe)
 target_link_libraries(mesh_builder LF::lf.assemble)
+target_link_libraries(mesh_builder linear_systems)
 

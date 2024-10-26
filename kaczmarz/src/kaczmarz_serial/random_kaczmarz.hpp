@@ -3,7 +3,7 @@
 
 #include <vector>
 
-#include "dense.hpp"
+#include "linear_systems/dense.hpp"
 #include "kaczmarz_common.hpp"
 
 /**

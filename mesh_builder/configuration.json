@@ -2,5 +2,5 @@
   "selector": 0,
   "scale": 1.0,
   "degree": 1,
-  "matrix_file": "../../system_matrices/elementmatrix_unitsquare.txt"
+  "matrix_file": "../../generated_bvp_matrices/elementmatrix_unitsquare.txt"
 }

@@ -78,3 +78,25 @@ SparseLinearSystem SparseLinearSystem::read_from_file(std::string path) {
   std::cout << "RHS Vector constructed" << std::endl;
   return SparseLinearSystem(A, b);
 }
+
+// idea for export Linear System:
+// 1st entry: nnz in Matrix, 2nd and 3rd entry: rows/cols of Matrix, then
+// triplets printed out, then values of RHS Vector
+void SparseLinearSystem::write_to_file(std::string path) const {
+  std::ofstream outFile(path);
+  if (!outFile.is_open()) {
+    std::cerr << "Error opening file for writing!" << std::endl;
+    return;
+  }
+  outFile << this->_A.nonZeros() << std::endl;
+  outFile << this->_A.rows() << " " << this->_A.cols() << std::endl;
+
+  // print values of matrix
+  for (int k = 0; k < this->_A.outerSize(); ++k) {
+    for (SparseMatrix::InnerIterator it(this->_A, k); it; ++it) {
+      outFile << it.row() << " " << it.col() << " " << it.value() << std::endl;
+    }
+  }
+  // print values of vector
+  for (int i = 0; i < this->_b.size(); i++) outFile << this->_b[i] << std::endl;
+}
