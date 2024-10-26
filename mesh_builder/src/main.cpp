@@ -10,12 +10,11 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
-
-#include "linear_systems/sparse.hpp"
 #include <nlohmann/json.hpp>
 
-SparseLinearSystem generate_system(
-    nlohmann::json config_data) {
+#include "linear_systems/sparse.hpp"
+
+SparseLinearSystem generate_system(nlohmann::json config_data) {
   unsigned selector_mesh = config_data["selector"];
   double scale = config_data["scale"];
   // generate mesh

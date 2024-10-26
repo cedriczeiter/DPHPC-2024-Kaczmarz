@@ -1,8 +1,8 @@
 #ifndef SPARSE_HPP
 #define SPARSE_HPP
 
-#include <random>
 #include <cassert>
+#include <random>
 
 #include "types.hpp"
 
@@ -13,7 +13,9 @@ class SparseLinearSystem {
 
  public:
   SparseLinearSystem(const SparseMatrix &A, const Vector &b) : _A(A), _b(b) {
-    assert(A.rows() == b.size() && "Number of rows in coefficient matrix must equal RHS vector dimension!");
+    assert(A.rows() == b.size() &&
+           "Number of rows in coefficient matrix must equal RHS vector "
+           "dimension!");
   }
 
   const SparseMatrix &A() const { return this->_A; }

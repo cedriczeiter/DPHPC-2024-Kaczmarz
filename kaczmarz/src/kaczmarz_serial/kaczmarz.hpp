@@ -1,8 +1,8 @@
 #ifndef KACZMARZ_HPP
 #define KACZMARZ_HPP
 
-#include "linear_systems/dense.hpp"
 #include "kaczmarz_common.hpp"
+#include "linear_systems/dense.hpp"
 #include "linear_systems/sparse.hpp"
 /**
  * @brief Solves the Ax = b LSE by running the serial Kaczmarz algorithm with
