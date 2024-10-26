@@ -36,7 +36,6 @@ SparseLinearSystem SparseLinearSystem::generate_random_banded_regular(
 
 SparseLinearSystem SparseLinearSystem::read_from_stream(
     std::istream& in_stream) {
-
   unsigned nnz, rows, cols;
   in_stream >> nnz >> rows >> cols;
 
@@ -75,14 +74,12 @@ void SparseLinearSystem::write_to_stream(std::ostream& out_stream) const {
   // write values of matrix
   for (int k = 0; k < this->_A.outerSize(); ++k) {
     for (SparseMatrix::InnerIterator it(this->_A, k); it; ++it) {
-      out_stream << it.row() << " " << it.col() << " " << it.value()
-                 << '\n';
+      out_stream << it.row() << " " << it.col() << " " << it.value() << '\n';
     }
   }
 
   // write values of vector
-  for (int i = 0; i < this->_b.size(); i++)
-    out_stream << this->_b[i] << '\n';
+  for (int i = 0; i < this->_b.size(); i++) out_stream << this->_b[i] << '\n';
 
   out_stream.flush();
 }
