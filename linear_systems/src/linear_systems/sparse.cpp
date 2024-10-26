@@ -36,38 +36,32 @@ SparseLinearSystem SparseLinearSystem::generate_random_banded_regular(
 
 SparseLinearSystem SparseLinearSystem::read_from_stream(
     std::istream& in_stream) {
-  std::vector<double> entries;
 
-  double entry;
-  while (in_stream >> entry) entries.push_back(entry);
-  // first entry: nnz in A
-  unsigned nnz = (unsigned)entries.at(0);
-  // next two entries of file are rows and cols
-  unsigned rows = (unsigned)entries.at(1);
-  unsigned cols = (unsigned)entries.at(2);
-  // assert format is correct
-  assert(3 + 3 * nnz + cols == entries.size());
+  unsigned nnz, rows, cols;
+  in_stream >> nnz >> rows >> cols;
 
-  SparseMatrix A(rows, cols);
+  assert(nnz <= rows * cols);
+
   std::vector<Eigen::Triplet<double>> triplets_A;
+  triplets_A.reserve(nnz);
 
   // every next three entries correspond to values for a triplet
   for (unsigned i = 0; i < nnz; i++) {
-    unsigned idx = 3 + 3 * i;
-    unsigned row = (unsigned)entries.at(idx);
-    unsigned col = (unsigned)entries.at(idx + 1);
-    double value = (unsigned)entries.at(idx + 2);
-    triplets_A.push_back(Eigen::Triplet<double>(row, col, value));
+    unsigned row, col;
+    double value;
+    in_stream >> row >> col >> value;
+    triplets_A.emplace_back(row, col, value);
   }
+
+  SparseMatrix A(rows, cols);
   A.setFromTriplets(triplets_A.begin(), triplets_A.end());
-  std::cout << "A constructed" << std::endl;
+
   // construct rhs vector
-  Vector b = Vector::Zero(cols);
+  Vector b = Vector::Zero(rows);
   for (unsigned i = 0; i < cols; i++) {
-    unsigned idx = 3 + 3 * nnz + i;
-    b[i] = entries.at(idx);
+    in_stream >> b[i];
   }
-  std::cout << "RHS Vector constructed" << std::endl;
+
   return SparseLinearSystem(A, b);
 }
 
@@ -75,17 +69,20 @@ SparseLinearSystem SparseLinearSystem::read_from_stream(
 // 1st entry: nnz in Matrix, 2nd and 3rd entry: rows/cols of Matrix, then
 // triplets printed out, then values of RHS Vector
 void SparseLinearSystem::write_to_stream(std::ostream& out_stream) const {
-  out_stream << this->_A.nonZeros() << std::endl;
-  out_stream << this->_A.rows() << " " << this->_A.cols() << std::endl;
+  out_stream << this->_A.nonZeros() << '\n';
+  out_stream << this->_A.rows() << " " << this->_A.cols() << '\n';
 
-  // print values of matrix
+  // write values of matrix
   for (int k = 0; k < this->_A.outerSize(); ++k) {
     for (SparseMatrix::InnerIterator it(this->_A, k); it; ++it) {
       out_stream << it.row() << " " << it.col() << " " << it.value()
-                 << std::endl;
+                 << '\n';
     }
   }
-  // print values of vector
+
+  // write values of vector
   for (int i = 0; i < this->_b.size(); i++)
-    out_stream << this->_b[i] << std::endl;
+    out_stream << this->_b[i] << '\n';
+
+  out_stream.flush();
 }
