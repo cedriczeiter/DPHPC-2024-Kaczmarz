@@ -1,7 +1,6 @@
 #include "sparse.hpp"
 
 #include <Eigen/SparseQR>
-#include <fstream>
 #include <iostream>
 #include <random>
 #include <vector>
@@ -13,7 +12,7 @@ Vector SparseLinearSystem::eigen_solve() const {
 }
 
 SparseLinearSystem SparseLinearSystem::generate_random_banded_regular(
-    std::mt19937 &rng, const unsigned dim, const unsigned bandwidth) {
+    std::mt19937& rng, const unsigned dim, const unsigned bandwidth) {
   std::uniform_real_distribution<double> dist(-1.0, 1.0);
   SparseMatrix A(dim, dim);
   int rank;
@@ -35,19 +34,12 @@ SparseLinearSystem SparseLinearSystem::generate_random_banded_regular(
   return SparseLinearSystem(A, b);
 }
 
-SparseLinearSystem SparseLinearSystem::read_from_file(std::string path) {
-  std::ifstream inputFile(path);
+SparseLinearSystem SparseLinearSystem::read_from_stream(
+    std::istream& in_stream) {
   std::vector<double> entries;
-  if (!inputFile) {
-    std::cerr << "Error opening file. Generating random banded regular instead"
-              << std::endl;
-    std::mt19937 rng(21);
-    return generate_random_banded_regular(rng, 10, 3);
-  }
 
-  std::cout << "Reading in Matrix entries from " << path << std::endl;
   double entry;
-  while (inputFile >> entry) entries.push_back(entry);
+  while (in_stream >> entry) entries.push_back(entry);
   // first entry: nnz in A
   unsigned nnz = (unsigned)entries.at(0);
   // next two entries of file are rows and cols
@@ -82,21 +74,18 @@ SparseLinearSystem SparseLinearSystem::read_from_file(std::string path) {
 // idea for export Linear System:
 // 1st entry: nnz in Matrix, 2nd and 3rd entry: rows/cols of Matrix, then
 // triplets printed out, then values of RHS Vector
-void SparseLinearSystem::write_to_file(std::string path) const {
-  std::ofstream outFile(path);
-  if (!outFile.is_open()) {
-    std::cerr << "Error opening file for writing!" << std::endl;
-    return;
-  }
-  outFile << this->_A.nonZeros() << std::endl;
-  outFile << this->_A.rows() << " " << this->_A.cols() << std::endl;
+void SparseLinearSystem::write_to_stream(std::ostream& out_stream) const {
+  out_stream << this->_A.nonZeros() << std::endl;
+  out_stream << this->_A.rows() << " " << this->_A.cols() << std::endl;
 
   // print values of matrix
   for (int k = 0; k < this->_A.outerSize(); ++k) {
     for (SparseMatrix::InnerIterator it(this->_A, k); it; ++it) {
-      outFile << it.row() << " " << it.col() << " " << it.value() << std::endl;
+      out_stream << it.row() << " " << it.col() << " " << it.value()
+                 << std::endl;
     }
   }
   // print values of vector
-  for (int i = 0; i < this->_b.size(); i++) outFile << this->_b[i] << std::endl;
+  for (int i = 0; i < this->_b.size(); i++)
+    out_stream << this->_b[i] << std::endl;
 }

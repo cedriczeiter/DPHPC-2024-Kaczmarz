@@ -32,8 +32,8 @@ class SparseLinearSystem {
                                                            unsigned dim,
                                                            unsigned bandwidth);
 
-  static SparseLinearSystem read_from_file(std::string path);
-  void write_to_file(std::string path) const;
+  static SparseLinearSystem read_from_stream(std::istream &in_stream);
+  void write_to_stream(std::ostream &out_stream) const;
 };
 
 #endif  // SPARSE_HPP

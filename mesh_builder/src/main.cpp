@@ -7,7 +7,6 @@
 #include <lf/mesh/utils/utils.h>
 
 #include <Eigen/SparseCore>
-#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <nlohmann/json.hpp>
@@ -56,24 +55,28 @@ SparseLinearSystem generate_system(nlohmann::json config_data) {
 }
 
 int main(int argc, char **argv) {
-  // Set complete file path to the configuration file;
-  const std::filesystem::path here = __FILE__;
-  auto config_file_path = here.parent_path() / "../configuration.json";
-
-  // read in data from configuration file; right now we dont have many params in
-  // there yet, but this mightchange, so having everything in a config file will
-  // be much easier
-  std::ifstream config_file(config_file_path.string());
-  if (!config_file.is_open()) {
-    std::cerr << "Error opening config file!" << std::endl;
-    return 1;
-  }
   nlohmann::json config_data;
-  config_file >> config_data;
-  config_file.close();
 
-  // Save Matrix to use Kaczmarz solver
-  generate_system(config_data).write_to_file(config_data["matrix_file"]);
+  // read in data from configuration file (or stdin); right now we dont have
+  // many params in there yet, but this might change, so having everything in a
+  // config file will be much easier
+  if (argc == 2) {
+    // there is a command-line argument -> interpret it as path to config file
+
+    std::ifstream config_file(argv[1]);
+    if (!config_file.is_open()) {
+      std::cerr << "Can't open config file " << argv[1] << std::endl;
+      return 1;
+    }
+    config_file >> config_data;
+  } else {
+    // there are no or too many command-line arguments -> read config from stdin
+
+    std::cin >> config_data;
+  }
+
+  // Output the LSE to use Kaczmarz solver
+  generate_system(config_data).write_to_stream(std::cout);
 
   return 0;
 }
