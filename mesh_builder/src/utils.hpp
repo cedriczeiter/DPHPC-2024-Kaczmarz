@@ -27,14 +27,13 @@ int export_matrix(Eigen::SparseMatrix<double> A, Eigen::VectorXd rhs,
     }
   }
   // print values of vector
-  for (int i = 0; i < rhs.size(); i++)
-    outFile << rhs[i] << std::endl;
+  for (int i = 0; i < rhs.size(); i++) outFile << rhs[i] << std::endl;
 
   return 0;
 }
 
-std::pair<Eigen::SparseMatrix<double>, Eigen::VectorXd>
-generate_system(nlohmann::json config_data) {
+std::pair<Eigen::SparseMatrix<double>, Eigen::VectorXd> generate_system(
+    nlohmann::json config_data) {
   unsigned selector_mesh = config_data["selector"];
   double scale = config_data["scale"];
   // generate mesh

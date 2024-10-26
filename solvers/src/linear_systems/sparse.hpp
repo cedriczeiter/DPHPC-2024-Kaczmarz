@@ -6,13 +6,13 @@
 #include "types.hpp"
 
 class SparseLinearSystem {
-private:
+ private:
   SparseMatrix _A;
   Vector _b;
 
   SparseLinearSystem(const SparseMatrix &A, const Vector &b) : _A(A), _b(b) {}
 
-public:
+ public:
   const SparseMatrix &A() const { return this->_A; }
 
   const Vector &b() const { return this->_b; }
@@ -30,4 +30,4 @@ public:
   static SparseLinearSystem read_from_file(std::string path);
 };
 
-#endif // SPARSE_HPP
+#endif  // SPARSE_HPP

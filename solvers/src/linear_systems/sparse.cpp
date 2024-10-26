@@ -47,8 +47,7 @@ SparseLinearSystem SparseLinearSystem::read_from_file(std::string path) {
 
   std::cout << "Reading in Matrix entries from " << path << std::endl;
   double entry;
-  while (inputFile >> entry)
-    entries.push_back(entry);
+  while (inputFile >> entry) entries.push_back(entry);
   // first entry: nnz in A
   unsigned nnz = (unsigned)entries.at(0);
   // next two entries of file are rows and cols

@@ -1,5 +1,3 @@
-#include <Eigen/SparseCore>
-#include <fstream>
 #include <lf/assemble/assemble.h>
 #include <lf/fe/fe.h>
 #include <lf/io/io.h>
@@ -8,7 +6,9 @@
 #include <lf/mesh/test_utils/test_meshes.h>
 #include <lf/mesh/utils/utils.h>
 
+#include <Eigen/SparseCore>
 #include <filesystem>
+#include <fstream>
 #include <iostream>
 
 #include "utils.hpp"
