@@ -23,24 +23,9 @@ set(CMAKE_CXX_STANDARD 20)
 #enable language support
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-set(DBoost_NO_BOOST_CMAKE ON)
 
-#enable warnings
-include(CheckCXXCompilerFlag)
-CHECK_CXX_COMPILER_FLAG(-Wall COMPILER_SUPPORTS_WALL)
-CHECK_CXX_COMPILER_FLAG(-Wextra COMPILER_SUPPORTS_WEXTRA)
-CHECK_CXX_COMPILER_FLAG(-Wconversion COMPILER_SUPPORTS_WCONVERSION)
-
-add_library(warning_flags INTERFACE)
-if(COMPILER_SUPPORTS_WALL)
-  target_compile_options(warning_flags INTERFACE -Wall)
-endif()
-if(COMPILER_SUPPORTS_WEXTRA)
-  target_compile_options(warning_flags INTERFACE -Wextra)
-endif()
-if(COMPILER_SUPPORTS_WCONVERSION)
-  target_compile_options(warning_flags INTERFACE -Wconversion)
-endif()
+# Enable all warnings and extra warnings
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -pthread")
 
 
 ## Get Eigen
