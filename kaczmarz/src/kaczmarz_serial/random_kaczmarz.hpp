@@ -50,6 +50,6 @@ KaczmarzSolverStatus kaczmarz_random_solver(const DenseLinearSystem &lse,
  * @param num_rows The number of rows in the matrix A.
  * @return The index of the selected row.
  */
-unsigned random_row_selection(const double *row_norms, const unsigned num_rows);
+unsigned random_row_selection(const double *row_norms, unsigned num_rows);
 
 #endif  // KACZMARZ_RANDOM_HPP

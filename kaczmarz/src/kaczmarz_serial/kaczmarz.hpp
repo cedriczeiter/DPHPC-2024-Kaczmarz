@@ -22,15 +22,13 @@
  * @return KaczmarzSolverStatus indicating the status of the solver
  */
 KaczmarzSolverStatus dense_kaczmarz(const DenseLinearSystem& lse, double* x,
-                                    const unsigned max_iterations,
-                                    const double precision);
+                                    unsigned max_iterations, double precision);
 
 /**
  * @brief Analogous to dense_kaczmarz but operates on sparse LSEs.
  */
 KaczmarzSolverStatus sparse_kaczmarz(const SparseLinearSystem& lse,
                                      Eigen::VectorXd& x,
-                                     const unsigned max_iterations,
-                                     const double precision);
+                                     unsigned max_iterations, double precision);
 
 #endif  // KACZMARZ_HPP

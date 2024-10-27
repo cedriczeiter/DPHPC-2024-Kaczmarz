@@ -19,7 +19,7 @@
 ///
 /// @param dim The dimension of the dense linear system (number of variables).
 /// @param no_runs The number of test runs to perform for the given dimension.
-void run_dense_tests(const unsigned dim, const unsigned no_runs);
+void run_dense_tests(unsigned dim, unsigned no_runs);
 
 /// @brief Runs tests on sparse linear systems to compare Kaczmarz solution with
 /// Eigen's solution.
@@ -32,7 +32,6 @@ void run_dense_tests(const unsigned dim, const unsigned no_runs);
 /// @param bandwidth The bandwidth of the sparse linear system.
 /// @param no_runs The number of test runs to perform for the given dimension
 /// and bandwidth.
-void run_sparse_tests(const unsigned dim, const unsigned bandwidth,
-                      const unsigned no_runs);
+void run_sparse_tests(unsigned dim, unsigned bandwidth, unsigned no_runs);
 
 #endif  // KACZMARZ_TESTS_HPP

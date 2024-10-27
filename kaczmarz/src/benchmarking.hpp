@@ -29,7 +29,6 @@
 /// will be stored.
 /// @param rng A random number generator used for creating the linear system.
 /// @return The average time taken to solve the system across all iterations.
-double benchmark(const int dim, const int numIterations, double& stdDev,
-                 std::mt19937& rng);
+double benchmark(int dim, int numIterations, double& stdDev, std::mt19937& rng);
 
 #endif  // BENCHMARK_HPP
