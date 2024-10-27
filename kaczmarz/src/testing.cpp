@@ -1,9 +1,4 @@
-#include <cmath>
-#include <random>
-
-#include "gtest/gtest.h"
-#include "kaczmarz.hpp"
-#include "linear_systems/dense.hpp"
+#include "testing.hpp"
 
 constexpr unsigned MAX_IT = 1000000;
 constexpr unsigned RUNS_PER_DIM = 5;
