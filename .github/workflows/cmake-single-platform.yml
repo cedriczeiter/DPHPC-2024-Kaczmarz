@@ -22,12 +22,12 @@ jobs:
 
     - name: Build linear systems
       run: |
-        cmake -S . -B linear_systems/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+        cmake linear_systems -B linear_systems/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
         cmake --build linear_systems/build --config ${{env.BUILD_TYPE}}
       
     - name: Build kaczmarz
       run: |
-        cmake -S . -B kaczmarz/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}  
+        cmake kaczmarz -B kaczmarz/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}  
         cmake --build kaczmarz/build --config ${{env.BUILD_TYPE}}
 
     # Run the test executable directly
