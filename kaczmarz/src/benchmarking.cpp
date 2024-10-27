@@ -7,9 +7,9 @@
 #include <random>
 #include <vector>
 
-#include "dense.hpp"
 #include "kaczmarz.hpp"
 #include "kaczmarz_common.hpp"
+#include "linear_systems/dense.hpp"
 
 #define MAX_IT 1000000
 double benchmark(int dim, int numIterations, double& stdDev,

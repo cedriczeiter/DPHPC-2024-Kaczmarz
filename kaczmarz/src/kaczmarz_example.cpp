@@ -1,7 +1,5 @@
-#include <filesystem>
 #include <fstream>
 #include <iostream>
-#include <iterator>
 #include <random>
 
 #include "kaczmarz.hpp"
@@ -60,13 +58,11 @@ int main() {
   std::cout << "\n\nNow solving for a sparse matrix generated from a mesh..."
             << std::endl;
 
-  // Set complete file path to the sparse sytem file
-  const std::filesystem::path here = __FILE__;
-  auto system_file_path =
-      here.parent_path() / "../../system_matrices/elementmatrix_unitsquare.txt";
   // read in from file
+  std::ifstream lse_input_stream(
+      "../../generated_bvp_matrices/elementmatrix_unitsquare.txt");
   const SparseLinearSystem sparse_lse =
-      SparseLinearSystem::read_from_file(system_file_path.string());
+      SparseLinearSystem::read_from_stream(lse_input_stream);
   // solve
   Eigen::VectorXd x_kaczmarz_sparse =
       Eigen::VectorXd::Zero(sparse_lse.column_count());
