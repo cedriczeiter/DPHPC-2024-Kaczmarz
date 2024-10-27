@@ -10,8 +10,9 @@ fi
 # Define the formatting style (Google style is used as an example)
 STYLE="Google"
 
-# Find and format all .cpp and .hpp files
 echo "Formatting all C++ files in the project using clang-format with style: $STYLE"
-find . -iname '*.hpp' -o -iname '*.cpp' | xargs clang-format -i --style=$STYLE
+
+# Find and format all .cpp and .hpp files while skipping all paths that contain a directory "build"
+find . -path '*/build' -prune -o \( -iname '*.hpp' -o -iname '*.cpp' \) | xargs clang-format -i --style=$STYLE
 
 echo "Formatting complete."

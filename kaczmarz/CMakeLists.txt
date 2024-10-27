@@ -3,8 +3,8 @@ project(parallel_kaczmarz_pde C CXX)
 
 # Set C standard
 set(CMAKE_C_STANDARD 11)
-#set Cpp standard
-set(CMAKE_CXX_STANDARD 11)
+#setup CXX standard 
+set(CMAKE_CXX_STANDARD 20)
 
 # Enable all warnings and extra warnings
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -pthread")
@@ -14,8 +14,6 @@ find_package (Eigen3 3.3 REQUIRED NO_MODULE)
 
 set(SOURCE_DIR ${CMAKE_SOURCE_DIR}/src)
 set(SOURCES
-  ${SOURCE_DIR}/linear_systems/dense.cpp
-  ${SOURCE_DIR}/linear_systems/sparse.cpp
   ${SOURCE_DIR}/kaczmarz_serial/kaczmarz.cpp
   ${SOURCE_DIR}/kaczmarz_serial/random_kaczmarz.cpp
 )
@@ -42,11 +40,8 @@ target_include_directories(benchmark_executable PRIVATE ${SOURCE_DIR}/linear_sys
 
 CONFIGURE_FILE(${SOURCE_DIR}/plot.py ${PATH_TO_BUILD} plot.py COPYONLY)
 
-#add_subdirectory("${CMAKE_BINARY_DIR}/googletest-src"
-#                 "${CMAKE_BINARY_DIR}/googletest-build"
-#)
+add_subdirectory(../linear_systems linear_systems_build)
 
-target_link_libraries(kaczmarz_example Eigen3::Eigen)
-target_link_libraries(testing Eigen3::Eigen)
-target_link_libraries(testing gtest)
-target_link_libraries(benchmark_executable Eigen3::Eigen)
+target_link_libraries(kaczmarz_example PRIVATE Eigen3::Eigen linear_systems)
+target_link_libraries(testing PRIVATE Eigen3::Eigen linear_systems gtest)
+target_link_libraries(benchmark_executable PRIVATE Eigen3::Eigen linear_systems)

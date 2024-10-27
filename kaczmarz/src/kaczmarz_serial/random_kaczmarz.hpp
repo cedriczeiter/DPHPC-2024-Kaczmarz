@@ -3,8 +3,8 @@
 
 #include <vector>
 
-#include "dense.hpp"
 #include "kaczmarz_common.hpp"
+#include "linear_systems/dense.hpp"
 
 /**
  * @brief Solves the Ax = b linear system using the randomized Kaczmarz
