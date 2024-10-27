@@ -8,9 +8,9 @@
 #include <random>
 #include <vector>
 
-#include "kaczmarz.hpp"
-#include "kaczmarz_common.hpp"
-#include "linear_systems/dense.hpp"
+#include "kaczmarz_serial/kaczmarz.hpp"
+#include "kaczmarz_serial/kaczmarz_common.hpp"
+#include "linear_systems/src/linear_systems/dense.hpp"
 
 /// @file benchmark.hpp
 /// @brief Contains the benchmark function declaration for measuring Kaczmarz algorithm performance.

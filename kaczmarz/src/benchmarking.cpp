@@ -1,4 +1,4 @@
-#include "benchmark.hpp"
+#include "benchmarking.hpp"
 
 #define MAX_IT 1000000
 double benchmark(int dim, int numIterations, double& stdDev,
