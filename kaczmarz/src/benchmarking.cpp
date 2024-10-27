@@ -3,7 +3,6 @@
 #define MAX_IT 1000000
 double benchmark(int dim, int numIterations, double& stdDev,
                  std::mt19937& rng) {
-
   std::vector<double> times;
   for (int i = 0; i < numIterations; ++i) {
     const DenseLinearSystem lse =
