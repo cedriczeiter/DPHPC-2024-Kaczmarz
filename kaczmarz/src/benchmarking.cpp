@@ -1,19 +1,9 @@
-#include <cassert>
-#include <chrono>
-#include <cmath>
-#include <cstring>
-#include <fstream>
-#include <iostream>
-#include <random>
-#include <vector>
-
-#include "kaczmarz.hpp"
-#include "kaczmarz_common.hpp"
-#include "linear_systems/dense.hpp"
+#include "benchmark.hpp"
 
 #define MAX_IT 1000000
 double benchmark(int dim, int numIterations, double& stdDev,
                  std::mt19937& rng) {
+
   std::vector<double> times;
   for (int i = 0; i < numIterations; ++i) {
     const DenseLinearSystem lse =
@@ -22,7 +12,7 @@ double benchmark(int dim, int numIterations, double& stdDev,
     // Allocate memory to save kaczmarz solution
     std::vector<double> x_kaczmarz(dim, 0.0);
 
-    auto start = std::chrono::high_resolution_clock::now();
+    const auto start = std::chrono::high_resolution_clock::now();
 
     dense_kaczmarz(lse, &x_kaczmarz[0], MAX_IT * dim,
                    1e-10);  // solve randomised system, max iterations steps
