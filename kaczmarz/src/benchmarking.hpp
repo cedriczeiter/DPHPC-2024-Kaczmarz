@@ -12,9 +12,6 @@
 #include "kaczmarz_serial/kaczmarz_common.hpp"
 #include "linear_systems/src/linear_systems/dense.hpp"
 
-/// @file benchmark.hpp
-/// @brief Contains the benchmark function declaration for measuring Kaczmarz algorithm performance.
-
 /// @brief Benchmarks the Kaczmarz algorithm on a randomly generated dense linear system.
 /// 
 /// This function generates a random dense linear system of a given dimension and solves
