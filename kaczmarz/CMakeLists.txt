@@ -42,14 +42,6 @@ CONFIGURE_FILE(${SOURCE_DIR}/plot.py ${PATH_TO_BUILD} plot.py COPYONLY)
 
 add_subdirectory(../linear_systems linear_systems_build)
 
-#add_subdirectory("${CMAKE_BINARY_DIR}/googletest-src"
-#                 "${CMAKE_BINARY_DIR}/googletest-build"
-#)
-
 target_link_libraries(kaczmarz_example PRIVATE Eigen3::Eigen linear_systems)
 target_link_libraries(testing PRIVATE Eigen3::Eigen linear_systems gtest)
-# target_link_libraries(testing gtest)
 target_link_libraries(benchmark_executable PRIVATE Eigen3::Eigen linear_systems)
-# target_link_libraries(kaczmarz_example PRIVATE linear_systems)
-# target_link_libraries(testing PRIVATE linear_systems)
-# target_link_libraries(benchmark_executable PRIVATE linear_systems)
