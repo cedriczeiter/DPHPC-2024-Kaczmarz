@@ -21,13 +21,13 @@ jobs:
       run: sudo apt-get install libeigen3-dev
 
     # Configure CMake
-    - name: Configure CMake
-      run: cmake -S . -B build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+    #- name: Configure CMake
+    #  run: cmake -S . -B build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
 
     # Build the project
     - name: Build
-      run: cmake --build build --config ${{env.BUILD_TYPE}}
+      run: ./build_all_anew.sh
 
     # Run the test executable directly
     - name: Run Tests
-      run: ./build/testing
+      run: ./kaczmarz/build/testing
