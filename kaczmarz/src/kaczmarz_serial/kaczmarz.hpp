@@ -29,6 +29,6 @@ KaczmarzSolverStatus dense_kaczmarz(const DenseLinearSystem& lse, double* x,
  */
 KaczmarzSolverStatus sparse_kaczmarz(const SparseLinearSystem& lse,
                                      Eigen::VectorXd& x,
-                                     unsigned max_iterations, double precision);
+                                     const unsigned max_iterations, const double precision);
 
 #endif  // KACZMARZ_HPP

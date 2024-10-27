@@ -4,7 +4,7 @@
 #include <iostream>
 
 KaczmarzSolverStatus dense_kaczmarz(const DenseLinearSystem &lse, double *x,
-                                    unsigned max_iterations, double precision) {
+                                    const unsigned max_iterations, const double precision) {
   const unsigned rows = lse.row_count();
   const unsigned cols = lse.column_count();
   // Iterate through a maximum of max_iterations
