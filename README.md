@@ -6,7 +6,9 @@ This project implements a Kaczmarz method for solving systems of linear equation
 ### Steps to Build and Run
 
 1. **Install Dependencies**
-   Install CMake and Eigen if not already installed. Install clang-format if you want to format code (using: bash format_code.sh).
+   Install CMake and Eigen if not already installed. 
+   
+   Install clang-format if you want to format code (using: bash format_code.sh).
 
 2. **Clone the Repository**:
    ```
@@ -14,24 +16,16 @@ This project implements a Kaczmarz method for solving systems of linear equation
    cd parallel_kaczmarz_pde
    ```
 
-3. **Create a Build Directory**:
-   It is recommended to create a separate directory for the build files.
+3. **Run Build Script**:
    ```
-   mkdir build
-   cd build
+   bash build_all_anew.sh
    ```
+   This creates build folders in all the main folders. In there one can find already created executables. (No need to run make-command anymore)
 
-4. **Run CMake**:
-   Generate the build configuration files.
-   ```
-   cmake ..
-   ```
 
-5. **Compile the Project**:
-   Use the generated Makefiles to compile the project.
-   ```
-   make
-   ```
+
+------------------Needs to be updated from here on---------------------------------------
+
 6. **Run Tests**:
    After a successful build, run the testing executable.
    ```
