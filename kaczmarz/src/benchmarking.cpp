@@ -1,7 +1,7 @@
 #include "benchmarking.hpp"
 
 #define MAX_IT 1000000
-double benchmark(int dim, int numIterations, double& stdDev,
+double benchmark(const int dim, const int numIterations, double& stdDev,
                  std::mt19937& rng) {
   std::vector<double> times;
   for (int i = 0; i < numIterations; ++i) {
@@ -43,7 +43,7 @@ double benchmark(int dim, int numIterations, double& stdDev,
 }
 
 int main() {
-  int numIterations = 10;  // Number of iterations to reduce noise
+  const int numIterations = 10;  // Number of iterations to reduce noise
   std::mt19937 rng(21);
 
   // Open the file for output
