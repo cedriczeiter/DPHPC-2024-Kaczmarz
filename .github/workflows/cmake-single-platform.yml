@@ -21,9 +21,9 @@ jobs:
       run: sudo apt-get install libeigen3-dev
 
     - name: Build linear systems
-    run: |
-      cmake -S . -B linear_systems/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
-      cmake --build linear_systems/build --config ${{env.BUILD_TYPE}}
+      run: |
+        cmake -S . -B linear_systems/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+        cmake --build linear_systems/build --config ${{env.BUILD_TYPE}}
       
     - name: Build kaczmarz
       run: |
