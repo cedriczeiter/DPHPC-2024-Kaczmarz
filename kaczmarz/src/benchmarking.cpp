@@ -129,12 +129,9 @@ double benchmark_EigenSolver_sparse(const int dim, const int numIterations,
     const SparseLinearSystem lse =
         SparseLinearSystem::generate_random_banded_regular(rng, dim, BANDWIDTH);
 
-    Eigen::VectorXd x_kaczmarz_sparse =
-        Eigen::VectorXd::Zero(lse.column_count());
-
     const auto start = std::chrono::high_resolution_clock::now();
 
-    lse.eigen_solve();
+    Vector x_kaczmarz_sparse = lse.eigen_solve();
 
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
@@ -153,12 +150,9 @@ double benchmark_EigenSolver_dense(const int dim, const int numIterations,
     const DenseLinearSystem lse =
         DenseLinearSystem::generate_random_regular(rng, dim);
 
-    // Allocate memory to save kaczmarz solution
-    // std::vector<double> x_kaczmarz(dim, 0.0);
-
     const auto start = std::chrono::high_resolution_clock::now();
 
-    lse.eigen_solve();
+    Vector x_kaczmarz = lse.eigen_solve();
 
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;

@@ -53,7 +53,7 @@ This project implements a Kaczmarz method for solving systems of linear equation
    ```
 
  9. **Plot the Benchmarking**:
-   After a successful build and benchmarking, plot the results of the benchmark.
+   After a successful build and benchmarking, plot the results of the benchmark. You can choose to either plot all tested algorithms, only the dense or only the sparse ones by changing plot.py to plot_dense.py or respectively plot_sparse.py
    ```
    python plot.py
    ```
