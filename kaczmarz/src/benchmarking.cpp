@@ -1,7 +1,5 @@
-#include <cassert>
 #include <chrono>
 #include <cmath>
-#include <cstring>
 #include <fstream>
 #include <iostream>
 #include <random>
@@ -12,7 +10,21 @@
 #include "linear_systems/dense.hpp"
 
 #define MAX_IT 1000000
-double benchmark(int dim, int numIterations, double& stdDev,
+
+/// @brief Benchmarks the Kaczmarz algorithm on a randomly generated dense
+/// linear system.
+///
+/// This function generates a random dense linear system of a given dimension
+/// and solves it using the Kaczmarz algorithm multiple times to gather
+/// statistics on average runtime and standard deviation.
+///
+/// @param dim The dimension of the linear system (number of variables).
+/// @param numIterations Number of iterations for averaging results.
+/// @param stdDev Reference to a variable where the computed standard deviation
+/// will be stored.
+/// @param rng A random number generator used for creating the linear system.
+/// @return The average time taken to solve the system across all iterations.
+double benchmark(const int dim, const int numIterations, double& stdDev,
                  std::mt19937& rng) {
   std::vector<double> times;
   for (int i = 0; i < numIterations; ++i) {
@@ -22,7 +34,7 @@ double benchmark(int dim, int numIterations, double& stdDev,
     // Allocate memory to save kaczmarz solution
     std::vector<double> x_kaczmarz(dim, 0.0);
 
-    auto start = std::chrono::high_resolution_clock::now();
+    const auto start = std::chrono::high_resolution_clock::now();
 
     dense_kaczmarz(lse, &x_kaczmarz[0], MAX_IT * dim,
                    1e-10);  // solve randomised system, max iterations steps
@@ -54,7 +66,7 @@ double benchmark(int dim, int numIterations, double& stdDev,
 }
 
 int main() {
-  int numIterations = 10;  // Number of iterations to reduce noise
+  const int numIterations = 10;  // Number of iterations to reduce noise
   std::mt19937 rng(21);
 
   // Open the file for output

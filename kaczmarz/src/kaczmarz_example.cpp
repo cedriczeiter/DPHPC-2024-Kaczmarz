@@ -74,7 +74,7 @@ int main() {
         << std::endl;
   }
 
-  unsigned cols = sparse_lse.column_count();
+  const unsigned cols = sparse_lse.column_count();
 
   const Vector x_eigen_sparse = sparse_lse.eigen_solve();
 

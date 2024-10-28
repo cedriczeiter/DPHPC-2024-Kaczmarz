@@ -6,7 +6,7 @@
 #include <vector>
 
 // Helper function to randomly select a row based on row norms
-unsigned random_row_selection(const double *row_norms, unsigned num_rows,
+unsigned random_row_selection(const double *row_norms, const unsigned num_rows,
                               std::mt19937 &rng) {
   std::discrete_distribution<> dist(
       row_norms, row_norms + num_rows);  // Distribution based on row norms
