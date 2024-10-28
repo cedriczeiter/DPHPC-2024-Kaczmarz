@@ -14,6 +14,28 @@
 #define BANDWIDTH 5
 #define MAX_DIM 16
 
+/// @brief Computes the average and standard deviation of a vector of times.
+/// @param times A vector of times recorded for benchmarking.
+/// @param avgTime Reference to store the computed average time.
+/// @param stdDev Reference to store the computed standard deviation.
+void compute_statistics(const std::vector<double>& times, double& avgTime,
+                        double& stdDev) {
+  int n = times.size();
+  if (n == 0) {
+    avgTime = 0;
+    stdDev = 0;
+    return;
+  }
+  avgTime = std::accumulate(times.begin(), times.end(), 0.0) / n;
+
+  double variance = 0;
+  for (double time : times) {
+    variance += (time - avgTime) * (time - avgTime);
+  }
+  variance /= n;
+  stdDev = std::sqrt(variance);
+}
+
 /// @brief Benchmarks the Kaczmarz algorithm on a randomly generated dense
 /// linear system.
 ///
@@ -48,21 +70,8 @@ double benchmark_normalsolver_dense(const int dim, const int numIterations,
     times.push_back(elapsed.count());
   }
 
-  // Calculate average time
   double avgTime = 0;
-  for (double time : times) {
-    avgTime += time;
-  }
-  avgTime /= numIterations;
-
-  // Calculate standard deviation
-  double variance = 0;
-  for (double time : times) {
-    variance += (time - avgTime) * (time - avgTime);
-  }
-  variance /= numIterations;
-  stdDev = std::sqrt(variance);
-
+  compute_statistics(times, avgTime, stdDev);
   return avgTime;
 }
 
@@ -88,21 +97,8 @@ double benchmark_sarsesolver_sparse(const int dim, const int numIterations,
     times.push_back(elapsed.count());
   }
 
-  // Calculate average time
   double avgTime = 0;
-  for (double time : times) {
-    avgTime += time;
-  }
-  avgTime /= numIterations;
-
-  // Calculate standard deviation
-  double variance = 0;
-  for (double time : times) {
-    variance += (time - avgTime) * (time - avgTime);
-  }
-  variance /= numIterations;
-  stdDev = std::sqrt(variance);
-
+  compute_statistics(times, avgTime, stdDev);
   return avgTime;
 }
 
