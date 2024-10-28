@@ -7,9 +7,9 @@
 
 #include "kaczmarz.hpp"
 #include "kaczmarz_common.hpp"
-#include "random_kaczmarz.hpp"
 #include "linear_systems/dense.hpp"
 #include "linear_systems/sparse.hpp"
+#include "random_kaczmarz.hpp"
 
 #define MAX_IT 1000000
 #define BANDWIDTH 4
@@ -63,8 +63,7 @@ double benchmark_normalsolver_dense(const int dim, const int numIterations,
 
     const auto start = std::chrono::high_resolution_clock::now();
 
-    dense_kaczmarz(lse, &x_kaczmarz[0], MAX_IT * dim,
-                   PRECISION);
+    dense_kaczmarz(lse, &x_kaczmarz[0], MAX_IT * dim, PRECISION);
 
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
@@ -88,9 +87,7 @@ double benchmark_sarsesolver_sparse(const int dim, const int numIterations,
 
     const auto start = std::chrono::high_resolution_clock::now();
 
-    sparse_kaczmarz(
-        lse, x_kaczmarz_sparse, MAX_IT * dim,
-        PRECISION);
+    sparse_kaczmarz(lse, x_kaczmarz_sparse, MAX_IT * dim, PRECISION);
 
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
@@ -109,13 +106,11 @@ double benchmark_randomsolver_dense(const int dim, const int numIterations,
     const DenseLinearSystem lse =
         DenseLinearSystem::generate_random_regular(rng, dim);
 
-  std::vector<double> x_kaczmarz_random(dim, 0.0);
+    std::vector<double> x_kaczmarz_random(dim, 0.0);
 
     const auto start = std::chrono::high_resolution_clock::now();
 
-    kaczmarz_random_solver(
-        lse,  &x_kaczmarz_random[0], MAX_IT * dim,
-        PRECISION);
+    kaczmarz_random_solver(lse, &x_kaczmarz_random[0], MAX_IT * dim, PRECISION);
 
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
@@ -169,7 +164,6 @@ int main() {
   }
   outFileNS.close();  // Close the file after writing
 
-
   //////////////////////////////////////////
   /// Random Solver Dense///
   //////////////////////////////////////////
@@ -180,7 +174,6 @@ int main() {
 
   // Loop over problem sizes, benchmark, and write to file
   for (int dim = 1; dim <= MAX_DIM; dim *= 2) {
-
     std::cout << dim << std::endl;
     double stdDev;
     double avgTime =
