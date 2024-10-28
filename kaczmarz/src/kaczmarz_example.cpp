@@ -27,17 +27,17 @@ int main() {
     std::cout << "The serial Kaczmarz solver didn't converge!" << std::endl;
   }
 
-  const auto status_random =
-      kaczmarz_random_solver(lse, &x_kaczmarz_random[0], 100000, 1e-10);
-  if (status_random != KaczmarzSolverStatus::Converged) {
-    std::cout << "The random Kaczmarz solver didn't converge!" << std::endl;
-  }
-
   std::cout << "Kaczmarz solution: \n";
   for (unsigned i = 0; i < dim; i++) {
     std::cout << x_kaczmarz[i] << std::endl;
   }
   std::cout << "\n\n";
+
+  const auto status_random =
+      kaczmarz_random_solver(lse, &x_kaczmarz_random[0], 100000, 1e-10);
+  if (status_random != KaczmarzSolverStatus::Converged) {
+    std::cout << "The random Kaczmarz solver didn't converge!" << std::endl;
+  }
 
   // Print the solution from the randomized Kaczmarz solver
   std::cout << "Randomized Kaczmarz solution: \n";
