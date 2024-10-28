@@ -64,8 +64,7 @@ double benchmark_normalsolver_dense(const int dim, const int numIterations,
     const auto start = std::chrono::high_resolution_clock::now();
 
     dense_kaczmarz(lse, &x_kaczmarz[0], MAX_IT * dim,
-                   PRECISION);  // solve randomised system, max iterations steps
-                            // selected arbitratly, we might need to revise this
+                   PRECISION);
 
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
@@ -116,8 +115,7 @@ double benchmark_randomsolver_dense(const int dim, const int numIterations,
 
     kaczmarz_random_solver(
         lse,  &x_kaczmarz_random[0], MAX_IT * dim,
-        PRECISION);  // solve randomised system, max iterations steps
-                 // selected arbitratly, we might need to revise this
+        PRECISION);
 
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
@@ -172,7 +170,7 @@ int main() {
   outFileNS.close();  // Close the file after writing
 
 
-    //////////////////////////////////////////
+  //////////////////////////////////////////
   /// Random Solver Dense///
   //////////////////////////////////////////
 
@@ -182,6 +180,8 @@ int main() {
 
   // Loop over problem sizes, benchmark, and write to file
   for (int dim = 1; dim <= MAX_DIM; dim *= 2) {
+
+    std::cout << dim << std::endl;
     double stdDev;
     double avgTime =
         benchmark_randomsolver_dense(dim, numIterations, stdDev, rng);
