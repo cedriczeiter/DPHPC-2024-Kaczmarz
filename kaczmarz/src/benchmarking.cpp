@@ -147,14 +147,14 @@ double benchmark_EigenSolver_sparse(const int dim, const int numIterations,
 }
 
 double benchmark_EigenSolver_dense(const int dim, const int numIterations,
-                                    double& stdDev, std::mt19937& rng) {
+                                   double& stdDev, std::mt19937& rng) {
   std::vector<double> times;
   for (int i = 0; i < numIterations; ++i) {
     const DenseLinearSystem lse =
         DenseLinearSystem::generate_random_regular(rng, dim);
 
     // Allocate memory to save kaczmarz solution
-    //std::vector<double> x_kaczmarz(dim, 0.0);
+    // std::vector<double> x_kaczmarz(dim, 0.0);
 
     const auto start = std::chrono::high_resolution_clock::now();
 
@@ -169,7 +169,6 @@ double benchmark_EigenSolver_dense(const int dim, const int numIterations,
   compute_statistics(times, avgTime, stdDev);
   return avgTime;
 }
-
 
 int main() {
   const int numIterations = 10;  // Number of iterations to reduce noise
@@ -217,7 +216,7 @@ int main() {
   /// Random Solver Dense///
   //////////////////////////////////////////
 
-  //Open the file for output
+  // Open the file for output
   std::ofstream outFileRD("results_randomsolver_dense.csv");
   outFileRD << "Dim,AvgTime,StdDev\n";  // Write the header for the CSV file
 
@@ -252,8 +251,7 @@ int main() {
   }
   outFileED.close();  // Close the file after writing
 
-
-//////////////////////////////////////////
+  //////////////////////////////////////////
   /// Eigen Solver Sparse///
   //////////////////////////////////////////
 
@@ -271,8 +269,6 @@ int main() {
     outFileES << dim << "," << avgTime << "," << stdDev << "\n";
   }
   outFileES.close();  // Close the file after writing
-
-
 
   return 0;
 }
