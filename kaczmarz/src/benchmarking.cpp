@@ -69,7 +69,6 @@ double benchmark_normalsolver_dense(const int dim, const int numIterations,
 }
 
 /// @brief Benchmarks the sparse Kaczmarz algorithm.
-
 double benchmark_sarsesolver_sparse(const int dim, const int numIterations,
                                     double& stdDev, std::mt19937& rng) {
   std::vector<double> times;
@@ -95,7 +94,6 @@ double benchmark_sarsesolver_sparse(const int dim, const int numIterations,
 }
 
 /// @brief Benchmarks the random Kaczmarz solver on a dense linear system.
-
 double benchmark_randomsolver_dense(const int dim, const int numIterations,
                                     double& stdDev, std::mt19937& rng) {
   std::vector<double> times;
@@ -118,8 +116,8 @@ double benchmark_randomsolver_dense(const int dim, const int numIterations,
   compute_statistics(times, avgTime, stdDev);
   return avgTime;
 }
-/// @brief Benchmarks Eigen solver on a sparse linear system.
 
+/// @brief Benchmarks Eigen solver on a sparse linear system.
 double benchmark_EigenSolver_sparse(const int dim, const int numIterations,
                                     double& stdDev, std::mt19937& rng) {
   std::vector<double> times;
@@ -140,8 +138,8 @@ double benchmark_EigenSolver_sparse(const int dim, const int numIterations,
   compute_statistics(times, avgTime, stdDev);
   return avgTime;
 }
-/// @brief Benchmarks Eigen solver on a dense linear system.
 
+/// @brief Benchmarks Eigen solver on a dense linear system.
 double benchmark_EigenSolver_dense(const int dim, const int numIterations,
                                    double& stdDev, std::mt19937& rng) {
   std::vector<double> times;
