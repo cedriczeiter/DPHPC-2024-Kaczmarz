@@ -17,8 +17,8 @@
 #define PRECISION 1e-10
 
 /// @brief Computes the average and standard deviation of a vector of times.
-/// @param times A vector of times recorded for benchmarking.
-/// @param avgTime Reference to store the computed average time.
+/// @param times A vector of times recorded for benchmarking in seconds.
+/// @param avgTime Reference to store the computed average time in seconds.
 /// @param stdDev Reference to store the computed standard deviation.
 void compute_statistics(const std::vector<double>& times, double& avgTime,
                         double& stdDev) {
@@ -38,19 +38,12 @@ void compute_statistics(const std::vector<double>& times, double& avgTime,
   stdDev = std::sqrt(variance);
 }
 
-/// @brief Benchmarks the Kaczmarz algorithm on a randomly generated dense
-/// linear system.
-///
-/// This function generates a random dense linear system of a given dimension
-/// and solves it using the Kaczmarz algorithm multiple times to gather
-/// statistics on average runtime and standard deviation.
-///
-/// @param dim The dimension of the linear system (number of variables).
-/// @param numIterations Number of iterations for averaging results.
-/// @param stdDev Reference to a variable where the computed standard deviation
-/// will be stored.
-/// @param rng A random number generator used for creating the linear system.
-/// @return The average time taken to solve the system across all iterations.
+/// @brief Benchmarks the Kaczmarz algorithm on a dense linear system.
+/// @param dim Dimension of the system.
+/// @param numIterations Number of iterations for timing.
+/// @param stdDev Output parameter for the computed standard deviation.
+/// @param rng Random generator for system generation.
+/// @return Average time taken for solution.
 double benchmark_normalsolver_dense(const int dim, const int numIterations,
                                     double& stdDev, std::mt19937& rng) {
   std::vector<double> times;
@@ -74,6 +67,8 @@ double benchmark_normalsolver_dense(const int dim, const int numIterations,
   compute_statistics(times, avgTime, stdDev);
   return avgTime;
 }
+
+/// @brief Benchmarks the sparse Kaczmarz algorithm.
 
 double benchmark_sarsesolver_sparse(const int dim, const int numIterations,
                                     double& stdDev, std::mt19937& rng) {
@@ -99,6 +94,8 @@ double benchmark_sarsesolver_sparse(const int dim, const int numIterations,
   return avgTime;
 }
 
+/// @brief Benchmarks the random Kaczmarz solver on a dense linear system.
+
 double benchmark_randomsolver_dense(const int dim, const int numIterations,
                                     double& stdDev, std::mt19937& rng) {
   std::vector<double> times;
@@ -121,6 +118,7 @@ double benchmark_randomsolver_dense(const int dim, const int numIterations,
   compute_statistics(times, avgTime, stdDev);
   return avgTime;
 }
+/// @brief Benchmarks Eigen solver on a sparse linear system.
 
 double benchmark_EigenSolver_sparse(const int dim, const int numIterations,
                                     double& stdDev, std::mt19937& rng) {
@@ -142,6 +140,7 @@ double benchmark_EigenSolver_sparse(const int dim, const int numIterations,
   compute_statistics(times, avgTime, stdDev);
   return avgTime;
 }
+/// @brief Benchmarks Eigen solver on a dense linear system.
 
 double benchmark_EigenSolver_dense(const int dim, const int numIterations,
                                    double& stdDev, std::mt19937& rng) {
