@@ -36,7 +36,7 @@
  */
 KaczmarzSolverStatus kaczmarz_random_solver(const DenseLinearSystem &lse,
                                             double *x, unsigned max_iterations,
-                                            double precision);
+                                            double precision, std::vector<double>& times_residuals, std::vector<double>& residuals, std::vector<int>& iterations, const int convergence_step_rate);
 
 /**
  * @brief Helper function to select a random row based on its squared norm.

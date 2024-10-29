@@ -16,6 +16,7 @@
 #define MAX_DIM 16
 #define PRECISION 1e-10
 
+
 /// @brief Computes the average and standard deviation of a vector of times.
 /// @param times A vector of times recorded for benchmarking.
 /// @param avgTime Reference to store the computed average time.
@@ -60,10 +61,12 @@ double benchmark_normalsolver_dense(const int dim, const int numIterations,
 
     // Allocate memory to save kaczmarz solution
     std::vector<double> x_kaczmarz(dim, 0.0);
-
+     std::vector<double> times_residuals;
+      std::vector<double> residuals;
+  std::vector<int> iterations;
     const auto start = std::chrono::high_resolution_clock::now();
 
-    dense_kaczmarz(lse, &x_kaczmarz[0], MAX_IT * dim, PRECISION);
+    dense_kaczmarz(lse, &x_kaczmarz[0], MAX_IT * dim, PRECISION, times_residuals,residuals, iterations,MAX_IT);
 
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
@@ -84,10 +87,12 @@ double benchmark_sarsesolver_sparse(const int dim, const int numIterations,
 
     Eigen::VectorXd x_kaczmarz_sparse =
         Eigen::VectorXd::Zero(lse.column_count());
-
+     std::vector<double> times_residuals;
+      std::vector<double> residuals;
+  std::vector<int> iterations;
     const auto start = std::chrono::high_resolution_clock::now();
-
-    sparse_kaczmarz(lse, x_kaczmarz_sparse, MAX_IT * dim, PRECISION);
+    
+    sparse_kaczmarz(lse, x_kaczmarz_sparse, MAX_IT * dim, PRECISION, times_residuals,residuals, iterations,MAX_IT);
 
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
@@ -107,10 +112,12 @@ double benchmark_randomsolver_dense(const int dim, const int numIterations,
         DenseLinearSystem::generate_random_regular(rng, dim);
 
     std::vector<double> x_kaczmarz_random(dim, 0.0);
-
+     std::vector<double> times_residuals;
+      std::vector<double> residuals;
+  std::vector<int> iterations;
     const auto start = std::chrono::high_resolution_clock::now();
 
-    kaczmarz_random_solver(lse, &x_kaczmarz_random[0], MAX_IT * dim, PRECISION);
+    kaczmarz_random_solver(lse, &x_kaczmarz_random[0], MAX_IT * dim, PRECISION, times_residuals,residuals, iterations,MAX_IT);
 
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
@@ -174,7 +181,6 @@ int main() {
 
   // Loop over problem sizes, benchmark, and write to file
   for (int dim = 1; dim <= MAX_DIM; dim *= 2) {
-    std::cout << dim << std::endl;
     double stdDev;
     double avgTime =
         benchmark_randomsolver_dense(dim, numIterations, stdDev, rng);

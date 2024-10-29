@@ -28,10 +28,12 @@ void run_dense_tests(const unsigned dim, const unsigned no_runs) {
     // Allocate memory to save kaczmarz solution
     // Set everything to zero in x_kaczmnarz
     std::vector<double> x_kaczmarz(dim, 0.0);
-
+     std::vector<double> times_residuals;
+      std::vector<double> residuals;
+  std::vector<int> iterations;
     // precision and max. iterations selected randomly, we might need to revise
     // this
-    dense_kaczmarz(lse, &x_kaczmarz[0], MAX_IT * dim, 1e-10);
+    dense_kaczmarz(lse, &x_kaczmarz[0], MAX_IT * dim, 1e-10,times_residuals,residuals, iterations,MAX_IT);
 
     const Vector x_eigen = lse.eigen_solve();
 
@@ -75,7 +77,11 @@ void run_sparse_tests(const unsigned dim, const unsigned bandwidth,
 
     // precision and max. iterations selected randomly, we might need to revise
     // this
-    sparse_kaczmarz(lse, x_kaczmarz, MAX_IT * dim, 1e-10);
+         std::vector<double> times_residuals;
+      std::vector<double> residuals;
+  std::vector<int> iterations;
+  
+    sparse_kaczmarz(lse, x_kaczmarz, MAX_IT * dim, 1e-10,times_residuals,residuals, iterations,MAX_IT);
 
     const Vector x_eigen = lse.eigen_solve();
 
