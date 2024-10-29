@@ -5,6 +5,7 @@ This project implements a Kaczmarz method for solving systems of linear equation
 
 1. **Install Dependencies**
    Install CMake and Eigen if not already installed. 
+   (Easy to follow Eigen installation: https://www.cyberithub.com/how-to-install-eigen3-on-ubuntu-20-04-lts-focal-fossa/)
    
    Install clang-format if you want to format code (using: `bash format_code.sh`).
 
