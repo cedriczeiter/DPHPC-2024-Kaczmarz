@@ -36,4 +36,20 @@ class SparseLinearSystem {
   void write_to_stream(std::ostream &out_stream) const;
 };
 
+class BandedLinearSystem {
+ private:
+  unsigned _bandwidth;
+  unsigned _dim;
+  std::vector<double> _A_data;
+  Vector _b;
+  // TODO
+
+ public:
+  unsigned bandwidth() const { return this->_bandwidth; }
+  unsigned dim() const { return this->_dim; }
+  const std::vector<double> &A_data() const { return this->_A_data; }
+  const Vector &b() const { return this->_b; }
+  // TODO
+};
+
 #endif  // SPARSE_HPP
