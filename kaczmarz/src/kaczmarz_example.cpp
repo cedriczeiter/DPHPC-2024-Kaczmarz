@@ -21,10 +21,12 @@ int main() {
 
   std::vector<double> x_kaczmarz(dim, 0.0);
   std::vector<double> x_kaczmarz_random(dim, 0.0);
-     std::vector<double> times_residuals;
-      std::vector<double> residuals;
+  std::vector<double> times_residuals;
+  std::vector<double> residuals;
   std::vector<int> iterations;
-  const auto status_dense = dense_kaczmarz(lse, &x_kaczmarz[0], 100000, 1e-10, times_residuals,residuals, iterations,100000);
+  const auto status_dense =
+      dense_kaczmarz(lse, &x_kaczmarz[0], 100000, 1e-10, times_residuals,
+                     residuals, iterations, 100000);
   if (status_dense != KaczmarzSolverStatus::Converged) {
     std::cout << "The serial Kaczmarz solver didn't converge!" << std::endl;
   }
@@ -36,7 +38,8 @@ int main() {
   std::cout << "\n\n";
 
   const auto status_random =
-      kaczmarz_random_solver(lse, &x_kaczmarz_random[0], 100000, 1e-10, times_residuals,residuals, iterations,100000);
+      kaczmarz_random_solver(lse, &x_kaczmarz_random[0], 100000, 1e-10,
+                             times_residuals, residuals, iterations, 100000);
   if (status_random != KaczmarzSolverStatus::Converged) {
     std::cout << "The random Kaczmarz solver didn't converge!" << std::endl;
   }
@@ -69,7 +72,8 @@ int main() {
   Eigen::VectorXd x_kaczmarz_sparse =
       Eigen::VectorXd::Zero(sparse_lse.column_count());
   const auto status_sparse =
-      sparse_kaczmarz(sparse_lse, x_kaczmarz_sparse, 10000000, 1e-10, times_residuals,residuals, iterations,100000);
+      sparse_kaczmarz(sparse_lse, x_kaczmarz_sparse, 10000000, 1e-10,
+                      times_residuals, residuals, iterations, 100000);
   if (status_sparse != KaczmarzSolverStatus::Converged) {
     std::cout
         << "The serial Kaczmarz solver for sparse matrices didn't converge!"

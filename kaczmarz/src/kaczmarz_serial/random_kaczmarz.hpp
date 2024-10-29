@@ -34,9 +34,11 @@
  *         - KaczmarzSolverStatus::OutOfIterations: The algorithm reached the
  * maximum number of iterations without converging.
  */
-KaczmarzSolverStatus kaczmarz_random_solver(const DenseLinearSystem &lse,
-                                            double *x, unsigned max_iterations,
-                                            double precision, std::vector<double>& times_residuals, std::vector<double>& residuals, std::vector<int>& iterations, const int convergence_step_rate);
+KaczmarzSolverStatus kaczmarz_random_solver(
+    const DenseLinearSystem& lse, double* x, unsigned max_iterations,
+    double precision, std::vector<double>& times_residuals,
+    std::vector<double>& residuals, std::vector<int>& iterations,
+    const int convergence_step_rate);
 
 /**
  * @brief Helper function to select a random row based on its squared norm.
@@ -50,6 +52,6 @@ KaczmarzSolverStatus kaczmarz_random_solver(const DenseLinearSystem &lse,
  * @param num_rows The number of rows in the matrix A.
  * @return The index of the selected row.
  */
-unsigned random_row_selection(const double *row_norms, unsigned num_rows);
+unsigned random_row_selection(const double* row_norms, unsigned num_rows);
 
 #endif  // KACZMARZ_RANDOM_HPP
