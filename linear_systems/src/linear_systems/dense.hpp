@@ -6,7 +6,6 @@
 
 #include "types.hpp"
 
-
 /**
  * @class DenseLinearSystem
  * @brief Represents a linear system with a dense matrix, providing methods for
@@ -28,7 +27,8 @@ class DenseLinearSystem {
 
   /**
    * @brief Constructs an empty dense linear system with specified dimensions.
-   * @param row_count Number of rows in the system matrix and nr elements in vector.
+   * @param row_count Number of rows in the system matrix and nr elements in
+   * vector.
    * @param column_count Number of columns in the system matrix.
    */
   DenseLinearSystem(const unsigned row_count, const unsigned column_count) {
@@ -66,7 +66,8 @@ class DenseLinearSystem {
   /**
    * @brief Solves the linear system using full LU decomposition with pivoting
    *        and returns the solution.
-   * @return Solution as Eigen::VectorXd computed using Eigen's LU decomposition.
+   * @return Solution as Eigen::VectorXd computed using Eigen's LU
+   * decomposition.
    */
   Vector eigen_solve() const;
 
@@ -74,7 +75,8 @@ class DenseLinearSystem {
    * @brief Generates a random dense linear system with a full-rank matrix.
    * @param rng Random number generator.
    * @param dim Dimension of the square matrix to generate.
-   * @return A random DenseLinearSystem object with dimension `dim` x `dim` and a full-rank matrix.
+   * @return A random DenseLinearSystem object with dimension `dim` x `dim` and
+   * a full-rank matrix.
    */
   static DenseLinearSystem generate_random_regular(std::mt19937 &rng,
                                                    unsigned dim);
