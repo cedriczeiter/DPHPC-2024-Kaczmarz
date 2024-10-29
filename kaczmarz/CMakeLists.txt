@@ -39,6 +39,8 @@ target_include_directories(benchmark_executable PRIVATE ${SOURCE_DIR}/linear_sys
 
 
 CONFIGURE_FILE(${SOURCE_DIR}/plot.py ${PATH_TO_BUILD} plot.py COPYONLY)
+CONFIGURE_FILE(${SOURCE_DIR}/plot_dense.py ${PATH_TO_BUILD} plot_dense.py COPYONLY)
+CONFIGURE_FILE(${SOURCE_DIR}/plot_sparse.py ${PATH_TO_BUILD} plot_sparse.py COPYONLY)
 
 add_subdirectory(../linear_systems linear_systems_build)
 
