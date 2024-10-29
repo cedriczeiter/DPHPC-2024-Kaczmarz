@@ -10,8 +10,8 @@
 unsigned random_row_selection(const double *row_norms, const unsigned num_rows,
                               std::mt19937 &rng) {
   std::discrete_distribution<> dist(
-      row_norms, row_norms + num_rows); // Distribution based on row norms
-  return dist(rng);                     // Randomly select a row
+      row_norms, row_norms + num_rows);  // Distribution based on row norms
+  return dist(rng);                      // Randomly select a row
 }
 
 KaczmarzSolverStatus kaczmarz_random_solver(const DenseLinearSystem &lse,
@@ -34,7 +34,7 @@ KaczmarzSolverStatus kaczmarz_random_solver(const DenseLinearSystem &lse,
 
   // Iterate through a maximum of max_iterations
   for (unsigned iter = 0; iter < max_iterations; iter++) {
-    bool substantial_correction = false; // Track significant updates to x
+    bool substantial_correction = false;  // Track significant updates to x
 
     // Randomly select a row based on the squared norms
     unsigned i = random_row_selection(row_norms.data(), rows, rng);
@@ -57,7 +57,7 @@ KaczmarzSolverStatus kaczmarz_random_solver(const DenseLinearSystem &lse,
     // Compute correction for the selected row
     const double correction = (lse.b()[i] - dot_product) / a_norm;
     if (std::fabs(correction) > precision) {
-      substantial_correction = true; // Mark substantial change
+      substantial_correction = true;  // Mark substantial change
     }
 
     // Update the solution vector x with the correction
