@@ -216,7 +216,6 @@ int main() {
 
   // Loop over problem sizes, benchmark, and write to file
   for (int dim = 1; dim <= MAX_DIM; dim *= 2) {
-    std::cout << dim << std::endl;
     double stdDev;
     double avgTime =
         benchmark_randomsolver_dense(dim, numIterations, stdDev, rng);
