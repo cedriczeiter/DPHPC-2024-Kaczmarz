@@ -14,12 +14,14 @@ unsigned random_row_selection(const double *row_norms, const unsigned num_rows,
   return dist(rng);                      // Randomly select a row
 }
 
+// Main function with the LISE stopping criterion
 KaczmarzSolverStatus kaczmarz_random_solver(
     const DenseLinearSystem &lse, double *x, unsigned max_iterations,
     double precision, std::vector<double> &times_residuals,
     std::vector<double> &residuals, std::vector<int> &iterations,
     const int convergence_step_rate) {
   std::mt19937 rng(1);
+  unsigned L = 50;
   const unsigned rows = lse.row_count();
   const unsigned cols = lse.column_count();
 
@@ -48,6 +50,7 @@ KaczmarzSolverStatus kaczmarz_random_solver(
 
   const double residual_norm_0 = std::sqrt(residual_norm_sq);
   const auto start = std::chrono::high_resolution_clock::now();
+  std::vector<double> prev_x(cols, 0.0);  // Store solution every L iterations
 
   // Iterate through a maximum of max_iterations
   for (unsigned iter = 0; iter < max_iterations; iter++) {
@@ -57,6 +60,8 @@ KaczmarzSolverStatus kaczmarz_random_solver(
       const auto end = std::chrono::high_resolution_clock::now();
       std::chrono::duration<double> elapsed = end - start;
       times_residuals.push_back(elapsed.count());
+
+      // Calculate the residual norm
       double residual_norm_sq = 0.0;
       for (unsigned k = 0; k < rows; k++) {
         double row_residual = 0.0;
@@ -98,16 +103,32 @@ KaczmarzSolverStatus kaczmarz_random_solver(
       return KaczmarzSolverStatus::ZeroNormRow;
     }
 
-    // Check if the correction is substantial
+    // Apply Kaczmarz correction
     const double correction = (lse.b()[i] - dot_product) / a_norm;
     for (unsigned j = 0; j < cols; j++) {
       x[j] += a_row[j] * correction;
     }
-    //   if (std::fabs(correction) < precision) {
-    //     substantial_correction = true;
-    //   }
+
+    // LISE Stopping Criterion
+    if (iter % L == 0 && iter > 0) {  // Check every L iterations
+      double norm_diff = 0.0;
+      for (unsigned j = 0; j < cols; j++) {
+        double diff = x[j] - prev_x[j];
+        norm_diff += diff * diff;
+      }
+      norm_diff = std::sqrt(norm_diff) / L;
+
+      // Check if the LISE stopping criterion is met
+      if (norm_diff < precision) {
+        return KaczmarzSolverStatus::Converged;
+      }
+
+      // Update prev_x to store the current solution
+      std::copy(x, x + cols, prev_x.begin());
+    }
   }
 
-  // If it didnt return earlier, then max iterations reached and not converged.
+  // If it didn't return earlier, then max iterations were reached without
+  // convergence
   return KaczmarzSolverStatus::OutOfIterations;
 }
