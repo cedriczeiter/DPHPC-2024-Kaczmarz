@@ -3,9 +3,9 @@
 #include <chrono>
 #include <cmath>
 #include <cstdlib>
+#include <numeric>
 #include <random>
 #include <vector>
-#include <numeric>
 
 // Helper function to randomly select a row based on row norms
 unsigned random_row_selection(const double *row_norms, const unsigned num_rows,
@@ -52,7 +52,7 @@ KaczmarzSolverStatus kaczmarz_random_solver(
 
   // Iterate through a maximum of max_iterations
   for (unsigned iter = 0; iter < max_iterations; iter++) {
-    bool substantial_correction = false;  // Track significant updates to x 
+    bool substantial_correction = false;  // Track significant updates to x
 
     if (iter % convergence_step_rate == 0) {
       const auto end = std::chrono::high_resolution_clock::now();
