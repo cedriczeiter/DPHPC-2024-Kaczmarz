@@ -72,6 +72,12 @@ KaczmarzSolverStatus kaczmarz_random_solver(
       double residual_fraction = residual_norm_now / residual_norm_0;
       residuals.push_back(residual_fraction);
       iterations.push_back(iter);
+      if(residual_fraction<=precision){
+      return KaczmarzSolverStatus::Converged;
+    }
+    if(elapsed.count()>=100.595){
+    return KaczmarzSolverStatus::OutOfIterations;
+    }
     }
 
     // Randomly select a row based on the squared norms
@@ -97,9 +103,9 @@ KaczmarzSolverStatus kaczmarz_random_solver(
     for (unsigned j = 0; j < cols; j++) {
       x[j] += a_row[j] * correction;
     }
-    if (std::fabs(correction) < precision) {
-      substantial_correction = true;
-    }
+  //   if (std::fabs(correction) < precision) {
+  //     substantial_correction = true;
+  //   }
   }
 
   // If it didnt return earlier, then max iterations reached and not converged.
