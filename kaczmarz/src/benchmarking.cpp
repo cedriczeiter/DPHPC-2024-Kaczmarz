@@ -13,7 +13,7 @@
 
 #define MAX_IT 1000000
 #define BANDWIDTH 4
-#define MAX_DIM 16
+#define MAX_DIM 32
 #define PRECISION 1e-10
 
 /// @brief Computes the average and standard deviation of a vector of times.
@@ -114,7 +114,7 @@ double benchmark_randomsolver_dense(const int dim, const int numIterations,
     const auto start = std::chrono::high_resolution_clock::now();
 
     kaczmarz_random_solver(lse, &x_kaczmarz_random[0], MAX_IT * dim, PRECISION,
-                           times_residuals, residuals, iterations, MAX_IT);
+                           times_residuals, residuals, iterations, 100000);
 
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
@@ -171,8 +171,8 @@ double benchmark_EigenSolver_dense(const int dim, const int numIterations,
 }
 
 int main() {
-  const int numIterations = 10;  // Number of iterations to reduce noise
-  std::mt19937 rng(21);
+  const int numIterations = 3;  // Number of iterations to reduce noise
+  std::mt19937 rng(43);
 
   //////////////////////////////////////////
   /// Normal Solver Dense///

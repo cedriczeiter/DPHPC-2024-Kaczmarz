@@ -19,7 +19,7 @@ plt.plot(data_random_dense["Time"], data_random_dense["Residual"], 'o-', label="
 # Set labels and title
 plt.xlabel("Time")
 plt.ylabel("Residual/Residual(0)")
-plt.xscale('log')
+#plt.xscale('log')
 plt.yscale('log')
 plt.title("Convergence of our Algorithms")
 

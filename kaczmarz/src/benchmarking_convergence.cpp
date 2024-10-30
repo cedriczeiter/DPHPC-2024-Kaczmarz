@@ -14,7 +14,7 @@
 #define MAX_IT 1000000
 #define BANDWIDTH 4
 #define PRECISION 1e-10
-#define TEST_DIM 16
+#define TEST_DIM 64
 #define NUM_ITERATIONS 1
 #define CONVERGENCE_TRACKING_RATE 500
 
@@ -91,7 +91,7 @@ void compute_residuals_randomsolver_dense(const int dim,
 }
 
 int main() {
-  std::mt19937 rng(21);
+  std::mt19937 rng(43);
 
   std::vector<double> times_residuals_normal_dense;
   std::vector<double> residuals_normal_dense;

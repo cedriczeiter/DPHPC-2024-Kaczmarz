@@ -20,7 +20,7 @@ KaczmarzSolverStatus kaczmarz_random_solver(
     double precision, std::vector<double> &times_residuals,
     std::vector<double> &residuals, std::vector<int> &iterations,
     const int convergence_step_rate) {
-  std::mt19937 rng(1);
+  std::mt19937 rng(41);
   unsigned L = 50;
   const unsigned rows = lse.row_count();
   const unsigned cols = lse.column_count();
@@ -77,9 +77,9 @@ KaczmarzSolverStatus kaczmarz_random_solver(
       double residual_fraction = residual_norm_now / residual_norm_0;
       residuals.push_back(residual_fraction);
       iterations.push_back(iter);
-      if (residual_fraction <= precision) {
-        return KaczmarzSolverStatus::Converged;
-      }
+      // if (residual_fraction <= precision) {
+      //   return KaczmarzSolverStatus::Converged;
+      // }
       if (elapsed.count() >= 100.595) {
         return KaczmarzSolverStatus::OutOfIterations;
       }
