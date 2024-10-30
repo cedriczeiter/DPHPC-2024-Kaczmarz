@@ -5,6 +5,7 @@ This project implements a Kaczmarz method for solving systems of linear equation
 
 1. **Install Dependencies**
    Install CMake and Eigen if not already installed. 
+   (Easy to follow Eigen installation: https://www.cyberithub.com/how-to-install-eigen3-on-ubuntu-20-04-lts-focal-fossa/)
    
    Install clang-format if you want to format code (using: `bash format_code.sh`).
 
@@ -53,7 +54,7 @@ This project implements a Kaczmarz method for solving systems of linear equation
    ```
 
  9. **Plot the Benchmarking**:
-   After a successful build and benchmarking, plot the results of the benchmark.
+   After a successful build and benchmarking, plot the results of the benchmark. You can choose to either plot all tested algorithms, only the dense or only the sparse ones by changing plot.py to plot_dense.py or respectively plot_sparse.py
    ```
    python plot.py
    ```
