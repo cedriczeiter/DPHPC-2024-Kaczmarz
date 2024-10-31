@@ -2,10 +2,11 @@
 #include <random>
 #include <vector>
 
-#include "gtest/gtest.h"
 #include "kaczmarz.hpp"
+#include "kaczmarz_asynchronous.hpp"
 #include "linear_systems/dense.hpp"
 #include "linear_systems/sparse.hpp"
+#include "gtest/gtest.h"
 
 constexpr unsigned MAX_IT = 1000000;
 constexpr unsigned RUNS_PER_DIM = 5;
@@ -71,11 +72,12 @@ void run_sparse_tests(const unsigned dim, const unsigned bandwidth,
     const SparseLinearSystem lse =
         SparseLinearSystem::generate_random_banded_regular(rng, dim, bandwidth);
 
-    Vector x_kaczmarz = Vector::Zero(dim);
+    // Vector x_kaczmarz = Vector::Zero(dim);
+    std::vector<double> x_kaczmarz(dim, 0.0);
 
     // precision and max. iterations selected randomly, we might need to revise
     // this
-    sparse_kaczmarz(lse, x_kaczmarz, MAX_IT * dim, 1e-10);
+    sparse_kaczmarz_parallel(lse, &x_kaczmarz[0], MAX_IT * dim, 1e-10, 4);
 
     const Vector x_eigen = lse.eigen_solve();
 
