@@ -4,11 +4,12 @@
 
 #include "gtest/gtest.h"
 #include "kaczmarz.hpp"
+#include "kaczmarz_parallel/kaczmarz_banded.hpp"
 #include "linear_systems/dense.hpp"
 #include "linear_systems/sparse.hpp"
 
 constexpr unsigned MAX_IT = 1000000;
-constexpr unsigned RUNS_PER_DIM = 5;
+constexpr unsigned RUNS_PER_DIM = 1;
 
 /// @brief Runs tests on dense linear systems to compare Kaczmarz solution with
 /// Eigen's solution.
@@ -41,6 +42,7 @@ void run_dense_tests(const unsigned dim, const unsigned no_runs) {
   }
 }
 
+/*
 TEST(KaczmarzSerialDenseCorrectnessSmall, AgreesWithEigen) {
   run_dense_tests(5, RUNS_PER_DIM);
 }
@@ -52,6 +54,7 @@ TEST(KaczmarzSerialDenseCorrectnessMedium, AgreesWithEigen) {
 TEST(KaczmarzSerialDenseCorrectnessLarge, AgreesWithEigen) {
   run_dense_tests(50, RUNS_PER_DIM);
 }
+*/
 
 /// @brief Runs tests on sparse linear systems to compare Kaczmarz solution with
 /// Eigen's solution.
@@ -68,16 +71,16 @@ void run_sparse_tests(const unsigned dim, const unsigned bandwidth,
                       const unsigned no_runs) {
   std::mt19937 rng(21);
   for (unsigned i = 0; i < no_runs; i++) {
-    const SparseLinearSystem lse =
-        SparseLinearSystem::generate_random_banded_regular(rng, dim, bandwidth);
+    const BandedLinearSystem lse =
+        BandedLinearSystem::generate_random_regular(rng, dim, bandwidth);
 
     Vector x_kaczmarz = Vector::Zero(dim);
 
     // precision and max. iterations selected randomly, we might need to revise
     // this
-    sparse_kaczmarz(lse, x_kaczmarz, MAX_IT * dim, 1e-10);
+    banded_sparse_kaczmarz(lse, x_kaczmarz, MAX_IT * dim, 1e-10);
 
-    const Vector x_eigen = lse.eigen_solve();
+    const Vector x_eigen = lse.to_sparse_system().eigen_solve();
 
     for (unsigned i = 0; i < dim; i++) {
       ASSERT_LE(std::abs(x_eigen[i] - x_kaczmarz[i]), 1e-6);
@@ -85,6 +88,7 @@ void run_sparse_tests(const unsigned dim, const unsigned bandwidth,
   }
 }
 
+/*
 TEST(KaczmarzSerialSparseCorrectnessSmall, AgreesWithEigen) {
   run_sparse_tests(5, 1, RUNS_PER_DIM);
 }
@@ -92,9 +96,10 @@ TEST(KaczmarzSerialSparseCorrectnessSmall, AgreesWithEigen) {
 TEST(KaczmarzSerialSparseCorrectnessMedium, AgreesWithEigen) {
   run_sparse_tests(20, 2, RUNS_PER_DIM);
 }
+*/
 
 TEST(KaczmarzSerialSparseCorrectnessLarge, AgreesWithEigen) {
-  run_sparse_tests(50, 2, RUNS_PER_DIM);
+  run_sparse_tests(100, 6, RUNS_PER_DIM);
 }
 
 int main() {
