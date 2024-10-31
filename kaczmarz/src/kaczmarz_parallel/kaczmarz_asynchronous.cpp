@@ -52,14 +52,13 @@ KaczmarzSolverStatus sparse_kaczmarz_parallel(const SparseLinearSystem &lse,
       for (Eigen::SparseMatrix<double, Eigen::RowMajor>::InnerIterator it(
                lse.A(), k);
            it; ++it) {
+#pragma omp atomic
         dot_product += it.value() * x[it.col()];
       }
       const double update_coeff = (lse.b()[k] - dot_product) / sq_norms[k];
-#pragma omp critical
-      {
-        for (SparseMatrix::InnerIterator it(lse.A(), k); it; ++it) {
-          x[it.col()] += update_coeff * it.value();
-        }
+      for (SparseMatrix::InnerIterator it(lse.A(), k); it; ++it) {
+#pragma omp atomic
+        x[it.col()] += update_coeff * it.value();
       }
 
       // Stop if a row squared norm of a row is zero
@@ -68,7 +67,10 @@ KaczmarzSolverStatus sparse_kaczmarz_parallel(const SparseLinearSystem &lse,
       }
 
       // check if stopping criterion has been reached
-      if (converged)
+      bool local_converged;
+#pragma omp atomic
+      local_converged = converged;
+      if (local_converged)
         break;
 
       // thread 0 applies LISE stopping criterion
@@ -82,10 +84,8 @@ KaczmarzSolverStatus sparse_kaczmarz_parallel(const SparseLinearSystem &lse,
         norm_diff = std::sqrt(norm_diff) / L;
         // Check if the LISE stopping criterion is met
         if (norm_diff < precision) {
-#pragma omp critical
-          {
-            converged = true;
-          }
+#pragma omp atomic
+          converged = true;
         }
 
         // Update prev_x to store the current solution

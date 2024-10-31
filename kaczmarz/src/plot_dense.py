@@ -19,7 +19,7 @@ plt.errorbar(data_Eigen_dense["Dim"], data_Eigen_dense["AvgTime"], yerr=data_Eig
 # Set labels and title
 plt.xlabel("Dim")
 plt.ylabel("Average Time (s)")
-plt.yscale('log')
+#plt.yscale('log')
 plt.title("Benchmark of our Dense Algorithms")
 
 # Add grid and legend
