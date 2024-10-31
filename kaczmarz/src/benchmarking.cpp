@@ -13,7 +13,7 @@
 
 #define MAX_IT 1000000
 #define BANDWIDTH 4
-#define MAX_DIM 16
+#define MAX_DIM 32
 #define PRECISION 1e-10
 
 /// @brief Computes the average and standard deviation of a vector of times.
@@ -53,10 +53,13 @@ double benchmark_normalsolver_dense(const int dim, const int numIterations,
 
     // Allocate memory to save kaczmarz solution
     std::vector<double> x_kaczmarz(dim, 0.0);
-
+    std::vector<double> times_residuals;
+    std::vector<double> residuals;
+    std::vector<int> iterations;
     const auto start = std::chrono::high_resolution_clock::now();
 
-    dense_kaczmarz(lse, &x_kaczmarz[0], MAX_IT * dim, PRECISION);
+    dense_kaczmarz(lse, &x_kaczmarz[0], MAX_IT * dim, PRECISION,
+                   times_residuals, residuals, iterations, MAX_IT);
 
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
@@ -78,10 +81,13 @@ double benchmark_sarsesolver_sparse(const int dim, const int numIterations,
 
     Eigen::VectorXd x_kaczmarz_sparse =
         Eigen::VectorXd::Zero(lse.column_count());
-
+    std::vector<double> times_residuals;
+    std::vector<double> residuals;
+    std::vector<int> iterations;
     const auto start = std::chrono::high_resolution_clock::now();
 
-    sparse_kaczmarz(lse, x_kaczmarz_sparse, MAX_IT * dim, PRECISION);
+    sparse_kaczmarz(lse, x_kaczmarz_sparse, MAX_IT * dim, PRECISION,
+                    times_residuals, residuals, iterations, MAX_IT);
 
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
@@ -102,10 +108,13 @@ double benchmark_randomsolver_dense(const int dim, const int numIterations,
         DenseLinearSystem::generate_random_regular(rng, dim);
 
     std::vector<double> x_kaczmarz_random(dim, 0.0);
-
+    std::vector<double> times_residuals;
+    std::vector<double> residuals;
+    std::vector<int> iterations;
     const auto start = std::chrono::high_resolution_clock::now();
 
-    kaczmarz_random_solver(lse, &x_kaczmarz_random[0], MAX_IT * dim, PRECISION);
+    kaczmarz_random_solver(lse, &x_kaczmarz_random[0], MAX_IT * dim, PRECISION,
+                           times_residuals, residuals, iterations, 100000);
 
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
@@ -162,8 +171,8 @@ double benchmark_EigenSolver_dense(const int dim, const int numIterations,
 }
 
 int main() {
-  const int numIterations = 10;  // Number of iterations to reduce noise
-  std::mt19937 rng(21);
+  const int numIterations = 3;  // Number of iterations to reduce noise
+  std::mt19937 rng(43);
 
   //////////////////////////////////////////
   /// Normal Solver Dense///
