@@ -2,14 +2,49 @@
 #include <random>
 #include <vector>
 
+#include "gtest/gtest.h"
 #include "kaczmarz.hpp"
+#include "kaczmarz_common.hpp"
 #include "kaczmarz_asynchronous.hpp"
+#include "kaczmarz_serial/kaczmarz_common.hpp"
 #include "linear_systems/dense.hpp"
 #include "linear_systems/sparse.hpp"
-#include "gtest/gtest.h"
 
-constexpr unsigned MAX_IT = 1000000;
+constexpr unsigned MAX_IT = 10000000;
 constexpr unsigned RUNS_PER_DIM = 5;
+
+void run_parallel_tests(const unsigned dim, const unsigned bandwidth,
+                      const unsigned no_runs) {
+  std::mt19937 rng(21);
+  for (unsigned i = 0; i < no_runs; i++) {
+    const SparseLinearSystem lse =
+        SparseLinearSystem::generate_random_banded_regular(rng, dim, bandwidth);
+
+    std::vector<double> x_kaczmarz(dim, 0.0);
+
+    auto result = sparse_kaczmarz_parallel(lse, &x_kaczmarz[0], MAX_IT * dim, 1e-10, 4);
+
+    ASSERT_EQ(KaczmarzSolverStatus::Converged, result);
+
+    const Vector x_eigen = lse.eigen_solve();
+
+    for (unsigned i = 0; i < dim; i++) {
+      ASSERT_LE(std::abs(x_eigen[i] - x_kaczmarz[i]), 1e-6);
+    }
+  }
+}
+
+TEST(KaczmarzParallelSparseCorrectnessSmall, AgreesWithEigen) {
+  run_parallel_tests(5, 1, RUNS_PER_DIM);
+}
+
+TEST(KaczmarzParallelSparseParallelCorrectnessMedium, AgreesWithEigen) {
+  run_parallel_tests(20, 2, RUNS_PER_DIM);
+}
+
+TEST(KaczmarzParallelSparseParallelCorrectnessLarge, AgreesWithEigen) {
+  run_parallel_tests(50, 2, RUNS_PER_DIM);
+}
 
 /// @brief Runs tests on dense linear systems to compare Kaczmarz solution with
 /// Eigen's solution.
@@ -34,8 +69,10 @@ void run_dense_tests(const unsigned dim, const unsigned no_runs) {
     std::vector<int> iterations;
     // precision and max. iterations selected randomly, we might need to revise
     // this
-    dense_kaczmarz(lse, &x_kaczmarz[0], MAX_IT * dim, 1e-10, times_residuals,
+    auto result = dense_kaczmarz(lse, &x_kaczmarz[0], MAX_IT * dim, 1e-10, times_residuals,
                    residuals, iterations, MAX_IT);
+
+    ASSERT_EQ(KaczmarzSolverStatus::Converged, result);
 
     const Vector x_eigen = lse.eigen_solve();
 
@@ -75,8 +112,7 @@ void run_sparse_tests(const unsigned dim, const unsigned bandwidth,
     const SparseLinearSystem lse =
         SparseLinearSystem::generate_random_banded_regular(rng, dim, bandwidth);
 
-    // Vector x_kaczmarz = Vector::Zero(dim);
-    std::vector<double> x_kaczmarz(dim, 0.0);
+    Vector x_kaczmarz = Vector::Zero(dim);
 
     // precision and max. iterations selected randomly, we might need to revise
     // this
@@ -84,8 +120,10 @@ void run_sparse_tests(const unsigned dim, const unsigned bandwidth,
     std::vector<double> residuals;
     std::vector<int> iterations;
 
-    sparse_kaczmarz(lse, x_kaczmarz, MAX_IT * dim, 1e-10, times_residuals,
+    auto result = sparse_kaczmarz(lse, x_kaczmarz, MAX_IT * dim, 1e-10, times_residuals,
                     residuals, iterations, MAX_IT);
+
+    ASSERT_EQ(KaczmarzSolverStatus::Converged, result);
 
     const Vector x_eigen = lse.eigen_solve();
 

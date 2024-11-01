@@ -1,6 +1,7 @@
 #include "kaczmarz_asynchronous.hpp"
 
 #include <omp.h>
+#include <unistd.h>
 
 #include <cmath>
 #include <cstdlib>
@@ -11,14 +12,12 @@ KaczmarzSolverStatus sparse_kaczmarz_parallel(const SparseLinearSystem &lse,
                                               const unsigned max_iterations,
                                               const double precision,
                                               const double num_threads) {
+  omp_set_num_threads(num_threads);
+
   std::mt19937 rng(1);
   const unsigned rows = lse.row_count();
   const unsigned cols = lse.column_count();
   std::uniform_int_distribution<> distr(0, rows - 1);
-
-  // init lock used for writing to x
-  omp_lock_t writelock;
-  omp_init_lock(&writelock);
 
   // vector for storing convergence criterions
   std::vector<double> prev_x(cols, 0.0);
@@ -52,12 +51,14 @@ KaczmarzSolverStatus sparse_kaczmarz_parallel(const SparseLinearSystem &lse,
       for (Eigen::SparseMatrix<double, Eigen::RowMajor>::InnerIterator it(
                lse.A(), k);
            it; ++it) {
-#pragma omp atomic
-        dot_product += it.value() * x[it.col()];
+        double x_value;
+#pragma omp atomic read
+        x_value = x[it.col()];
+        dot_product += it.value() * x_value;
       }
       const double update_coeff = (lse.b()[k] - dot_product) / sq_norms[k];
       for (SparseMatrix::InnerIterator it(lse.A(), k); it; ++it) {
-#pragma omp atomic
+#pragma omp atomic update
         x[it.col()] += update_coeff * it.value();
       }
 
@@ -68,34 +69,38 @@ KaczmarzSolverStatus sparse_kaczmarz_parallel(const SparseLinearSystem &lse,
 
       // check if stopping criterion has been reached
       bool local_converged;
-#pragma omp atomic
+#pragma omp atomic read
       local_converged = converged;
-      if (local_converged)
-        break;
+      if (local_converged) break;
 
       // thread 0 applies LISE stopping criterion
       if (omp_get_thread_num() == 0 && iter % L == 0 &&
-          iter > 0) { // Check every L iterations
+          iter > 0) {  // Check every L iterations
         double norm_diff = 0.0;
         for (unsigned j = 0; j < cols; j++) {
-          double diff = x[j] - prev_x[j];
+          double x_value;
+#pragma omp atomic read
+          x_value = x[j];
+          double diff = x_value - prev_x[j];
           norm_diff += diff * diff;
         }
-        norm_diff = std::sqrt(norm_diff) / L;
+        norm_diff = std::sqrt(norm_diff);
         // Check if the LISE stopping criterion is met
         if (norm_diff < precision) {
-#pragma omp atomic
           converged = true;
         }
-
         // Update prev_x to store the current solution
-        std::copy(x, x + cols, prev_x.begin());
+        for (unsigned j = 0; j < cols; j++) {
+          double x_value;
+#pragma omp atomic read
+          x_value = x[j];
+          prev_x[j] = x_value;
+        }
       }
     }
   }
 
-  if (converged)
-    return KaczmarzSolverStatus::Converged;
+  if (converged) return KaczmarzSolverStatus::Converged;
 
   return KaczmarzSolverStatus::OutOfIterations;
 }
