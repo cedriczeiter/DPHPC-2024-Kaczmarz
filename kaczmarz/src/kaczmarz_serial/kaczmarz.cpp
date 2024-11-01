@@ -54,6 +54,11 @@ KaczmarzSolverStatus dense_kaczmarz(const DenseLinearSystem &lse, double *x,
       double residual_fraction = residual_norm_now / residual_norm_0;
       residuals.push_back(residual_fraction);
       iterations.push_back(iter);
+
+      //if residual converged enough, return
+      if (residual_norm_now < precision){
+        return KaczmarzSolverStatus::Converged;
+      }
     }
 
     // Process each row of matrix A
@@ -73,21 +78,6 @@ KaczmarzSolverStatus dense_kaczmarz(const DenseLinearSystem &lse, double *x,
         return KaczmarzSolverStatus::ZeroNormRow;
       }
 
-      // Check if the correction is substantial
-      const double correction = (lse.b()[i] - dot_product) / row_sq_norm;
-      for (unsigned j = 0; j < cols; j++) {
-        x[j] += a_row[j] * correction;
-      }
-      if (std::fabs(correction) > precision) {
-        substantial_correction = true;
-      }
-    }
-
-    // If no substantial correction was made, the solution has converged and
-    // algorithm ends
-    if (!substantial_correction) {
-      return KaczmarzSolverStatus::Converged;
-    }
   }
 
   // If it didnt return earlier, then max iterations reached and not converged.
@@ -126,6 +116,7 @@ KaczmarzSolverStatus sparse_kaczmarz(
 
       iterations.push_back(iter);
     }
+    //if residual small enough, return
     if ((lse.A()*x - lse.b()).norm() < precision) {
       return KaczmarzSolverStatus::Converged;
     }
