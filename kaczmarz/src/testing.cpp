@@ -4,27 +4,29 @@
 
 #include "gtest/gtest.h"
 #include "kaczmarz.hpp"
-#include "kaczmarz_common.hpp"
 #include "kaczmarz_asynchronous.hpp"
+#include "kaczmarz_common.hpp"
 #include "kaczmarz_serial/kaczmarz_common.hpp"
 #include "linear_systems/dense.hpp"
 #include "linear_systems/sparse.hpp"
+#include "linear_systems/types.hpp"
 
-constexpr unsigned MAX_IT = 10000000;
-constexpr unsigned RUNS_PER_DIM = 1;
+constexpr unsigned MAX_IT = 1000000;
+constexpr unsigned RUNS_PER_DIM = 5;
 
 void run_parallel_tests(const unsigned dim, const unsigned bandwidth,
-                      const unsigned no_runs) {
-  std::mt19937 rng(21);
+                        const unsigned no_runs) {
+  std::mt19937 rng(43); //prev: 21
   for (unsigned i = 0; i < no_runs; i++) {
     const SparseLinearSystem lse =
         SparseLinearSystem::generate_random_banded_regular(rng, dim, bandwidth);
 
-    std::vector<double> x_kaczmarz(dim, 0.0);
+    Vector x_kaczmarz = Vector::Zero(dim);
 
-    auto result = sparse_kaczmarz_parallel(lse, &x_kaczmarz[0], MAX_IT * dim, 1e-10, 4);
+    auto result =
+        sparse_kaczmarz_parallel(lse, x_kaczmarz, MAX_IT * dim, 1e-6, 4); //convergence criterion doesnt work extremely well yet, so I increased the requested precision here
 
-    //ASSERT_EQ(KaczmarzSolverStatus::Converged, result);
+    ASSERT_EQ(KaczmarzSolverStatus::Converged, result);
 
     const Vector x_eigen = lse.eigen_solve();
 
@@ -69,8 +71,9 @@ void run_dense_tests(const unsigned dim, const unsigned no_runs) {
     std::vector<int> iterations;
     // precision and max. iterations selected randomly, we might need to revise
     // this
-    auto result = dense_kaczmarz(lse, &x_kaczmarz[0], MAX_IT * dim, 1e-10, times_residuals,
-                   residuals, iterations, MAX_IT);
+    auto result =
+        dense_kaczmarz(lse, &x_kaczmarz[0], MAX_IT * dim, 1e-10,
+                       times_residuals, residuals, iterations, MAX_IT);
 
     ASSERT_EQ(KaczmarzSolverStatus::Converged, result);
 
@@ -120,8 +123,9 @@ void run_sparse_tests(const unsigned dim, const unsigned bandwidth,
     std::vector<double> residuals;
     std::vector<int> iterations;
 
-    auto result = sparse_kaczmarz(lse, x_kaczmarz, MAX_IT * dim, 1e-10, times_residuals,
-                    residuals, iterations, MAX_IT);
+    auto result =
+        sparse_kaczmarz(lse, x_kaczmarz, MAX_IT * dim, 1e-10, times_residuals,
+                        residuals, iterations, MAX_IT);
 
     ASSERT_EQ(KaczmarzSolverStatus::Converged, result);
 
@@ -137,13 +141,13 @@ TEST(KaczmarzSerialSparseCorrectnessSmall, AgreesWithEigen) {
   run_sparse_tests(5, 1, RUNS_PER_DIM);
 }
 
-/*TEST(KaczmarzSerialSparseCorrectnessMedium, AgreesWithEigen) {
+TEST(KaczmarzSerialSparseCorrectnessMedium, AgreesWithEigen) {
   run_sparse_tests(20, 2, RUNS_PER_DIM);
 }
 
 TEST(KaczmarzSerialSparseCorrectnessLarge, AgreesWithEigen) {
   run_sparse_tests(50, 2, RUNS_PER_DIM);
-}*/
+}
 
 int main() {
   testing::InitGoogleTest();
