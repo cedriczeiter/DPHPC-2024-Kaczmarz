@@ -6,6 +6,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <random>
+#include <iostream>
 
 KaczmarzSolverStatus sparse_kaczmarz_parallel(const SparseLinearSystem &lse,
                                               double *x,
@@ -14,17 +15,16 @@ KaczmarzSolverStatus sparse_kaczmarz_parallel(const SparseLinearSystem &lse,
                                               const double num_threads) {
   omp_set_num_threads(num_threads);
 
-  std::mt19937 rng(1);
+
   const unsigned rows = lse.row_count();
   const unsigned cols = lse.column_count();
   std::uniform_int_distribution<> distr(0, rows - 1);
 
-  // vector for storing convergence criterions
-  std::vector<double> prev_x(cols, 0.0);
-  std::copy(x, x + cols, prev_x.begin());
+
   // L for LISE convergence criterion
   const unsigned L = 50;
   bool converged = false;
+  std::vector<double> updates(cols, 0.0);
 
   // squared norms of rows of A (so that we don't need to recompute them in each
   // iteration
@@ -35,31 +35,39 @@ KaczmarzSolverStatus sparse_kaczmarz_parallel(const SparseLinearSystem &lse,
 
 #pragma omp parallel
   {
+    std::mt19937 rng(omp_get_thread_num());
+    auto b = lse.b();
+    auto A = lse.A();
+
     for (unsigned iter = 0; iter < max_iterations / num_threads; iter++) {
-      bool substantial_correction = false;
 
       // Randomly select a row based on the squared norms
       unsigned k = distr(rng);
-
-      // Access the selected row
-      const auto a_row = lse.A().row(k);
 
       // Compute the dot product and row squared norm
       double dot_product = 0.0;
       double a_norm = sq_norms[k];
 
+
       for (Eigen::SparseMatrix<double, Eigen::RowMajor>::InnerIterator it(
-               lse.A(), k);
+               A, k);
            it; ++it) {
+
         double x_value;
 #pragma omp atomic read
         x_value = x[it.col()];
+
         dot_product += it.value() * x_value;
       }
-      const double update_coeff = (lse.b()[k] - dot_product) / sq_norms[k];
-      for (SparseMatrix::InnerIterator it(lse.A(), k); it; ++it) {
+
+      const double update_coeff = (b[k] - dot_product) / sq_norms[k];
+      for (SparseMatrix::InnerIterator it(A, k); it; ++it) {
+        double update = update_coeff * it.value();
+
 #pragma omp atomic update
-        x[it.col()] += update_coeff * it.value();
+        x[it.col()] += update;
+#pragma omp atomic update
+        updates[i] += update;
       }
 
       // Stop if a row squared norm of a row is zero
@@ -76,26 +84,21 @@ KaczmarzSolverStatus sparse_kaczmarz_parallel(const SparseLinearSystem &lse,
       // thread 0 applies LISE stopping criterion
       if (omp_get_thread_num() == 0 && iter % L == 0 &&
           iter > 0) {  // Check every L iterations
-        double norm_diff = 0.0;
-        for (unsigned j = 0; j < cols; j++) {
-          double x_value;
-#pragma omp atomic read
-          x_value = x[j];
-          double diff = x_value - prev_x[j];
-          norm_diff += diff * diff;
-        }
-        norm_diff = std::sqrt(norm_diff);
-        // Check if the LISE stopping criterion is met
-        if (norm_diff < precision) {
+        double tot_updates;
+        #pragma omp atomic read
+        tot_updates = updates;
+
+        
+        tot_updates = tot_updates / L;
+        
+        if (std::sqrt(tot_updates) < precision){
+          #pragma omp atomic write
           converged = true;
-        }
-        // Update prev_x to store the current solution
-        for (unsigned j = 0; j < cols; j++) {
-          double x_value;
-#pragma omp atomic read
-          x_value = x[j];
-          prev_x[j] = x_value;
-        }
+          std::cout << "Total updates:" << std::sqrt(tot_updates) << " Precision: " << precision << " CONVERGED" << std::endl;
+        } 
+        std::cout << "Total updates:" << std::sqrt(tot_updates) << " Precision: " << precision << " WORKING" << std::endl;
+        #pragma omp atomic write
+        updates = 0;
       }
     }
   }
