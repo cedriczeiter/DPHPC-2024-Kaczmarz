@@ -29,10 +29,13 @@ void run_dense_tests(const unsigned dim, const unsigned no_runs) {
     // Allocate memory to save kaczmarz solution
     // Set everything to zero in x_kaczmnarz
     std::vector<double> x_kaczmarz(dim, 0.0);
-
+    std::vector<double> times_residuals;
+    std::vector<double> residuals;
+    std::vector<int> iterations;
     // precision and max. iterations selected randomly, we might need to revise
     // this
-    dense_kaczmarz(lse, &x_kaczmarz[0], MAX_IT * dim, 1e-10);
+    dense_kaczmarz(lse, &x_kaczmarz[0], MAX_IT * dim, 1e-10, times_residuals,
+                   residuals, iterations, MAX_IT);
 
     const Vector x_eigen = lse.eigen_solve();
 
@@ -42,7 +45,6 @@ void run_dense_tests(const unsigned dim, const unsigned no_runs) {
   }
 }
 
-/*
 TEST(KaczmarzSerialDenseCorrectnessSmall, AgreesWithEigen) {
   run_dense_tests(5, RUNS_PER_DIM);
 }
@@ -54,7 +56,6 @@ TEST(KaczmarzSerialDenseCorrectnessMedium, AgreesWithEigen) {
 TEST(KaczmarzSerialDenseCorrectnessLarge, AgreesWithEigen) {
   run_dense_tests(50, RUNS_PER_DIM);
 }
-*/
 
 /// @brief Runs tests on sparse linear systems to compare Kaczmarz solution with
 /// Eigen's solution.
@@ -78,7 +79,12 @@ void run_sparse_tests(const unsigned dim, const unsigned bandwidth,
 
     // precision and max. iterations selected randomly, we might need to revise
     // this
-    banded_sparse_kaczmarz(lse, x_kaczmarz, MAX_IT * dim, 1e-10);
+    std::vector<double> times_residuals;
+    std::vector<double> residuals;
+    std::vector<int> iterations;
+
+    sparse_kaczmarz(lse, x_kaczmarz, MAX_IT * dim, 1e-10, times_residuals,
+                    residuals, iterations, MAX_IT);
 
     const Vector x_eigen = lse.to_sparse_system().eigen_solve();
 
@@ -88,7 +94,6 @@ void run_sparse_tests(const unsigned dim, const unsigned bandwidth,
   }
 }
 
-/*
 TEST(KaczmarzSerialSparseCorrectnessSmall, AgreesWithEigen) {
   run_sparse_tests(5, 1, RUNS_PER_DIM);
 }
@@ -96,7 +101,6 @@ TEST(KaczmarzSerialSparseCorrectnessSmall, AgreesWithEigen) {
 TEST(KaczmarzSerialSparseCorrectnessMedium, AgreesWithEigen) {
   run_sparse_tests(20, 2, RUNS_PER_DIM);
 }
-*/
 
 TEST(KaczmarzSerialSparseCorrectnessLarge, AgreesWithEigen) {
   run_sparse_tests(100, 6, RUNS_PER_DIM);
