@@ -1,7 +1,7 @@
-#ifndef KACZMARZ_HPP
-#define KACZMARZ_HPP
+#ifndef BASIC_HPP
+#define BASIC_HPP
 
-#include "kaczmarz_common.hpp"
+#include "common.hpp"
 #include "linear_systems/dense.hpp"
 #include "linear_systems/sparse.hpp"
 /**
@@ -39,4 +39,4 @@ KaczmarzSolverStatus sparse_kaczmarz(const SparseLinearSystem& lse,
                                      std::vector<int>& iterations,
                                      const int convergence_step_rate);
 
-#endif  // KACZMARZ_HPP
+#endif  // BASIC_HPP

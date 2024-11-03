@@ -1,9 +1,9 @@
-#ifndef KACZMARZ_RANDOM_HPP
-#define KACZMARZ_RANDOM_HPP
+#ifndef RANDOM_HPP
+#define RANDOM_HPP
 
 #include <vector>
 
-#include "kaczmarz_common.hpp"
+#include "common.hpp"
 #include "linear_systems/dense.hpp"
 
 /**
@@ -54,4 +54,4 @@ KaczmarzSolverStatus kaczmarz_random_solver(
  */
 unsigned random_row_selection(const double* row_norms, unsigned num_rows);
 
-#endif  // KACZMARZ_RANDOM_HPP
+#endif  // RANDOM_HPP

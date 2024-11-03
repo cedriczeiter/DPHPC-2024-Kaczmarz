@@ -5,11 +5,10 @@
 #include <random>
 #include <vector>
 
-#include "kaczmarz.hpp"
-#include "kaczmarz_common.hpp"
+#include "solvers/basic.hpp"
+#include "solvers/random.hpp"
 #include "linear_systems/dense.hpp"
 #include "linear_systems/sparse.hpp"
-#include "random_kaczmarz.hpp"
 
 #define MAX_IT 1000000
 #define BANDWIDTH 4

@@ -3,7 +3,7 @@
 #include <vector>
 
 #include "gtest/gtest.h"
-#include "kaczmarz.hpp"
+#include "solvers/basic.hpp"
 #include "linear_systems/dense.hpp"
 #include "linear_systems/sparse.hpp"
 

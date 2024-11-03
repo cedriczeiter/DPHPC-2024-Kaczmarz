@@ -1,7 +1,7 @@
-#ifndef KACZMARZ_BANDED_HPP
-#define KACZMARZ_BANDED_HPP
+#ifndef BANDED_HPP
+#define BANDED_HPP
 
-#include "../kaczmarz_serial/kaczmarz_common.hpp"
+#include "common.hpp"
 #include "linear_systems/sparse.hpp"
 
 KaczmarzSolverStatus kaczmarz_banded_2_cpu_threads(
@@ -13,4 +13,4 @@ KaczmarzSolverStatus kaczmarz_banded_serial(const BandedLinearSystem& lse,
                                             unsigned max_iterations,
                                             double precision);
 
-#endif  // KACZMARZ_BANDED_HPP
+#endif  // BANDED_HPP

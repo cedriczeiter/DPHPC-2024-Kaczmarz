@@ -2,12 +2,11 @@
 #include <iostream>
 #include <random>
 
-#include "kaczmarz.hpp"
-#include "kaczmarz_serial/kaczmarz_common.hpp"
-#include "kaczmarz_serial/random_kaczmarz.hpp"
+#include "solvers/common.hpp"
+#include "solvers/basic.hpp"
+#include "solvers/random.hpp"
 #include "linear_systems/dense.hpp"
 #include "linear_systems/sparse.hpp"
-#include "random_kaczmarz.hpp"
 
 int main() {
   const unsigned dim = 5;

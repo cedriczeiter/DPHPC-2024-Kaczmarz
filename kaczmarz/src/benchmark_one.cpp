@@ -2,7 +2,7 @@
 #include <iostream>
 #include <random>
 
-#include "kaczmarz_parallel/kaczmarz_banded.hpp"
+#include "solvers/banded.hpp"
 #include "linear_systems/sparse.hpp"
 
 using hrclock = std::chrono::high_resolution_clock;

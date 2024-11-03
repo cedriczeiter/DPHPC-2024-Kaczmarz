@@ -1,8 +1,7 @@
-#include "random_kaczmarz.hpp"
+#include "random.hpp"
 
 #include <chrono>
 #include <cmath>
-#include <cstdlib>
 #include <random>
 #include <vector>
 

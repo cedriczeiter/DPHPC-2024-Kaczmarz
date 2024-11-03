@@ -1,4 +1,6 @@
-#include "kaczmarz_common.hpp"
+#include "common.hpp"
+
+#include <cassert>
 
 std::string kaczmarz_status_string(const KaczmarzSolverStatus status) {
   switch (status) {

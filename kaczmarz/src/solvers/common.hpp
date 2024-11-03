@@ -1,7 +1,6 @@
-#ifndef KACZMARZ_COMMON_HPP
-#define KACZMARZ_COMMON_HPP
+#ifndef COMMON_HPP
+#define COMMON_HPP
 
-#include <cassert>
 #include <string>
 
 /**
@@ -11,4 +10,4 @@ enum class KaczmarzSolverStatus { Converged, ZeroNormRow, OutOfIterations };
 
 std::string kaczmarz_status_string(const KaczmarzSolverStatus status);
 
-#endif  // KACZMARZ_COMMON_HPP
+#endif  // COMMON_HPP

@@ -1,4 +1,4 @@
-#include "kaczmarz_banded.hpp"
+#include "banded.hpp"
 
 #include <cassert>
 #include <iostream>
