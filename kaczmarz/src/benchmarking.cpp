@@ -5,10 +5,10 @@
 #include <random>
 #include <vector>
 
-#include "solvers/basic.hpp"
-#include "solvers/random.hpp"
 #include "linear_systems/dense.hpp"
 #include "linear_systems/sparse.hpp"
+#include "solvers/basic.hpp"
+#include "solvers/random.hpp"
 
 #define MAX_IT 1000000
 #define BANDWIDTH 4

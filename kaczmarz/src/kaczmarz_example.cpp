@@ -2,11 +2,11 @@
 #include <iostream>
 #include <random>
 
-#include "solvers/common.hpp"
-#include "solvers/basic.hpp"
-#include "solvers/random.hpp"
 #include "linear_systems/dense.hpp"
 #include "linear_systems/sparse.hpp"
+#include "solvers/basic.hpp"
+#include "solvers/common.hpp"
+#include "solvers/random.hpp"
 
 int main() {
   const unsigned dim = 5;

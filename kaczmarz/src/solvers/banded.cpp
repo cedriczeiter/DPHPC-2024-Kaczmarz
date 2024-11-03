@@ -12,12 +12,16 @@ KaczmarzSolverStatus kaczmarz_banded_2_cpu_threads(
   const unsigned bandwidth = lse.bandwidth();
   const unsigned dim = lse.dim();
 
-  // Necessary for the separate processing of the first and last rows to work out.
+  // Necessary for the separate processing of the first and last rows to work
+  // out.
   assert(2 * bandwidth <= dim);
 
-  // Necessary for the division and parallel processing of the middle rows to work out.
-  // Otherwise, the parts of the result vector x that the parallel-running threads write to might overlap. -> Race conditions.
-  // Specifically, say in the first part, both threads access a subarray of length `middle_row_count / 4 + (2 * bandwidth + 1)`. Thread 0 starts it at idx. 0 while thread 1 at middle_row_count / 2. That means that we need 
+  // Necessary for the division and parallel processing of the middle rows to
+  // work out. Otherwise, the parts of the result vector x that the
+  // parallel-running threads write to might overlap. -> Race conditions.
+  // Specifically, say in the first part, both threads access a subarray of
+  // length `middle_row_count / 4 + (2 * bandwidth + 1)`. Thread 0 starts it at
+  // idx. 0 while thread 1 at middle_row_count / 2. That means that we need
   // `middle_row_count / 4 + (2 * bandwidth + 1) <= middle_row_count / 2` i.e.
   // `2 * bandwidth + 1 <= middle_row_count / 4` i.e.
   // `8 * bandwidth + 4 <= (dim - 2 * bandwidth)` i.e.
