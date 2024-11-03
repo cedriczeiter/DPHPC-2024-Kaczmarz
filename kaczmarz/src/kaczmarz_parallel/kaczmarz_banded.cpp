@@ -12,7 +12,17 @@ KaczmarzSolverStatus kaczmarz_banded_2_cpu_threads(
   const unsigned bandwidth = lse.bandwidth();
   const unsigned dim = lse.dim();
 
+  // Necessary for the separate processing of the first and last rows to work out.
   assert(2 * bandwidth <= dim);
+
+  // Necessary for the division and parallel processing of the middle rows to work out.
+  // Otherwise, the parts of the result vector x that the parallel-running threads write to might overlap. -> Race conditions.
+  // Specifically, say in the first part, both threads access a subarray of length `middle_row_count / 4 + (2 * bandwidth + 1)`. Thread 0 starts it at idx. 0 while thread 1 at middle_row_count / 2. That means that we need 
+  // `middle_row_count / 4 + (2 * bandwidth + 1) <= middle_row_count / 2` i.e.
+  // `2 * bandwidth + 1 <= middle_row_count / 4` i.e.
+  // `8 * bandwidth + 4 <= (dim - 2 * bandwidth)` i.e.
+  // `10 * bandwidth + 4 <= dim`
+  assert(10 * bandwidth + 4 <= dim);
 
   const std::vector<double> sq_norms = [bandwidth, dim, &lse]() {
     std::vector<double> sq_norms(dim, 0);
@@ -61,7 +71,7 @@ KaczmarzSolverStatus kaczmarz_banded_2_cpu_threads(
 
     const unsigned middle_row_count = (dim - 2 * bandwidth) / 4 * 4;
 
-    assert(middle_row_count / 4 >= 2 * bandwidth);
+    assert(middle_row_count / 4 >= 2 * bandwidth + 1);
 
     const auto full_row_update = [bandwidth, elem_idx,
                                   &row_update](const unsigned row_idx) -> bool {
@@ -93,7 +103,6 @@ KaczmarzSolverStatus kaczmarz_banded_2_cpu_threads(
       for (unsigned row_idx = start_row_idx;
            row_idx < start_row_idx + batch_row_count; row_idx++) {
         if (full_row_update(row_idx)) {
-// TODO: this algorithm should be deterministic, but it seems it isn't? why?
 #pragma omp atomic write
           substantial_update = true;
         }
