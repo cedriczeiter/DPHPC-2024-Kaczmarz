@@ -122,7 +122,8 @@ class SparseLinearSystem {
 };
 
 /**
- * A sparse representation of a LSE where the coefficient matrix is a banded matrix.
+ * A sparse representation of a LSE where the coefficient matrix is a banded
+ * matrix.
  */
 class BandedLinearSystem {
  private:
@@ -143,18 +144,24 @@ class BandedLinearSystem {
 
  public:
   /**
-   * Returns the set bandwidth of the banded matrix that is coefficient matrix of this LSE.
+   * Returns the set bandwidth of the banded matrix that is coefficient matrix
+   * of this LSE.
    */
   unsigned bandwidth() const { return this->_bandwidth; }
 
   /**
-   * Returns the number of columns (which is simultaneously the number of rows) of the coefficient matrix of this LSE.
+   * Returns the number of columns (which is simultaneously the number of rows)
+   * of the coefficient matrix of this LSE.
    */
   unsigned dim() const { return this->_dim; }
   /**
-   * The (potentially) non-zero entries of the coefficient matrix of this LSE. Stored in a row-major format.
+   * The (potentially) non-zero entries of the coefficient matrix of this LSE.
+   * Stored in a row-major format.
    *
-   * Take each row of the coefficient matrix and consider that subarray of its elements that is within the set bandwidth away from the main diagonal. The vector returned here consists of the concatenation of all these subarrays from row 0 to row dim - 1.
+   * Take each row of the coefficient matrix and consider that subarray of its
+   * elements that is within the set bandwidth away from the main diagonal. The
+   * vector returned here consists of the concatenation of all these subarrays
+   * from row 0 to row dim - 1.
    */
   const std::vector<double> &A_data() const { return this->_A_data; }
   /**
@@ -163,7 +170,9 @@ class BandedLinearSystem {
   const Vector &b() const { return this->_b; }
 
   /**
-   * Generate a random LSE with a banded coefficient matrix of a given dimension (dim) and bandwidth. The coefficient values (and those of the RHS) are chosen i.i.d. from the uniform distribution on [-1, 1].
+   * Generate a random LSE with a banded coefficient matrix of a given dimension
+   * (dim) and bandwidth. The coefficient values (and those of the RHS) are
+   * chosen i.i.d. from the uniform distribution on [-1, 1].
    */
   static BandedLinearSystem generate_random_regular(std::mt19937 &rng,
                                                     unsigned dim,

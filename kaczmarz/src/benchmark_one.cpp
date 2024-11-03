@@ -7,6 +7,11 @@
 
 using hrclock = std::chrono::high_resolution_clock;
 
+/**
+ * The purpose of this file is to be easily able to manually benchmark a single
+ * run of one of our implementations.
+ */
+
 int main() {
   constexpr unsigned dim = 2000;
   constexpr unsigned bandwidth = 6;

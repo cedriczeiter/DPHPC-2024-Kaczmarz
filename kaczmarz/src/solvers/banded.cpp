@@ -61,9 +61,35 @@ KaczmarzSolverStatus kaczmarz_banded_2_cpu_threads(
   };
 
   for (unsigned iter = 0; iter < max_iterations; iter++) {
+    /*
+       We can group the rows of the coefficient matrix into groups A, B, C, D,
+       E, F, G as
+       A
+       B
+       C
+       D
+       E
+       F
+       G
+       with row 0 being at the top and row dim - 1 at the bottom.
+       There are `bandwidth` rows in each of groups A and G. In those rows, the
+       number of potentially non-zero entries is less than the full (2 *
+       bandwidth + 1) which it is in all other rows.
+
+       For convenience, we want to divide the remaining `dim - 2 * bandwidth`
+       rows into four equally-sized groups. Those are B, C, D, and E, while F is
+       between 0 and 3 rows that needed to be taken away to make the number of
+       rows divisible by 4.
+
+       Then if the dimension is relatively large compared to the bandwidth, this
+       division allows us to process rows in group B in parallel with rows in
+       group D because any row in B is orthogonal to any row in D. So we do that
+       and finally repeat the same with groups C and E.
+     */
+
     bool substantial_update = false;
 
-    // update rows at the very top
+    // update rows at the very top (group A)
     unsigned elem_idx = 0;
     for (unsigned row_idx = 0; row_idx < bandwidth; row_idx++) {
       const unsigned row_nnz = bandwidth + 1 + row_idx;
@@ -86,6 +112,8 @@ KaczmarzSolverStatus kaczmarz_banded_2_cpu_threads(
 
 #pragma omp parallel num_threads(2)
     {
+      // thread 0 processes group B and thread 1 group D
+
       const int id = omp_get_thread_num();
       const unsigned start_row_idx = bandwidth + middle_row_count / 2 * id;
       const unsigned batch_row_count = middle_row_count / 4;
@@ -100,6 +128,8 @@ KaczmarzSolverStatus kaczmarz_banded_2_cpu_threads(
 
 #pragma omp parallel num_threads(2)
     {
+      // thread 0 processes group C and thread 1 group E
+
       const int id = omp_get_thread_num();
       const unsigned start_row_idx =
           bandwidth + middle_row_count / 4 + middle_row_count / 2 * id;
@@ -113,6 +143,7 @@ KaczmarzSolverStatus kaczmarz_banded_2_cpu_threads(
       }
     }
 
+    // process group F
     for (unsigned row_idx = bandwidth + middle_row_count;
          row_idx < dim - bandwidth; row_idx++) {
       if (row_update(row_idx,
@@ -122,7 +153,7 @@ KaczmarzSolverStatus kaczmarz_banded_2_cpu_threads(
       }
     }
 
-    // update rows at the very bottom
+    // update rows at the very bottom (group G)
     elem_idx += (dim - 2 * bandwidth) * (2 * bandwidth + 1);
     for (unsigned row_idx = dim - bandwidth; row_idx < dim; row_idx++) {
       const unsigned row_nnz = bandwidth + 1 + (dim - 1 - row_idx);
@@ -132,7 +163,6 @@ KaczmarzSolverStatus kaczmarz_banded_2_cpu_threads(
       elem_idx += row_nnz;
     }
     if (!substantial_update) {
-      std::cout << iter << " iterations" << std::endl;
       return KaczmarzSolverStatus::Converged;
     }
   }
@@ -182,6 +212,10 @@ KaczmarzSolverStatus kaczmarz_banded_serial(const BandedLinearSystem& lse,
   };
 
   for (unsigned iter = 0; iter < max_iterations; iter++) {
+    // Same idea as in the implementation `kaczmarz_banded_2_cpu_threads`.
+    // Except that without parallelization, we can merge groups B, C, D, E, and
+    // F all together.
+
     bool substantial_update = false;
 
     // update rows at the very top
@@ -217,7 +251,6 @@ KaczmarzSolverStatus kaczmarz_banded_serial(const BandedLinearSystem& lse,
       elem_idx += row_nnz;
     }
     if (!substantial_update) {
-      std::cout << iter << " iterations" << std::endl;
       return KaczmarzSolverStatus::Converged;
     }
   }
