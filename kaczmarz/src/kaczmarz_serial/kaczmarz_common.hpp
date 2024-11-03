@@ -1,8 +1,8 @@
 #ifndef KACZMARZ_COMMON_HPP
 #define KACZMARZ_COMMON_HPP
 
-#include <string>
 #include <cassert>
+#include <string>
 
 /**
  * @brief Enumeration to describe the result of the Kaczmarz solver.

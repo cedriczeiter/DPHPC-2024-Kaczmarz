@@ -12,4 +12,3 @@ std::string kaczmarz_status_string(const KaczmarzSolverStatus status) {
   assert(!"invalid Kaczmarz solver status!");
   return "";
 }
-

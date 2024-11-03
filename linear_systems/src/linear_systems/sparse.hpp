@@ -127,19 +127,20 @@ class BandedLinearSystem {
   unsigned _bandwidth;
   std::vector<double> _A_data;
   Vector _b;
-  
-  BandedLinearSystem(const unsigned dim, const unsigned bandwidth, const std::vector<double>& A_data, const Vector b)
-    : _dim(dim), _bandwidth(bandwidth), _A_data(A_data), _b(b) { }
+
+  BandedLinearSystem(const unsigned dim, const unsigned bandwidth,
+                     const std::vector<double> &A_data, const Vector b)
+      : _dim(dim), _bandwidth(bandwidth), _A_data(A_data), _b(b) {}
 
  public:
   unsigned bandwidth() const { return this->_bandwidth; }
   unsigned dim() const { return this->_dim; }
   const std::vector<double> &A_data() const { return this->_A_data; }
   const Vector &b() const { return this->_b; }
-  
+
   static BandedLinearSystem generate_random_regular(std::mt19937 &rng,
-                                                           unsigned dim,
-                                                           unsigned bandwidth);
+                                                    unsigned dim,
+                                                    unsigned bandwidth);
 
   SparseLinearSystem to_sparse_system() const;
 };
