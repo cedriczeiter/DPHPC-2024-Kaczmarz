@@ -29,6 +29,8 @@ KaczmarzSolverStatus dense_kaczmarz(const DenseLinearSystem &lse, double *x,
   const double residual_norm_0 = std::sqrt(residual_norm_sq);
   const auto start = std::chrono::high_resolution_clock::now();
 
+  double residual_norm_now = 0;  //Preallocate to save allocation overhead
+
   // Iterate through a maximum of max_iterations
   for (unsigned iter = 0; iter < max_iterations; iter++) {
     // the algorithm has converged iff none of the rows in an iteration caused a
@@ -50,9 +52,8 @@ KaczmarzSolverStatus dense_kaczmarz(const DenseLinearSystem &lse, double *x,
         residual_norm_sq += row_residual * row_residual;
       }
 
-      double residual_norm_now = std::sqrt(residual_norm_sq);
-      double residual_fraction = residual_norm_now / residual_norm_0;
-      residuals.push_back(residual_fraction);
+      residual_norm_now = std::sqrt(residual_norm_sq);
+      residuals.push_back(residual_norm_now / residual_norm_0);
       iterations.push_back(iter);
 
       // if residual converged enough, return
