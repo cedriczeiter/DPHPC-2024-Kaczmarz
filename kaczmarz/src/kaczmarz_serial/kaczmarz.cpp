@@ -126,16 +126,17 @@ KaczmarzSolverStatus sparse_kaczmarz(
                           residual_norm_0);  // Takes residual fraction
 
       iterations.push_back(iter);
+
+      // if residual small enough, return
+      if (residual_norm_now < precision) {
+        return KaczmarzSolverStatus::Converged;
+      }
     }
 
     for (unsigned i = 0; i < rows; i++) {
       const auto row = lse.A().row(i);
       const double update_coeff = (lse.b()[i] - row.dot(x)) / sq_norms[i];
       x += update_coeff * row;
-    }
-    // if residual small enough, return
-    if ((lse.A() * x - lse.b()).norm() < precision) {
-      return KaczmarzSolverStatus::Converged;
     }
   }
   return KaczmarzSolverStatus::OutOfIterations;
