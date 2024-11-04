@@ -10,6 +10,10 @@ using hrclock = std::chrono::high_resolution_clock;
 /**
  * The purpose of this file is to be easily able to manually benchmark a single
  * run of one of our implementations.
+ *
+ * This is useful because some performance characteristics might only be
+ * visible for large matrices. For those, it is impractically long to run the
+ * other benchmarking which repeats execution multiple times.
  */
 
 int main() {
