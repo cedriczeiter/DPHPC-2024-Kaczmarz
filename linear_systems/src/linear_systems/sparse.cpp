@@ -11,28 +11,22 @@ Vector SparseLinearSystem::eigen_solve() const {
   return qr.solve(this->_b);
 }
 
+/**
+ * Precondition: A is compressed
+ */
+bool is_regular(const SparseMatrix& A) {
+  if (A.rows() != A.cols()) {
+    return false;
+  }
+  Eigen::SparseQR<SparseMatrix, Eigen::COLAMDOrdering<int>> qr;
+  qr.compute(A);
+  return A.rows() == qr.rank();
+}
+
 SparseLinearSystem SparseLinearSystem::generate_random_banded_regular(
     std::mt19937& rng, const unsigned dim, const unsigned bandwidth) {
-  std::uniform_real_distribution<double> dist(-1.0, 1.0);
-  SparseMatrix A(dim, dim);
-  int rank;
-  do {
-    for (int i = 0; i < (int)dim; i++) {
-      const int from_col = std::max(i - (int)bandwidth, 0);
-      const int to_col = std::min(i + (int)bandwidth, (int)dim - 1);
-      for (int j = from_col; j <= to_col; j++) {
-        A.insert(i, j) = dist(rng);
-      }
-    }
-    A.makeCompressed();
-    Eigen::SparseQR<SparseMatrix, Eigen::COLAMDOrdering<int>> qr;
-    qr.setPivotThreshold(1e-6);
-    qr.compute(A);
-    rank = qr.rank();
-  } while (rank != (int)dim);
-  const Vector b =
-      Vector::NullaryExpr(dim, [&rng, &dist] { return dist(rng); });
-  return SparseLinearSystem(A, b);
+  return BandedLinearSystem::generate_random_regular(rng, dim, bandwidth)
+      .to_sparse_system();
 }
 
 SparseLinearSystem SparseLinearSystem::read_from_stream(
@@ -83,4 +77,49 @@ void SparseLinearSystem::write_to_stream(std::ostream& out_stream) const {
   for (int i = 0; i < this->_b.size(); i++) out_stream << this->_b[i] << '\n';
 
   out_stream.flush();
+}
+
+SparseMatrix sparse_matrix_from_banded(const std::vector<double>& data,
+                                       const unsigned dim,
+                                       const unsigned bandwidth) {
+  SparseMatrix A(dim, dim);
+  unsigned idx = 0;
+  for (int i = 0; i < (int)dim; i++) {
+    const int from_col = std::max(i - (int)bandwidth, 0);
+    const int to_col = std::min(i + (int)bandwidth, (int)dim - 1);
+    for (int j = from_col; j <= to_col; j++) {
+      A.insert(i, j) = data[idx++];
+    }
+  }
+  A.makeCompressed();
+  return A;
+}
+
+SparseLinearSystem BandedLinearSystem::to_sparse_system() const {
+  SparseMatrix A(this->_dim, this->_dim);
+  unsigned idx = 0;
+  for (int i = 0; i < (int)this->_dim; i++) {
+    const int from_col = std::max(i - (int)this->_bandwidth, 0);
+    const int to_col = std::min(i + (int)this->_bandwidth, (int)this->_dim - 1);
+    for (int j = from_col; j <= to_col; j++) {
+      A.insert(i, j) = this->_A_data[idx++];
+    }
+  }
+  return SparseLinearSystem(A, this->_b);
+}
+
+BandedLinearSystem BandedLinearSystem::generate_random_regular(
+    std::mt19937& rng, const unsigned dim, const unsigned bandwidth) {
+  assert(dim >= 2 * bandwidth);
+  const unsigned element_count =
+      dim * (2 * bandwidth + 1) - bandwidth * (bandwidth + 1);
+  std::uniform_real_distribution<double> dist(-1.0, 1.0);
+  std::vector<double> data(element_count);
+  do {
+    std::generate(data.begin(), data.end(),
+                  [&dist, &rng] { return dist(rng); });
+  } while (!is_regular(sparse_matrix_from_banded(data, dim, bandwidth)));
+  const Vector b =
+      Vector::NullaryExpr(dim, [&rng, &dist] { return dist(rng); });
+  return BandedLinearSystem(dim, bandwidth, data, b);
 }

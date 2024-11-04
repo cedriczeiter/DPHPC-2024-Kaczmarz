@@ -1,9 +1,13 @@
-#ifndef KACZMARZ_COMMON_HPP
-#define KACZMARZ_COMMON_HPP
+#ifndef COMMON_HPP
+#define COMMON_HPP
+
+#include <string>
 
 /**
  * @brief Enumeration to describe the result of the Kaczmarz solver.
  */
 enum class KaczmarzSolverStatus { Converged, ZeroNormRow, OutOfIterations };
 
-#endif  // KACZMARZ_COMMON_HPP
+std::string kaczmarz_status_string(const KaczmarzSolverStatus status);
+
+#endif  // COMMON_HPP

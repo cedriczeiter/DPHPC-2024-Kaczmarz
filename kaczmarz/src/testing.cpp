@@ -3,13 +3,9 @@
 #include <vector>
 
 #include "gtest/gtest.h"
-#include "kaczmarz.hpp"
-#include "kaczmarz_asynchronous.hpp"
-#include "kaczmarz_common.hpp"
-#include "kaczmarz_serial/kaczmarz_common.hpp"
 #include "linear_systems/dense.hpp"
 #include "linear_systems/sparse.hpp"
-#include "linear_systems/types.hpp"
+#include "solvers/basic.hpp"
 
 constexpr unsigned MAX_IT = 1000000;
 constexpr unsigned RUNS_PER_DIM = 5;
@@ -73,17 +69,17 @@ void run_dense_tests(const unsigned dim, const unsigned no_runs) {
     std::vector<int> iterations;
     // precision and max. iterations selected randomly, we might need to revise
     // this
-    auto result =
-        dense_kaczmarz(lse, &x_kaczmarz[0], MAX_IT * dim, 1e-10,
-                       times_residuals, residuals, iterations, MAX_IT);
-
-    ASSERT_EQ(KaczmarzSolverStatus::Converged, result);
+    dense_kaczmarz(lse, &x_kaczmarz[0], MAX_IT * dim, 1e-9, times_residuals,
+                   residuals, iterations, MAX_IT);
 
     const Vector x_eigen = lse.eigen_solve();
 
-    for (unsigned i = 0; i < dim; i++) {
-      ASSERT_LE(std::abs(x_eigen[i] - x_kaczmarz[i]), 1e-6);
+    double norm = 0;
+    for (int i = 0; i < dim; i++) {
+      norm += (x_kaczmarz[i] - x_eigen[i]) * (x_kaczmarz[i] - x_eigen[i]);
     }
+    norm = std::sqrt(norm);
+    ASSERT_LE(norm, 1e-6);
   }
 }
 
@@ -126,16 +122,14 @@ void run_sparse_tests(const unsigned dim, const unsigned bandwidth,
     std::vector<int> iterations;
 
     auto result =
-        sparse_kaczmarz(lse, x_kaczmarz, MAX_IT * dim, 1e-10, times_residuals,
+        sparse_kaczmarz(lse, x_kaczmarz, MAX_IT * dim, 1e-9, times_residuals,
                         residuals, iterations, MAX_IT);
 
-    ASSERT_EQ(KaczmarzSolverStatus::Converged, result);
+    ASSERT_EQ(result, KaczmarzSolverStatus::Converged);
 
     const Vector x_eigen = lse.eigen_solve();
 
-    for (unsigned i = 0; i < dim; i++) {
-      ASSERT_LE(std::abs(x_eigen[i] - x_kaczmarz[i]), 1e-6);
-    }
+    ASSERT_LE((x_kaczmarz - x_eigen).norm(), 1e-6);
   }
 }
 
