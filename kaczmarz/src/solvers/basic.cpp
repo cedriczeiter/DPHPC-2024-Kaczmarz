@@ -99,7 +99,6 @@ KaczmarzSolverStatus sparse_kaczmarz(
     std::vector<double> &times_residuals, std::vector<double> &residuals,
     std::vector<int> &iterations, const int convergence_step_rate) {
   const unsigned rows = lse.row_count();
-  const unsigned cols = lse.column_count();
   // squared norms of rows of A (so that we don't need to recompute them in each
   // iteration
   Vector sq_norms(rows);
