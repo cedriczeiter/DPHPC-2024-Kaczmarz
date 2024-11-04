@@ -33,7 +33,8 @@ int main() {
   std::cout << "Eigen solution computed in "
             << std::chrono::duration_cast<std::chrono::milliseconds>(
                    eigen_end - eigen_start)
-            << std::endl;
+                   .count()
+            << " milliseconds" << std::endl;
 
   Vector x_kaczmarz = Vector::Zero(dim);
 
@@ -45,6 +46,7 @@ int main() {
   std::cout << "Kaczmarz solution computed in "
             << std::chrono::duration_cast<std::chrono::milliseconds>(
                    kaczmarz_end - kaczmarz_start)
+                   .count()
             << std::endl;
   std::cout << "Kaczmarz solver status: " << kaczmarz_status_string(status)
             << std::endl;

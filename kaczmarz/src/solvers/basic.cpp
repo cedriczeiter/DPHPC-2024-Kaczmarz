@@ -28,6 +28,8 @@ KaczmarzSolverStatus dense_kaczmarz(const DenseLinearSystem &lse, double *x,
   const double residual_norm_0 = std::sqrt(residual_norm_sq);
   const auto start = std::chrono::high_resolution_clock::now();
 
+  double residual_norm_now = 0;  // Preallocate to save allocation overhead
+
   // Iterate through a maximum of max_iterations
   for (unsigned iter = 0; iter < max_iterations; iter++) {
     // the algorithm has converged iff none of the rows in an iteration caused a
@@ -49,10 +51,15 @@ KaczmarzSolverStatus dense_kaczmarz(const DenseLinearSystem &lse, double *x,
         residual_norm_sq += row_residual * row_residual;
       }
 
-      double residual_norm_now = std::sqrt(residual_norm_sq);
-      double residual_fraction = residual_norm_now / residual_norm_0;
-      residuals.push_back(residual_fraction);
+      residual_norm_now = std::sqrt(residual_norm_sq);
+      residuals.push_back(residual_norm_now /
+                          residual_norm_0);  // Takes residual fraction
       iterations.push_back(iter);
+
+      // if residual converged enough, return
+      if (residual_norm_now < precision) {
+        return KaczmarzSolverStatus::Converged;
+      }
     }
 
     // Process each row of matrix A
@@ -77,19 +84,11 @@ KaczmarzSolverStatus dense_kaczmarz(const DenseLinearSystem &lse, double *x,
       for (unsigned j = 0; j < cols; j++) {
         x[j] += a_row[j] * correction;
       }
-      if (std::fabs(correction) > precision) {
-        substantial_correction = true;
-      }
-    }
-
-    // If no substantial correction was made, the solution has converged and
-    // algorithm ends
-    if (!substantial_correction) {
-      return KaczmarzSolverStatus::Converged;
     }
   }
 
-  // If it didnt return earlier, then max iterations reached and not converged.
+  // If it didnt return earlier, then max iterations reached and not
+  // converged.
   return KaczmarzSolverStatus::OutOfIterations;
 }
 
@@ -100,34 +99,17 @@ KaczmarzSolverStatus sparse_kaczmarz(
     std::vector<int> &iterations, const int convergence_step_rate) {
   const unsigned rows = lse.row_count();
   const unsigned cols = lse.column_count();
-  // squared norms of rows of A (so that we don't need to recompute them in each
-  // iteration
+  // squared norms of rows of A (so that we don't need to recompute them in
+  // each iteration
   Vector sq_norms(rows);
   for (unsigned i = 0; i < rows; i++) {
     sq_norms[i] = lse.A().row(i).dot(lse.A().row(i));
   }
 
-  // Calculate the initial residual norm to check for convergence
-  double residual_norm_sq = 0.0;
-
-  // // Compute squared norms of rows of A
-  // for (unsigned i = 0; i < rows; i++) {
-  //     sq_norms[i] = lse.A().row(i).dot(lse.A().row(i));
-  // }
-
-  for (unsigned k = 0; k < rows; k++) {
-    double row_residual = 0.0;
-    // Access non-zero elements by iterating through the outer index
-    for (Eigen::Index j = lse.A().outerIndexPtr()[k];
-         j < lse.A().outerIndexPtr()[k + 1]; ++j) {
-      row_residual += lse.A().valuePtr()[j] * x[lse.A().innerIndexPtr()[j]];
-    }
-    row_residual -= lse.b()[k];
-    residual_norm_sq += row_residual * row_residual;
-  }
-
-  const double residual_norm_0 = std::sqrt(residual_norm_sq);
+  const double residual_norm_0 = (lse.A() * x - lse.b()).norm();
   const auto start = std::chrono::high_resolution_clock::now();
+
+  double residual_norm_now = 0;  // preallocation
 
   // same algorithm as in the dense case
   for (unsigned iter = 0; iter < max_iterations; iter++) {
@@ -137,42 +119,23 @@ KaczmarzSolverStatus sparse_kaczmarz(
       const auto end = std::chrono::high_resolution_clock::now();
       std::chrono::duration<double> elapsed = end - start;
       times_residuals.push_back(elapsed.count());
-      // Calculate the initial residual norm to check for convergence
-      double residual_norm_sq = 0.0;
-      // Vector sq_norms(rows);
 
-      // // Compute squared norms of rows of A
-      // for (unsigned i = 0; i < rows; i++) {
-      //     sq_norms[i] = lse.A().row(i).dot(lse.A().row(i));
-      // }
+      residual_norm_now = (lse.A() * x - lse.b()).norm();
+      residuals.push_back(residual_norm_now /
+                          residual_norm_0);  // Takes residual fraction
 
-      for (unsigned k = 0; k < rows; k++) {
-        double row_residual = 0.0;
-
-        // Access non-zero elements by iterating through the outer index
-        for (Eigen::Index j = lse.A().outerIndexPtr()[k];
-             j < lse.A().outerIndexPtr()[k + 1]; ++j) {
-          row_residual += lse.A().valuePtr()[j] * x[lse.A().innerIndexPtr()[j]];
-        }
-        row_residual -= lse.b()[k];
-        residual_norm_sq += row_residual * row_residual;
-      }
-
-      double residual_norm_now = std::sqrt(residual_norm_sq);
-      double residual_fraction = residual_norm_now / residual_norm_0;
-      residuals.push_back(residual_fraction);
       iterations.push_back(iter);
+
+      // if residual small enough, return
+      if (residual_norm_now < precision) {
+        return KaczmarzSolverStatus::Converged;
+      }
     }
+
     for (unsigned i = 0; i < rows; i++) {
       const auto row = lse.A().row(i);
       const double update_coeff = (lse.b()[i] - row.dot(x)) / sq_norms[i];
       x += update_coeff * row;
-      if (std::fabs(update_coeff) > precision) {
-        substantial_update = true;
-      }
-    }
-    if (!substantial_update) {
-      return KaczmarzSolverStatus::Converged;
     }
   }
   return KaczmarzSolverStatus::OutOfIterations;

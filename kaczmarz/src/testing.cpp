@@ -33,14 +33,17 @@ void run_dense_tests(const unsigned dim, const unsigned no_runs) {
     std::vector<int> iterations;
     // precision and max. iterations selected randomly, we might need to revise
     // this
-    dense_kaczmarz(lse, &x_kaczmarz[0], MAX_IT * dim, 1e-10, times_residuals,
+    dense_kaczmarz(lse, &x_kaczmarz[0], MAX_IT * dim, 1e-9, times_residuals,
                    residuals, iterations, MAX_IT);
 
     const Vector x_eigen = lse.eigen_solve();
 
-    for (unsigned i = 0; i < dim; i++) {
-      ASSERT_LE(std::abs(x_eigen[i] - x_kaczmarz[i]), 1e-6);
+    double norm = 0;
+    for (int i = 0; i < dim; i++) {
+      norm += (x_kaczmarz[i] - x_eigen[i]) * (x_kaczmarz[i] - x_eigen[i]);
     }
+    norm = std::sqrt(norm);
+    ASSERT_LE(norm, 1e-6);
   }
 }
 
@@ -82,14 +85,15 @@ void run_sparse_tests(const unsigned dim, const unsigned bandwidth,
     std::vector<double> residuals;
     std::vector<int> iterations;
 
-    sparse_kaczmarz(lse, x_kaczmarz, MAX_IT * dim, 1e-10, times_residuals,
-                    residuals, iterations, MAX_IT);
+    auto result =
+        sparse_kaczmarz(lse, x_kaczmarz, MAX_IT * dim, 1e-9, times_residuals,
+                        residuals, iterations, MAX_IT);
+
+    ASSERT_EQ(result, KaczmarzSolverStatus::Converged);
 
     const Vector x_eigen = lse.eigen_solve();
 
-    for (unsigned i = 0; i < dim; i++) {
-      ASSERT_LE(std::abs(x_eigen[i] - x_kaczmarz[i]), 1e-6);
-    }
+    ASSERT_LE((x_kaczmarz - x_eigen).norm(), 1e-6);
   }
 }
 
