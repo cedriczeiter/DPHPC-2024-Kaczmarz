@@ -26,6 +26,7 @@ SparseLinearSystem SparseLinearSystem::generate_random_banded_regular(
     }
     A.makeCompressed();
     Eigen::SparseQR<SparseMatrix, Eigen::COLAMDOrdering<int>> qr;
+    qr.setPivotThreshold(1e-6);
     qr.compute(A);
     rank = qr.rank();
   } while (rank != (int)dim);

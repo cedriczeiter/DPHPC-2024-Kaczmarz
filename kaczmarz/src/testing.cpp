@@ -16,15 +16,17 @@ constexpr unsigned RUNS_PER_DIM = 5;
 
 void run_parallel_tests(const unsigned dim, const unsigned bandwidth,
                         const unsigned no_runs) {
-  std::mt19937 rng(43); //prev: 21
+  std::mt19937 rng(21);
   for (unsigned i = 0; i < no_runs; i++) {
     const SparseLinearSystem lse =
         SparseLinearSystem::generate_random_banded_regular(rng, dim, bandwidth);
 
     Vector x_kaczmarz = Vector::Zero(dim);
 
-    auto result =
-        sparse_kaczmarz_parallel(lse, x_kaczmarz, MAX_IT * dim, 1e-6, 4); //convergence criterion doesnt work extremely well yet, so I increased the requested precision here
+    auto result = sparse_kaczmarz_parallel(
+        lse, x_kaczmarz, MAX_IT * dim, 1e-10,
+        4);  // convergence criterion doesnt work extremely well yet, so I
+             // increased the requested precision here
 
     ASSERT_EQ(KaczmarzSolverStatus::Converged, result);
 
