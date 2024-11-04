@@ -53,7 +53,7 @@ KaczmarzSolverStatus dense_kaczmarz(const DenseLinearSystem &lse, double *x,
       }
 
       residual_norm_now = std::sqrt(residual_norm_sq);
-      residuals.push_back(residual_norm_now / residual_norm_0);
+      residuals.push_back(residual_norm_now / residual_norm_0); // Takes residual fraction
       iterations.push_back(iter);
 
       // if residual converged enough, return
@@ -109,6 +109,8 @@ KaczmarzSolverStatus sparse_kaczmarz(
   const double residual_norm_0 = (lse.A() * x - lse.b()).norm();
   const auto start = std::chrono::high_resolution_clock::now();
 
+  double residual_norm_now = 0; // preallocation
+
   // same algorithm as in the dense case
   for (unsigned iter = 0; iter < max_iterations; iter++) {
     bool substantial_update = false;
@@ -118,9 +120,8 @@ KaczmarzSolverStatus sparse_kaczmarz(
       std::chrono::duration<double> elapsed = end - start;
       times_residuals.push_back(elapsed.count());
 
-      double residual_norm_now = (lse.A() * x - lse.b()).norm();
-      double residual_fraction = residual_norm_now / residual_norm_0;
-      residuals.push_back(residual_fraction);
+      residual_norm_now = (lse.A() * x - lse.b()).norm();
+      residuals.push_back(residual_norm_now / residual_norm_0); // Takes residual fraction
 
       iterations.push_back(iter);
     }
