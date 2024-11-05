@@ -4,6 +4,7 @@
 
 #include "linear_systems/sparse.hpp"
 #include "solvers/banded.hpp"
+#include "solvers/asynchronous.hpp"
 
 using hrclock = std::chrono::high_resolution_clock;
 
@@ -40,7 +41,7 @@ int main() {
 
   const auto kaczmarz_start = hrclock::now();
   const auto status =
-      kaczmarz_banded_2_cpu_threads(lse, x_kaczmarz, max_iterations, precision);
+      sparse_kaczmarz_parallel(lse.to_sparse_system(), x_kaczmarz, max_iterations, precision, 4);
   const auto kaczmarz_end = hrclock::now();
 
   std::cout << "Kaczmarz solution computed in "

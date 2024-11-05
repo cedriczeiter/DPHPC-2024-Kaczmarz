@@ -21,13 +21,19 @@ KaczmarzSolverStatus sparse_kaczmarz_parallel(const SparseLinearSystem &lse,
   const unsigned L = 10000;  // we check for convergence every 10000 steps
   unsigned total_iterations = 0;
   bool converged = false;
+  double current_residual = 1000; //arbitrarily set
+  double stepsize_global = 1;
 
-  // we create locks for each entry in x and each entry in prev_x (so the
+  // we create locks for each entry in x (so the
   // threads block each other as little as possible)
   std::vector<omp_lock_t> locks_x(cols);
   for (unsigned i = 0; i < cols; ++i) {
     omp_init_lock(&locks_x[i]);
   }
+
+  Vector x_momentum = Eigen::VectorXd::Zero(cols);
+  const double beta = 0.1;
+
 
   // squared norms of rows of A (so that we don't need to recompute them in each
   // iteration
@@ -36,6 +42,7 @@ KaczmarzSolverStatus sparse_kaczmarz_parallel(const SparseLinearSystem &lse,
     sq_norms[i] = lse.A().row(i).dot(lse.A().row(i));
     if (sq_norms[i] < 1e-7) return KaczmarzSolverStatus::ZeroNormRow;
   }
+
 
 #pragma omp parallel
   {
@@ -47,6 +54,20 @@ KaczmarzSolverStatus sparse_kaczmarz_parallel(const SparseLinearSystem &lse,
     for (unsigned i = thread_num; i < rows; i += omp_get_num_threads()) {
       local_rows.push_back(i);
     }
+
+    double beta_local;
+    #pragma omp atomic read
+    beta_local = beta;
+
+    //get local copy of square norm of rows
+    std::vector<double> local_row_norms;
+    #pragma omp critical
+    {
+      for (int i = 0; i < rows; i++){
+        local_row_norms.push_back(sq_norms[i]);
+      }
+    }
+
 
     const unsigned local_rows_size = local_rows.size();
     std::uniform_int_distribution<> distr(0, local_rows_size - 1);
@@ -70,12 +91,18 @@ KaczmarzSolverStatus sparse_kaczmarz_parallel(const SparseLinearSystem &lse,
         omp_unset_lock(&locks_x[it.col()]);
         dot_product += it.value() * x_value;
       }
-      const double update_coeff = (b[k] - dot_product) / sq_norms[k];
+
+      double stepsize_local;
+      #pragma omp atomic read
+      stepsize_local = stepsize_global;
+
+      const double update_coeff = ((b[k] - dot_product) / local_row_norms[k]);
       // update
       for (SparseMatrix::InnerIterator it(A, k); it; ++it) {
-        double update = update_coeff * it.value();
         omp_set_lock(&locks_x[it.col()]);
+        const double update = update_coeff * it.value() + beta_local * x_momentum[it.col()];
         x[it.col()] += update;
+        x_momentum[it.col()] = update;
         omp_unset_lock(&locks_x[it.col()]);
       }
 
@@ -92,13 +119,24 @@ KaczmarzSolverStatus sparse_kaczmarz_parallel(const SparseLinearSystem &lse,
           omp_set_lock(&locks_x[i]);
         }
         double residual = (A * x - b).norm();
+        for (unsigned i = 0; i < cols; ++i) {
+          omp_unset_lock(&locks_x[i]);
+        }
         if (residual < precision) {
 #pragma omp atomic write
           converged = true;
         }
-        for (unsigned i = 0; i < cols; ++i) {
-          omp_unset_lock(&locks_x[i]);
+        double residual_ratio = residual/current_residual;
+        if (residual_ratio < 1){
+          #pragma omp atomic update
+          stepsize_global *= 1.1;
         }
+        else if (residual_ratio > 1.1){
+          #pragma omp atomic update
+          stepsize_global *= 0.5;
+        }
+        current_residual = residual;
+        //std::cout << residual << "        " << stepsize_global << std::endl;
       }
     }
   }
