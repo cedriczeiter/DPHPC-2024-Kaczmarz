@@ -1,4 +1,4 @@
-#include "kaczmarz_asynchronous.hpp"
+#include "asynchronous.hpp"
 
 #include <omp.h>
 #include <unistd.h>
@@ -12,21 +12,13 @@ KaczmarzSolverStatus sparse_kaczmarz_parallel(const SparseLinearSystem &lse,
                                               Vector &x,
                                               const unsigned max_iterations,
                                               const double precision,
-                                              const double num_threads) {
+                                              const unsigned num_threads) {
   omp_set_num_threads(num_threads);
 
   const unsigned rows = lse.row_count();
   const unsigned cols = lse.column_count();
-  std::uniform_int_distribution<> distr(0, rows - 1);
 
-  //https://arxiv.org/pdf/2305.05482
-  const unsigned L = 10000; //we check for convergence every 1000 steps
-  double gamma = 1; //our initial step size; this step size will be updated during the solver run
-  //note: the paper on asynchronous parallel kaczmarz proposes choosing a stepsize of gamma according to the maximal eigenvalue. Since we dont know the eigenvalues of our matrix without performing further expensive calculations, we can use adpative stepsize.
-  //We adapt gamme according to this idea: 
-  //if the residual goes down, we can maybe increase gamma a little: gamma *= 1.1
-  //if the residual goes up, our stepsize is too large: gamme *= 0.5
-  double current_residual = -1;
+  const unsigned L = 10000;  // we check for convergence every 10000 steps
   unsigned total_iterations = 0;
   bool converged = false;
 
@@ -50,24 +42,28 @@ KaczmarzSolverStatus sparse_kaczmarz_parallel(const SparseLinearSystem &lse,
     unsigned thread_num = omp_get_thread_num();
     std::mt19937 rng(thread_num);
 
-    unsigned local_rows;
-    #pragma omp atomic read
-    local_rows = rows;
-    std::uniform_int_distribution<> distr(0, local_rows-1);
+    // each thread chooses randomly from own set of rows
+    std::vector<unsigned> local_rows;
+    for (unsigned i = thread_num; i < rows; i += omp_get_num_threads()) {
+      local_rows.push_back(i);
+    }
+
+    const unsigned local_rows_size = local_rows.size();
+    std::uniform_int_distribution<> distr(0, local_rows_size - 1);
 
     auto b = lse.b();
     auto A = lse.A();
 
-    for (unsigned iter = 0; iter < max_iterations / num_threads; iter++) {
+    for (unsigned iter = 0; iter < max_iterations; iter++) {
       // Randomly select a row
-      unsigned k = distr(rng);
+      unsigned k = local_rows.at(distr(rng));
 
 #pragma omp atomic update
       total_iterations++;
 
-
       double dot_product = 0.0;
-      for (Eigen::SparseMatrix<double, Eigen::RowMajor>::InnerIterator it(A, k); it; ++it) {
+      for (Eigen::SparseMatrix<double, Eigen::RowMajor>::InnerIterator it(A, k);
+           it; ++it) {
         double x_value;
         omp_set_lock(&locks_x[it.col()]);
         x_value = x[it.col()];
@@ -75,10 +71,7 @@ KaczmarzSolverStatus sparse_kaczmarz_parallel(const SparseLinearSystem &lse,
         dot_product += it.value() * x_value;
       }
       const double update_coeff = (b[k] - dot_product) / sq_norms[k];
-      double stepsize;
-      #pragma omp atomic read
-      stepsize = gamma;
-      //update
+      // update
       for (SparseMatrix::InnerIterator it(A, k); it; ++it) {
         double update = update_coeff * it.value();
         omp_set_lock(&locks_x[it.col()]);
@@ -106,23 +99,11 @@ KaczmarzSolverStatus sparse_kaczmarz_parallel(const SparseLinearSystem &lse,
         for (unsigned i = 0; i < cols; ++i) {
           omp_unset_lock(&locks_x[i]);
         }
-        /*//adapt stepsize
-        if (residual < current_residual && current_residual >= 0){
-          #pragma omp atomic update
-          gamma *= 1.1;
-        }
-        else if (residual > current_residual && current_residual >= 0){
-          #pragma omp atomic update
-          gamma *= 0.5;
-        }
-        current_residual = residual;*/
-        //std::cout << gamma << "                " << residual << std::endl;
       }
     }
   }
 
   if (converged) {
-    std::cout << "\n\nDONE\n\n\n\n\n" << std::endl;
     return KaczmarzSolverStatus::Converged;
   }
 

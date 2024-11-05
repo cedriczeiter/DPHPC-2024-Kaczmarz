@@ -5,6 +5,7 @@
 #include "gtest/gtest.h"
 #include "linear_systems/dense.hpp"
 #include "linear_systems/sparse.hpp"
+#include "solvers/asynchronous.hpp"
 #include "solvers/basic.hpp"
 
 constexpr unsigned MAX_IT = 1000000;
@@ -19,18 +20,14 @@ void run_parallel_tests(const unsigned dim, const unsigned bandwidth,
 
     Vector x_kaczmarz = Vector::Zero(dim);
 
-    auto result = sparse_kaczmarz_parallel(
-        lse, x_kaczmarz, MAX_IT * dim, 1e-10,
-        4);  // convergence criterion doesnt work extremely well yet, so I
-             // increased the requested precision here
+    auto result =
+        sparse_kaczmarz_parallel(lse, x_kaczmarz, MAX_IT * dim, 1e-9, 4);
 
     ASSERT_EQ(KaczmarzSolverStatus::Converged, result);
 
     const Vector x_eigen = lse.eigen_solve();
 
-    for (unsigned i = 0; i < dim; i++) {
-      ASSERT_LE(std::abs(x_eigen[i] - x_kaczmarz[i]), 1e-6);
-    }
+    ASSERT_LE((x_kaczmarz - x_eigen).norm(), 1e-6);
   }
 }
 

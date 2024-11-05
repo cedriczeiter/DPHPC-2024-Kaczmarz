@@ -71,8 +71,8 @@ double benchmark_normalsolver_dense(const int dim, const int numIterations,
 }
 
 /// @brief Benchmarks the sparse Kaczmarz algorithm.
-double benchmark_sarsesolver_sparse(const int dim, const int numIterations,
-                                    double& stdDev, std::mt19937& rng) {
+double benchmark_sparsesolver_sparse(const int dim, const int numIterations,
+                                     double& stdDev, std::mt19937& rng) {
   std::vector<double> times;
   for (int i = 0; i < numIterations; ++i) {
     const SparseLinearSystem lse =
@@ -204,7 +204,7 @@ int main() {
   for (int dim = 1; dim <= MAX_DIM; dim *= 2) {
     double stdDev;
     double avgTime =
-        benchmark_sarsesolver_sparse(dim, numIterations, stdDev, rng);
+        benchmark_sparsesolver_sparse(dim, numIterations, stdDev, rng);
 
     // Write results to the file
     outFileNS << dim << "," << avgTime << "," << stdDev << "\n";

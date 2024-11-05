@@ -18,6 +18,7 @@ set(SOURCES
   ${SOURCE_DIR}/solvers/basic.cpp
   ${SOURCE_DIR}/solvers/common.cpp
   ${SOURCE_DIR}/solvers/random.cpp
+  ${SOURCE_DIR}/solvers/asynchronous.cpp
 )
 
 # Fetch GoogleTest from the official GitHub repository
