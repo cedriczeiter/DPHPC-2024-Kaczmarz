@@ -136,7 +136,7 @@ KaczmarzSolverStatus sparse_kaczmarz_parallel(const SparseLinearSystem &lse,
           stepsize_global *= 0.5;
         }
         current_residual = residual;
-        //std::cout << residual << "        " << stepsize_global << std::endl;
+        std::cout << residual << "        " << std::endl;
       }
     }
   }
