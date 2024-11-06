@@ -32,4 +32,6 @@ jobs:
 
     # Run the test executable directly
     - name: Run Tests
-      run: ./kaczmarz/build/testing
+      run: |
+        export OMP_CANCELLATION=true
+        ./kaczmarz/build/testing
