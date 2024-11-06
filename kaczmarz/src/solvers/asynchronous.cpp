@@ -15,7 +15,7 @@ KaczmarzSolverStatus sparse_kaczmarz_parallel(const SparseLinearSystem &lse,
                                               const unsigned max_iterations,
                                               const double precision,
                                               const unsigned num_threads) {
-  std::cout << omp_get_cancellation() << std::endl;
+  //std::cout << omp_get_cancellation() << std::endl;
   assert(omp_get_cancellation());  // we need cancellation enabled for this
                                    // algorithm
   omp_set_num_threads(num_threads);
@@ -92,9 +92,9 @@ KaczmarzSolverStatus sparse_kaczmarz_parallel(const SparseLinearSystem &lse,
         x_momentum[it.col()] = update;
         omp_unset_lock(&locks_x[it.col()]);
       }
-      // we synchronize all threads, so we comply with the convergence
+      /*// we synchronize all threads, so we comply with the convergence
       // conditions of the asynchronous algorithms
-      #pragma omp barrier
+      #pragma omp barrier*/
 
       // stopping criterion
       if (thread_num == 0 && iter % L == 0 &&
