@@ -6,6 +6,9 @@ set(CMAKE_C_STANDARD 11)
 #setup CXX standard 
 set(CMAKE_CXX_STANDARD 20)
 
+#enable thread cancellation
+set(ENV{OMP_CANCELLATION} true)
+
 # Enable all warnings and extra warnings
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -pthread -fopenmp")
 
