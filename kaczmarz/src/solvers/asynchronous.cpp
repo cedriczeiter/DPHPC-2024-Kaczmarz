@@ -15,7 +15,7 @@ KaczmarzSolverStatus sparse_kaczmarz_parallel(const SparseLinearSystem &lse,
                                               const unsigned max_iterations,
                                               const double precision,
                                               const unsigned num_threads) {
-  //std::cout << omp_get_cancellation() << std::endl;
+  // std::cout << omp_get_cancellation() << std::endl;
   assert(omp_get_cancellation());  // we need cancellation enabled for this
                                    // algorithm
   omp_set_num_threads(num_threads);
@@ -23,7 +23,7 @@ KaczmarzSolverStatus sparse_kaczmarz_parallel(const SparseLinearSystem &lse,
   const unsigned rows = lse.row_count();
   const unsigned cols = lse.column_count();
 
-  const unsigned L = 1000;  // we check for convergence every 10000 steps
+  const unsigned L = 1000;  // we check for convergence every 1000 steps
   unsigned total_iterations = 0;
   bool converged = false;
   double current_residual = 1000;  // arbitrarily set
@@ -33,10 +33,10 @@ KaczmarzSolverStatus sparse_kaczmarz_parallel(const SparseLinearSystem &lse,
 
   // we create locks for each entry in x (so the
   // threads block each other as little as possible)
-  std::vector<omp_lock_t> locks_x(cols);
+  /*std::vector<omp_lock_t> locks_x(cols);
   for (unsigned i = 0; i < cols; ++i) {
     omp_init_lock(&locks_x[i]);
-  }
+  }*/
 
   Vector x_momentum = Eigen::VectorXd::Zero(cols);
   const double beta = 0;
@@ -62,6 +62,7 @@ KaczmarzSolverStatus sparse_kaczmarz_parallel(const SparseLinearSystem &lse,
     auto A = lse.A();
     auto b = lse.b();
     std::mt19937 rng(21);
+    double stepsize_local;
 
     const unsigned thread_num = omp_get_thread_num();
     const unsigned local_rows_size = local_rows[thread_num].size();
@@ -69,51 +70,70 @@ KaczmarzSolverStatus sparse_kaczmarz_parallel(const SparseLinearSystem &lse,
 
     // Loop performed by all threads
     for (unsigned iter = 0; iter < max_iterations; iter++) {
-      // Randomly select a row
-      unsigned k = local_rows[thread_num].at(distr(rng));
+      for (unsigned i = 0; i < runs_per_thread; i++) {
+        // Randomly select a row
+        unsigned k = local_rows[thread_num].at(distr(rng));
+        // for (int k = 0; k < local_rows_size; k++) {
+        double dot_product = 0.0;
+        for (Eigen::SparseMatrix<double, Eigen::RowMajor>::InnerIterator it(A,
+                                                                            k);
+             it; ++it) {
+          double x_value;
+// omp_set_lock(&locks_x[it.col()]);
+#pragma omp atomic read
+          x_value = x[it.col()];
+          // omp_unset_lock(&locks_x[it.col()]);
+          dot_product += it.value() * x_value;
+        }
 
-      double dot_product = 0.0;
-      for (Eigen::SparseMatrix<double, Eigen::RowMajor>::InnerIterator it(A, k);
-           it; ++it) {
-        double x_value;
-        omp_set_lock(&locks_x[it.col()]);
-        x_value = x[it.col()];
-        omp_unset_lock(&locks_x[it.col()]);
-        dot_product += it.value() * x_value;
+        double update_coeff = ((b[k] - dot_product) / sq_norms[k]);
+#pragma omp atomic read
+        stepsize_local = stepsize_global;
+        update_coeff *= stepsize_local;
+        //  update
+        for (SparseMatrix::InnerIterator it(A, k); it; ++it) {
+          // omp_set_lock(&locks_x[it.col()]);
+          const double update =
+              update_coeff * it.value();  // + beta * x_momentum[it.col()];
+#pragma omp atomic update
+          x[it.col()] += update;
+          /*#pragma omp atomic write
+          x_momentum[it.col()] = update;*/
+          // omp_unset_lock(&locks_x[it.col()]);
+        }
       }
-
-      const double update_coeff = ((b[k] - dot_product) / sq_norms[k]);
-      // update
-      for (SparseMatrix::InnerIterator it(A, k); it; ++it) {
-        omp_set_lock(&locks_x[it.col()]);
-        const double update =
-            update_coeff * it.value() + beta * x_momentum[it.col()];
-        x[it.col()] += update;
-        x_momentum[it.col()] = update;
-        omp_unset_lock(&locks_x[it.col()]);
-      }
-      // we synchronize all threads, so we comply with the convergence
-      // conditions of the asynchronous algorithms
-      #pragma omp barrier
+// we synchronize all threads, so we comply with the convergence
+// conditions of the asynchronous algorithms
+#pragma omp barrier
 
       // stopping criterion
       if (thread_num == 0 && iter % L == 0 &&
           iter > 0) {  // Check every L iterations
-        for (int i = 0; i < cols; i++) {
+        /*for (int i = 0; i < cols; i++) {
           omp_set_lock(&locks_x[i]);
-        }
-        double residual = (lse.A() * x - lse.b()).norm();
-        for (int i = 0; i < cols; i++) {
+        }*/
+        double residual = (A * x - b).norm();
+        /*for (int i = 0; i < cols; i++) {
           omp_unset_lock(&locks_x[i]);
-        }
+        }*/
         if (residual < precision) {
-          #pragma omp atomic write
+#pragma omp atomic write
           converged = true;
         }
-        //std::cout << residual << "        " << std::endl;
+        if (current_residual < residual) {
+#pragma omp atomic update
+          stepsize_global *= 0.9;
+        }
+        if (current_residual > residual) {
+#pragma omp atomic update
+          stepsize_global *= 1.1;
+          stepsize_global = std::min(stepsize_global, 1.);
+        }
+        current_residual = residual;
+        // std::cout << residual << "        " << stepsize_global << std::endl;
       }
-      if (converged){
-        #pragma omp cancel parallel
+      if (converged) {
+#pragma omp cancel parallel
       }
 
 #pragma omp cancellation point parallel

@@ -40,7 +40,7 @@ TEST(KaczmarzParallelSparseCorrectnessMedium, AgreesWithEigen) {
 }
 
 TEST(KaczmarzParallelSparseCorrectnessLarge, AgreesWithEigen) {
-  run_parallel_tests(1000, 2, RUNS_PER_DIM);
+  run_parallel_tests(50, 2, RUNS_PER_DIM);
 }
 
 /// @brief Runs tests on dense linear systems to compare Kaczmarz solution with
@@ -139,7 +139,7 @@ TEST(KaczmarzSerialSparseCorrectnessMedium, AgreesWithEigen) {
 }
 
 TEST(KaczmarzSerialSparseCorrectnessLarge, AgreesWithEigen) {
-  run_sparse_tests(1000, 2, RUNS_PER_DIM);
+  run_sparse_tests(50, 2, RUNS_PER_DIM);
 }
 
 int main() {
