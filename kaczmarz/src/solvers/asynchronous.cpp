@@ -15,7 +15,6 @@ KaczmarzSolverStatus sparse_kaczmarz_parallel(const SparseLinearSystem &lse,
                                               const unsigned max_iterations,
                                               const double precision,
                                               const unsigned num_threads) {
-  // std::cout << omp_get_cancellation() << std::endl;
   assert(omp_get_cancellation());  // we need cancellation enabled for this
                                    // algorithm
   omp_set_num_threads(num_threads);
@@ -23,23 +22,13 @@ KaczmarzSolverStatus sparse_kaczmarz_parallel(const SparseLinearSystem &lse,
   const unsigned rows = lse.row_count();
   const unsigned cols = lse.column_count();
 
+assert(num_threads < rows); //necessary for allowing each thread to have local rows  
+
   const unsigned L = 1000;  // we check for convergence every 1000 steps
-  unsigned total_iterations = 0;
   bool converged = false;
-  double current_residual = 1000;  // arbitrarily set
-  double stepsize_global = 1;
 
   const unsigned runs_per_thread = 30;
 
-  // we create locks for each entry in x (so the
-  // threads block each other as little as possible)
-  /*std::vector<omp_lock_t> locks_x(cols);
-  for (unsigned i = 0; i < cols; ++i) {
-    omp_init_lock(&locks_x[i]);
-  }*/
-
-  Vector x_momentum = Eigen::VectorXd::Zero(cols);
-  const double beta = 0;
 
   // squared norms of rows of A (so that we don't need to recompute them in each
   // iteration
@@ -52,23 +41,16 @@ KaczmarzSolverStatus sparse_kaczmarz_parallel(const SparseLinearSystem &lse,
   // each thread chooses randomly from own set of rows
   unsigned rows_per_thread = (unsigned)(rows / num_threads);
   std::vector<std::vector<unsigned> > local_rows(num_threads);
-  for (int i = 0; i < num_threads; i++) {
-    for (int j = rows_per_thread * i; j < rows && j < rows_per_thread * (i + 1);
+  for (unsigned i = 0; i < num_threads; i++) {
+    for (unsigned j = rows_per_thread * i; j < rows && j < rows_per_thread * (i + 1);
          j++) {
       local_rows.at(i).push_back(j);
     }
   }
-  for (int j = rows_per_thread * num_threads; j < rows; j++) {
+  for (unsigned j = rows_per_thread * num_threads; j < rows; j++) {
     local_rows.at(num_threads - 1).push_back(j);
   }
 
-  /*for (int i = 0; i < num_threads; i++){
-    std::cout << "Thread " << i << " assigned following rows: ";
-    for (int j = 0; j < local_rows.at(i).size(); j++){
-      std::cout << local_rows.at(i).at(j) << " ";
-    }
-    std::cout << std::endl;
-  }*/
 
 #pragma omp parallel
   {
@@ -86,38 +68,29 @@ KaczmarzSolverStatus sparse_kaczmarz_parallel(const SparseLinearSystem &lse,
       for (unsigned i = 0; i < runs_per_thread; i++) {
         // Randomly select a row
         unsigned k = local_rows[thread_num].at(distr(rng));
-        // for (int k = 0; k < local_rows_size; k++) {
+
         double dot_product = 0.0;
         for (Eigen::SparseMatrix<double, Eigen::RowMajor>::InnerIterator it(A,
                                                                             k);
              it; ++it) {
           double x_value;
-// omp_set_lock(&locks_x[it.col()]);
 #pragma omp atomic read
           x_value = x[it.col()];
-          // omp_unset_lock(&locks_x[it.col()]);
           dot_product += it.value() * x_value;
         }
 
         double update_coeff = ((b[k] - dot_product) / sq_norms[k]);
-#pragma omp atomic read
-        stepsize_local = stepsize_global;
-        update_coeff *= stepsize_local;
         //  update
         for (SparseMatrix::InnerIterator it(A, k); it; ++it) {
-          // omp_set_lock(&locks_x[it.col()]);
           const double update =
-              update_coeff * it.value();  // + beta * x_momentum[it.col()];
+              update_coeff * it.value(); 
 #pragma omp atomic update
           x[it.col()] += update;
-#pragma omp atomic write
-          x_momentum[it.col()] = update;
-          // omp_unset_lock(&locks_x[it.col()]);
         }
       }
 // we synchronize all threads, so we comply with the convergence
 // conditions of the asynchronous algorithms
-#pragma omp flush 
+#pragma omp barrier
 
       // stopping criterion
       if (thread_num == 0 && iter % L == 0 &&
@@ -133,17 +106,6 @@ KaczmarzSolverStatus sparse_kaczmarz_parallel(const SparseLinearSystem &lse,
 #pragma omp atomic write
           converged = true;
         }
-        if (current_residual < residual) {
-#pragma omp atomic update
-          stepsize_global *= 0.9;
-        }
-        if (current_residual > residual) {
-#pragma omp atomic update
-          stepsize_global *= 1.1;
-          stepsize_global = std::min(stepsize_global, 1.);
-        }
-        current_residual = residual;
-        // std::cout << residual << "        " << stepsize_global << std::endl;
       }
       if (converged) {
 #pragma omp cancel parallel

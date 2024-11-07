@@ -9,11 +9,12 @@
 #include "linear_systems/sparse.hpp"
 #include "solvers/basic.hpp"
 #include "solvers/random.hpp"
+#include "solvers/asynchronous.hpp"
 
 #define MAX_IT 1000000
 #define BANDWIDTH 4
-#define MAX_DIM 32
-#define PRECISION 1e-10
+#define MAX_DIM 128
+#define PRECISION 1e-5 
 
 /// @brief Computes the average and standard deviation of a vector of times.
 /// @param times A vector of times recorded for benchmarking in seconds.
@@ -98,6 +99,32 @@ double benchmark_sparsesolver_sparse(const int dim, const int numIterations,
   return avgTime;
 }
 
+/// @brief Benchmarks the sparse asynchronous Kaczmarz algorithm.
+double benchmark_sparsesolver_parallel(const int dim, const int numIterations,
+                                     double& stdDev, std::mt19937& rng) {
+  std::vector<double> times;
+  for (int i = 0; i < numIterations; ++i) {
+    const SparseLinearSystem lse =
+        SparseLinearSystem::generate_random_banded_regular(rng, dim, BANDWIDTH);
+
+    Eigen::VectorXd x_kaczmarz_sparse =
+        Eigen::VectorXd::Zero(lse.column_count());
+    const auto start = std::chrono::high_resolution_clock::now();
+
+    sparse_kaczmarz_parallel(lse, x_kaczmarz_sparse, MAX_IT * dim, PRECISION,
+                    std::min(dim, 6));
+
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed = end - start;
+    times.push_back(elapsed.count());
+  }
+
+  double avgTime = 0;
+  compute_statistics(times, avgTime, stdDev);
+  return avgTime;
+}
+
+
 /// @brief Benchmarks the random Kaczmarz solver on a dense linear system.
 double benchmark_randomsolver_dense(const int dim, const int numIterations,
                                     double& stdDev, std::mt19937& rng) {
@@ -151,7 +178,7 @@ double benchmark_EigenSolver_sparse(const int dim, const int numIterations,
 double benchmark_EigenSolver_dense(const int dim, const int numIterations,
                                    double& stdDev, std::mt19937& rng) {
   std::vector<double> times;
-  for (int i = 0; i < numIterations; ++i) {
+  for (int i = 8; i < numIterations; ++i) {
     const DenseLinearSystem lse =
         DenseLinearSystem::generate_random_regular(rng, dim);
 
@@ -177,7 +204,7 @@ int main() {
   /// Normal Solver Dense///
   //////////////////////////////////////////
 
-  // Open the file for output
+  /*// Open the file for output
   std::ofstream outFileND("results_normalsolver_dense.csv");
   outFileND << "Dim,AvgTime,StdDev\n";  // Write the header for the CSV file
 
@@ -190,7 +217,7 @@ int main() {
     // Write results to the file
     outFileND << dim << "," << avgTime << "," << stdDev << "\n";
   }
-  outFileND.close();  // Close the file after writing
+  outFileND.close();  // Close the file after writing*/
 
   //////////////////////////////////////////
   /// Normal Solver Sparse///
@@ -201,7 +228,7 @@ int main() {
   outFileNS << "Dim,AvgTime,StdDev\n";  // Write the header for the CSV file
 
   // Loop over problem sizes, benchmark, and write to file
-  for (int dim = 1; dim <= MAX_DIM; dim *= 2) {
+  for (int dim = 8; dim <= MAX_DIM; dim *= 2) {
     double stdDev;
     double avgTime =
         benchmark_sparsesolver_sparse(dim, numIterations, stdDev, rng);
@@ -215,7 +242,7 @@ int main() {
   /// Random Solver Dense///
   //////////////////////////////////////////
 
-  // Open the file for output
+  /*// Open the file for output
   std::ofstream outFileRD("results_randomsolver_dense.csv");
   outFileRD << "Dim,AvgTime,StdDev\n";  // Write the header for the CSV file
 
@@ -228,13 +255,34 @@ int main() {
     // Write results to the file
     outFileRD << dim << "," << avgTime << "," << stdDev << "\n";
   }
+  outFileRD.close();  // Close the file after writing*/
+
+  //////////////////////////////////////////
+  /// Asynchronous///
+  //////////////////////////////////////////
+
+  // Open the file for output
+  std::ofstream outFileRD("results_asynchronous.csv");
+  outFileRD << "Dim,AvgTime,StdDev\n";  // Write the header for the CSV file
+
+  // Loop over problem sizes, benchmark, and write to file
+  for (int dim = 8; dim <= MAX_DIM; dim *= 2) {
+    double stdDev;
+    double avgTime =
+        benchmark_sparsesolver_parallel(dim, numIterations, stdDev, rng);
+
+    // Write results to the file
+    outFileRD << dim << "," << avgTime << "," << stdDev << "\n";
+  }
   outFileRD.close();  // Close the file after writing
+
+
 
   //////////////////////////////////////////
   /// Eigen Solver Dense///
   //////////////////////////////////////////
 
-  // Open the file for output
+  /*// Open the file for output
   std::ofstream outFileED("results_eigensolver_dense.csv");
   outFileED << "Dim,AvgTime,StdDev\n";  // Write the header for the CSV file
 
@@ -247,7 +295,7 @@ int main() {
     // Write results to the file
     outFileED << dim << "," << avgTime << "," << stdDev << "\n";
   }
-  outFileED.close();  // Close the file after writing
+  outFileED.close();  // Close the file after writing*/
 
   //////////////////////////////////////////
   /// Eigen Solver Sparse///
@@ -258,7 +306,7 @@ int main() {
   outFileES << "Dim,AvgTime,StdDev\n";  // Write the header for the CSV file
 
   // Loop over problem sizes, benchmark, and write to file
-  for (int dim = 1; dim <= MAX_DIM; dim *= 2) {
+  for (int dim = 4; dim <= MAX_DIM; dim *= 2) {
     double stdDev;
     double avgTime =
         benchmark_EigenSolver_sparse(dim, numIterations, stdDev, rng);
