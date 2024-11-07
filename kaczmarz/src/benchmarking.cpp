@@ -7,14 +7,14 @@
 
 #include "linear_systems/dense.hpp"
 #include "linear_systems/sparse.hpp"
+#include "solvers/asynchronous.hpp"
 #include "solvers/basic.hpp"
 #include "solvers/random.hpp"
-#include "solvers/asynchronous.hpp"
 
 #define MAX_IT 1000000
 #define BANDWIDTH 4
 #define MAX_DIM 128
-#define PRECISION 1e-5 
+#define PRECISION 1e-5
 
 /// @brief Computes the average and standard deviation of a vector of times.
 /// @param times A vector of times recorded for benchmarking in seconds.
@@ -101,7 +101,7 @@ double benchmark_sparsesolver_sparse(const int dim, const int numIterations,
 
 /// @brief Benchmarks the sparse asynchronous Kaczmarz algorithm.
 double benchmark_sparsesolver_parallel(const int dim, const int numIterations,
-                                     double& stdDev, std::mt19937& rng) {
+                                       double& stdDev, std::mt19937& rng) {
   std::vector<double> times;
   for (int i = 0; i < numIterations; ++i) {
     const SparseLinearSystem lse =
@@ -112,7 +112,7 @@ double benchmark_sparsesolver_parallel(const int dim, const int numIterations,
     const auto start = std::chrono::high_resolution_clock::now();
 
     sparse_kaczmarz_parallel(lse, x_kaczmarz_sparse, MAX_IT * dim, PRECISION,
-                    std::min(dim, 6));
+                             std::min(dim, 6));
 
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
@@ -123,7 +123,6 @@ double benchmark_sparsesolver_parallel(const int dim, const int numIterations,
   compute_statistics(times, avgTime, stdDev);
   return avgTime;
 }
-
 
 /// @brief Benchmarks the random Kaczmarz solver on a dense linear system.
 double benchmark_randomsolver_dense(const int dim, const int numIterations,
@@ -275,8 +274,6 @@ int main() {
     outFileRD << dim << "," << avgTime << "," << stdDev << "\n";
   }
   outFileRD.close();  // Close the file after writing
-
-
 
   //////////////////////////////////////////
   /// Eigen Solver Dense///

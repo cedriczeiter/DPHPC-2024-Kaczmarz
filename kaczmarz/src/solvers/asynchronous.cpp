@@ -22,13 +22,13 @@ KaczmarzSolverStatus sparse_kaczmarz_parallel(const SparseLinearSystem &lse,
   const unsigned rows = lse.row_count();
   const unsigned cols = lse.column_count();
 
-assert(num_threads < rows); //necessary for allowing each thread to have local rows  
+  assert(num_threads <
+         rows);  // necessary for allowing each thread to have local rows
 
   const unsigned L = 1000;  // we check for convergence every 1000 steps
   bool converged = false;
 
   const unsigned runs_per_thread = 30;
-
 
   // squared norms of rows of A (so that we don't need to recompute them in each
   // iteration
@@ -42,15 +42,14 @@ assert(num_threads < rows); //necessary for allowing each thread to have local r
   unsigned rows_per_thread = (unsigned)(rows / num_threads);
   std::vector<std::vector<unsigned> > local_rows(num_threads);
   for (unsigned i = 0; i < num_threads; i++) {
-    for (unsigned j = rows_per_thread * i; j < rows && j < rows_per_thread * (i + 1);
-         j++) {
+    for (unsigned j = rows_per_thread * i;
+         j < rows && j < rows_per_thread * (i + 1); j++) {
       local_rows.at(i).push_back(j);
     }
   }
   for (unsigned j = rows_per_thread * num_threads; j < rows; j++) {
     local_rows.at(num_threads - 1).push_back(j);
   }
-
 
 #pragma omp parallel
   {
@@ -82,8 +81,7 @@ assert(num_threads < rows); //necessary for allowing each thread to have local r
         double update_coeff = ((b[k] - dot_product) / sq_norms[k]);
         //  update
         for (SparseMatrix::InnerIterator it(A, k); it; ++it) {
-          const double update =
-              update_coeff * it.value(); 
+          const double update = update_coeff * it.value();
 #pragma omp atomic update
           x[it.col()] += update;
         }
