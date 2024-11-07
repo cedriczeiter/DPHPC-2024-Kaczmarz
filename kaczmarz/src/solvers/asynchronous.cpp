@@ -50,17 +50,30 @@ KaczmarzSolverStatus sparse_kaczmarz_parallel(const SparseLinearSystem &lse,
   }
 
   // each thread chooses randomly from own set of rows
+  unsigned rows_per_thread = (unsigned)(rows / num_threads);
   std::vector<std::vector<unsigned> > local_rows(num_threads);
-  for (int j = 0; j < num_threads; j++) {
-    for (unsigned i = j; i < rows; i += num_threads) {
-      local_rows[j].push_back(i);
+  for (int i = 0; i < num_threads; i++) {
+    for (int j = rows_per_thread * i; j < rows && j < rows_per_thread * (i + 1);
+         j++) {
+      local_rows.at(i).push_back(j);
     }
   }
+  for (int j = rows_per_thread * num_threads; j < rows; j++) {
+    local_rows.at(num_threads - 1).push_back(j);
+  }
+
+  /*for (int i = 0; i < num_threads; i++){
+    std::cout << "Thread " << i << " assigned following rows: ";
+    for (int j = 0; j < local_rows.at(i).size(); j++){
+      std::cout << local_rows.at(i).at(j) << " ";
+    }
+    std::cout << std::endl;
+  }*/
 
 #pragma omp parallel
   {
-    auto A = lse.A();
-    auto b = lse.b();
+    const auto A = lse.A();
+    const auto b = lse.b();
     std::mt19937 rng(21);
     double stepsize_local;
 
@@ -97,8 +110,8 @@ KaczmarzSolverStatus sparse_kaczmarz_parallel(const SparseLinearSystem &lse,
               update_coeff * it.value();  // + beta * x_momentum[it.col()];
 #pragma omp atomic update
           x[it.col()] += update;
-          /*#pragma omp atomic write
-          x_momentum[it.col()] = update;*/
+#pragma omp atomic write
+          x_momentum[it.col()] = update;
           // omp_unset_lock(&locks_x[it.col()]);
         }
       }

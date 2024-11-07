@@ -2,7 +2,6 @@
 
 #include <chrono>
 #include <cmath>
-#include <iostream>
 
 KaczmarzSolverStatus dense_kaczmarz(const DenseLinearSystem &lse, double *x,
                                     const unsigned max_iterations,
@@ -131,7 +130,6 @@ KaczmarzSolverStatus sparse_kaczmarz(
       if (residual_norm_now < precision) {
         return KaczmarzSolverStatus::Converged;
       }
-      std::cout << residual_norm_now << std::endl;
     }
 
     for (unsigned i = 0; i < rows; i++) {
