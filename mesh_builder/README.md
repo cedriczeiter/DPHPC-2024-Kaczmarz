@@ -15,3 +15,6 @@ or
 ```
 ./mesh_builder ../configuration.json > lse.txt
 ```
+
+# Creating several meshes at once
+The shell script `generate_meshes.sh` can be used to create linear systems of increasing complexity. At the moment, this script generates meshes for PDE 1 used to benchmark Kaczmarz solvers presented here (https://www.sciencedirect.com/science/article/pii/S0167819109001252#sec5). The LSEs are saved in the folder `generated_bvp_matrices`.
