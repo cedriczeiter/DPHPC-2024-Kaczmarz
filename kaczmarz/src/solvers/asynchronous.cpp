@@ -117,7 +117,7 @@ KaczmarzSolverStatus sparse_kaczmarz_parallel(const SparseLinearSystem &lse,
       }
 // we synchronize all threads, so we comply with the convergence
 // conditions of the asynchronous algorithms
-#pragma omp barrier
+#pragma omp flush 
 
       // stopping criterion
       if (thread_num == 0 && iter % L == 0 &&
