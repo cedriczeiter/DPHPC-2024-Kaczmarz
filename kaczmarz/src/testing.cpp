@@ -21,7 +21,7 @@ void run_parallel_tests(const unsigned dim, const unsigned bandwidth,
     Vector x_kaczmarz = Vector::Zero(dim);
 
     auto result =
-        sparse_kaczmarz_parallel(lse, x_kaczmarz, MAX_IT * dim, 1e-9, 4);
+        sparse_kaczmarz_parallel(lse, x_kaczmarz, MAX_IT * dim, 1e-9, 1);
 
     ASSERT_EQ(KaczmarzSolverStatus::Converged, result);
 
