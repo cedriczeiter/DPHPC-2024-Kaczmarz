@@ -203,7 +203,7 @@ int main() {
   /// Normal Solver Dense///
   //////////////////////////////////////////
 
-  /*// Open the file for output
+  // Open the file for output
   std::ofstream outFileND("results_normalsolver_dense.csv");
   outFileND << "Dim,AvgTime,StdDev\n";  // Write the header for the CSV file
 
@@ -216,7 +216,7 @@ int main() {
     // Write results to the file
     outFileND << dim << "," << avgTime << "," << stdDev << "\n";
   }
-  outFileND.close();  // Close the file after writing*/
+  outFileND.close();  // Close the file after writing
 
   //////////////////////////////////////////
   /// Normal Solver Sparse///
@@ -241,7 +241,7 @@ int main() {
   /// Random Solver Dense///
   //////////////////////////////////////////
 
-  /*// Open the file for output
+  // Open the file for output
   std::ofstream outFileRD("results_randomsolver_dense.csv");
   outFileRD << "Dim,AvgTime,StdDev\n";  // Write the header for the CSV file
 
@@ -254,15 +254,15 @@ int main() {
     // Write results to the file
     outFileRD << dim << "," << avgTime << "," << stdDev << "\n";
   }
-  outFileRD.close();  // Close the file after writing*/
+  outFileRD.close();  // Close the file after writing
 
   //////////////////////////////////////////
   /// Asynchronous///
   //////////////////////////////////////////
 
   // Open the file for output
-  std::ofstream outFileRD("results_asynchronous.csv");
-  outFileRD << "Dim,AvgTime,StdDev\n";  // Write the header for the CSV file
+  std::ofstream outFileAS("results_asynchronous.csv");
+  outFileAS << "Dim,AvgTime,StdDev\n";  // Write the header for the CSV file
 
   // Loop over problem sizes, benchmark, and write to file
   for (int dim = 8; dim <= MAX_DIM; dim *= 2) {
@@ -271,15 +271,15 @@ int main() {
         benchmark_sparsesolver_parallel(dim, numIterations, stdDev, rng);
 
     // Write results to the file
-    outFileRD << dim << "," << avgTime << "," << stdDev << "\n";
+    outFileAS << dim << "," << avgTime << "," << stdDev << "\n";
   }
-  outFileRD.close();  // Close the file after writing
+  outFileAS.close();  // Close the file after writing
 
   //////////////////////////////////////////
   /// Eigen Solver Dense///
   //////////////////////////////////////////
 
-  /*// Open the file for output
+  // Open the file for output
   std::ofstream outFileED("results_eigensolver_dense.csv");
   outFileED << "Dim,AvgTime,StdDev\n";  // Write the header for the CSV file
 
@@ -292,7 +292,7 @@ int main() {
     // Write results to the file
     outFileED << dim << "," << avgTime << "," << stdDev << "\n";
   }
-  outFileED.close();  // Close the file after writing*/
+  outFileED.close();  // Close the file after writing
 
   //////////////////////////////////////////
   /// Eigen Solver Sparse///

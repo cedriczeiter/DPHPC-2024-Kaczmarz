@@ -20,15 +20,15 @@ KaczmarzSolverStatus sparse_kaczmarz_parallel(const SparseLinearSystem &lse,
   omp_set_num_threads(num_threads);
 
   const unsigned rows = lse.row_count();
-  const unsigned cols = lse.column_count();
+  // const unsigned cols = lse.column_count();
 
-  assert(num_threads <
+  assert(num_threads <=
          rows);  // necessary for allowing each thread to have local rows
 
-  const unsigned L = 1000;  // we check for convergence every 1000 steps
+  const unsigned L = 500;  // we check for convergence every L steps
   bool converged = false;
 
-  const unsigned runs_per_thread = 30;
+  const unsigned runs_per_thread = 15;
 
   // squared norms of rows of A (so that we don't need to recompute them in each
   // iteration
@@ -56,7 +56,6 @@ KaczmarzSolverStatus sparse_kaczmarz_parallel(const SparseLinearSystem &lse,
     const auto A = lse.A();
     const auto b = lse.b();
     std::mt19937 rng(21);
-    double stepsize_local;
 
     const unsigned thread_num = omp_get_thread_num();
     const unsigned local_rows_size = local_rows[thread_num].size();
@@ -93,17 +92,12 @@ KaczmarzSolverStatus sparse_kaczmarz_parallel(const SparseLinearSystem &lse,
       // stopping criterion
       if (thread_num == 0 && iter % L == 0 &&
           iter > 0) {  // Check every L iterations
-        /*for (int i = 0; i < cols; i++) {
-          omp_set_lock(&locks_x[i]);
-        }*/
         double residual = (A * x - b).norm();
-        /*for (int i = 0; i < cols; i++) {
-          omp_unset_lock(&locks_x[i]);
-        }*/
         if (residual < precision) {
 #pragma omp atomic write
           converged = true;
         }
+        // std::cout << residual << std::endl;
       }
       if (converged) {
 #pragma omp cancel parallel
