@@ -1,4 +1,3 @@
-#include "basic_cuda.hpp"
 
 #include <chrono>
 #include <cmath>

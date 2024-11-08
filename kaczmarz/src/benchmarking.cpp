@@ -9,7 +9,6 @@
 #include "linear_systems/sparse.hpp"
 #include "solvers/basic.hpp"
 #include "solvers/random.hpp"
-#include "solvers/basic_cuda.hpp"
 
 
 #define MAX_IT 1000000

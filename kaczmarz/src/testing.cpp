@@ -6,7 +6,6 @@
 #include "linear_systems/dense.hpp"
 #include "linear_systems/sparse.hpp"
 #include "solvers/basic.hpp"
-#include "solvers/basic_cuda.hpp"
 
 constexpr unsigned MAX_IT = 1000000;
 constexpr unsigned RUNS_PER_DIM = 5;
