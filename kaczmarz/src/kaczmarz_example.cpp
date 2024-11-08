@@ -7,6 +7,7 @@
 #include "solvers/basic.hpp"
 #include "solvers/common.hpp"
 #include "solvers/random.hpp"
+#include "solvers/basic_cuda.hpp"
 
 int main() {
   const unsigned dim = 5;
