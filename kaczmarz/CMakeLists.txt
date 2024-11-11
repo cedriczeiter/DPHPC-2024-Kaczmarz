@@ -78,6 +78,7 @@ target_link_libraries(benchmark_one PRIVATE linear_systems)
 
 # Enable CUDA support
 find_package(CUDA 11.7 REQUIRED)
+set(CMAKE_CUDA_ARCHITECTURES 60 70 75 86)
 
 # Add CUDA executables without cuda_add_executable
 add_executable(kaczmarz_example_cuda ${CUDA_SOURCES})
