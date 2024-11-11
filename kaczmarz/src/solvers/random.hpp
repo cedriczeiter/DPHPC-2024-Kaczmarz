@@ -4,7 +4,7 @@
 #include <vector>
 
 #include "common.hpp"
-#include "linear_systems/dense.hpp"
+#include "dense.hpp"
 
 /**
  * @brief Solves the Ax = b linear system using the randomized Kaczmarz

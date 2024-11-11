@@ -2,7 +2,7 @@
 #define BANDED_HPP
 
 #include "common.hpp"
-#include "linear_systems/sparse.hpp"
+#include "sparse.hpp"
 
 /**
  * Run an implementation of the Kaczmarz solver that is parallelized for two CPU

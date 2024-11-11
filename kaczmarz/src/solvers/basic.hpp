@@ -2,8 +2,8 @@
 #define BASIC_HPP
 
 #include "common.hpp"
-#include "linear_systems/dense.hpp"
-#include "linear_systems/sparse.hpp"
+#include "dense.hpp"
+#include "sparse.hpp"
 /**
  * @brief Solves the Ax = b LSE by running the serial Kaczmarz algorithm with
  * in-order row updates.
