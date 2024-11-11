@@ -17,16 +17,13 @@ KaczmarzSolverStatus dense_kaczmarz_cuda(const DenseLinearSystem &lse, double *x
 
   // Calculate the residual norm in the beginning to check for convergence
   double residual_norm_sq = 0.0;
+  const double *h_A = lse.A();
+  std::vector<double> h_result(rows);
+
+  squared_norm_cuda(h_A, h_result.data(), rows, cols);
   for (unsigned k = 0; k < rows; k++)
   {
-    double row_residual = 0.0;
-    const double *row = lse.A() + k * cols;
-    for (unsigned j = 0; j < cols; j++)
-    {
-      row_residual += row[j] * x[j];
-    }
-    row_residual -= lse.b()[k];
-    residual_norm_sq += row_residual * row_residual;
+    residual_norm_sq += h_result[k];
   }
 
   const double residual_norm_0 = std::sqrt(residual_norm_sq);

@@ -6,6 +6,10 @@ set(CMAKE_C_STANDARD 11)
 # Setup C++ standard
 set(CMAKE_CXX_STANDARD 20)
 
+# Enable CUDA support
+find_package(CUDA 11.7 REQUIRED)
+set(CMAKE_CUDA_ARCHITECTURES 60 70 75 86)
+
 # Enable all warnings and extra warnings
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -pthread -fopenmp")
 
@@ -62,25 +66,11 @@ set(SOURCES
   ${SOURCE_DIR}/solvers/cuda_funcs.cu
 )
 
-# Separate .cu files and .cpp files for different compilers
-set(CXX_SOURCES)
-set(CUDA_SOURCES)
-
-# Split the sources into C++ and CUDA files
-foreach(src ${SOURCES})
-    if(src MATCHES ".cu$")
-        list(APPEND CUDA_SOURCES ${src})
-    else()
-        list(APPEND CXX_SOURCES ${src})
-    endif()
-endforeach()
-
 # Create an object library for the shared C++ sources
-add_library(shared_sources OBJECT ${CXX_SOURCES})
+add_library(shared_sources OBJECT ${SOURCES})
 
 # Set include directories for shared sources (like .hpp files)
 target_include_directories(shared_sources PRIVATE ${EIGEN3_INCLUDE_DIR} ${CMAKE_SOURCE_DIR}/../linear_systems/src/linear_systems ${SOURCE_DIR}/solvers)
-
 
 ############################################
 #### Add executables and link libraries ####
@@ -88,7 +78,6 @@ target_include_directories(shared_sources PRIVATE ${EIGEN3_INCLUDE_DIR} ${CMAKE_
 
 # Set include directories for all executables
 set(EXECUTABLE_INCLUDE_DIRS ${EIGEN3_INCLUDE_DIR} ${LINEAR_SYSTEMS_INCLUDE_DIR} ${SOURCE_DIR}/solvers)
-
 
 # Create executables for your different benchmarks
 add_executable(benchmark_convergence ${SOURCE_DIR}/benchmarking_convergence.cpp)
@@ -104,27 +93,25 @@ target_include_directories(kaczmarz_example PRIVATE ${LINEAR_SYSTEMS_INCLUDE_DIR
 target_include_directories(testing PRIVATE ${LINEAR_SYSTEMS_INCLUDE_DIR} ${EXECUTABLE_INCLUDE_DIRS})
 target_include_directories(benchmark_one PRIVATE ${LINEAR_SYSTEMS_INCLUDE_DIR} ${EXECUTABLE_INCLUDE_DIRS})
 
-target_link_libraries(benchmark_convergence PRIVATE linear_systems $<TARGET_OBJECTS:shared_sources>)
-target_link_libraries(benchmark_executable PRIVATE linear_systems $<TARGET_OBJECTS:shared_sources>)
-target_link_libraries(kaczmarz_example PRIVATE linear_systems $<TARGET_OBJECTS:shared_sources>)
-target_link_libraries(testing PRIVATE linear_systems gtest $<TARGET_OBJECTS:shared_sources>)
-target_link_libraries(benchmark_one PRIVATE linear_systems $<TARGET_OBJECTS:shared_sources>)
+target_link_libraries(benchmark_convergence PRIVATE linear_systems $<TARGET_OBJECTS:shared_sources> ${CUDA_LIBRARIES})
+target_link_libraries(benchmark_executable PRIVATE linear_systems $<TARGET_OBJECTS:shared_sources> ${CUDA_LIBRARIES})
+target_link_libraries(kaczmarz_example PRIVATE linear_systems $<TARGET_OBJECTS:shared_sources> ${CUDA_LIBRARIES})
+target_link_libraries(testing PRIVATE linear_systems gtest $<TARGET_OBJECTS:shared_sources> ${CUDA_LIBRARIES})
+target_link_libraries(benchmark_one PRIVATE linear_systems $<TARGET_OBJECTS:shared_sources> ${CUDA_LIBRARIES})
 
+# Link CUDA runtime library
+target_link_libraries(shared_sources PRIVATE ${CUDA_LIBRARIES})
 
 ############################################
 #### CUDA support and executables ##########
 ############################################
 
-# Enable CUDA support
-find_package(CUDA 11.7 REQUIRED)
-set(CMAKE_CUDA_ARCHITECTURES 60 70 75 86)
-
 # Add CUDA executables
-include_directories(${CMAKE_SOURCE_DIR}/src/solvers)
-add_executable(testing_cuda ${CUDA_SOURCES} src/main_cuda.cpp)
+add_executable(testing_cuda ${SOURCE_DIR}/main_cuda.cpp)
 
-# Link the CUDA executables with the necessary libraries
-target_link_libraries(testing_cuda PRIVATE linear_systems)
+# Set include directories for CUDA executables
+target_include_directories(testing_cuda PRIVATE ${LINEAR_SYSTEMS_INCLUDE_DIR} ${EXECUTABLE_INCLUDE_DIRS})
+target_link_libraries(testing_cuda PRIVATE linear_systems $<TARGET_OBJECTS:shared_sources> ${CUDA_LIBRARIES})
 
 ############################################
 #### Configure and copy Python plot files ##
