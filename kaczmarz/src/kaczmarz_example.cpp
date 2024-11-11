@@ -7,8 +7,10 @@
 #include "solvers/basic.hpp"
 #include "solvers/common.hpp"
 #include "solvers/random.hpp"
+#include "solvers/cuda_basic.hpp"
 
-int main() {
+int main()
+{
   const unsigned dim = 5;
 
   // Initialize the random number generator
@@ -20,32 +22,53 @@ int main() {
 
   std::vector<double> x_kaczmarz(dim, 0.0);
   std::vector<double> x_kaczmarz_random(dim, 0.0);
+  std::vector<double> x_kaczmarz_cuda(dim, 0.0);
   std::vector<double> times_residuals;
   std::vector<double> residuals;
   std::vector<int> iterations;
+
   const auto status_dense =
       dense_kaczmarz(lse, &x_kaczmarz[0], 100000, 1e-10, times_residuals,
                      residuals, iterations, 100000);
-  if (status_dense != KaczmarzSolverStatus::Converged) {
+  if (status_dense != KaczmarzSolverStatus::Converged)
+  {
     std::cout << "The serial Kaczmarz solver didn't converge!" << std::endl;
   }
 
   std::cout << "Kaczmarz solution: \n";
-  for (unsigned i = 0; i < dim; i++) {
+  for (unsigned i = 0; i < dim; i++)
+  {
     std::cout << x_kaczmarz[i] << std::endl;
+  }
+  std::cout << "\n\n";
+
+  const auto status_dense_cuda =
+      dense_kaczmarz_cuda(lse, &x_kaczmarz_cuda[0], 100000, 1e-10, times_residuals,
+                          residuals, iterations, 100000);
+  if (status_dense_cuda != KaczmarzSolverStatus::Converged)
+  {
+    std::cout << "The cuda Kaczmarz solver didn't converge!" << std::endl;
+  }
+
+  std::cout << "Cuda Kaczmarz solution: \n";
+  for (unsigned i = 0; i < dim; i++)
+  {
+    std::cout << x_kaczmarz_cuda[i] << std::endl;
   }
   std::cout << "\n\n";
 
   const auto status_random =
       kaczmarz_random_solver(lse, &x_kaczmarz_random[0], 100000, 1e-10,
                              times_residuals, residuals, iterations, 100000);
-  if (status_random != KaczmarzSolverStatus::Converged) {
+  if (status_random != KaczmarzSolverStatus::Converged)
+  {
     std::cout << "The random Kaczmarz solver didn't converge!" << std::endl;
   }
 
   // Print the solution from the randomized Kaczmarz solver
   std::cout << "Randomized Kaczmarz solution: \n";
-  for (int i = 0; i < dim; i++) {
+  for (int i = 0; i < dim; i++)
+  {
     std::cout << x_kaczmarz_random[i] << std::endl;
   }
 
@@ -54,7 +77,8 @@ int main() {
   const Vector x_eigen = lse.eigen_solve();
 
   std::cout << "Eigen solution: \n";
-  for (unsigned i = 0; i < dim; i++) {
+  for (unsigned i = 0; i < dim; i++)
+  {
     std::cout << x_eigen[i] << std::endl;
   }
 
@@ -73,7 +97,8 @@ int main() {
   const auto status_sparse =
       sparse_kaczmarz(sparse_lse, x_kaczmarz_sparse, 10000000, 1e-10,
                       times_residuals, residuals, iterations, 100000);
-  if (status_sparse != KaczmarzSolverStatus::Converged) {
+  if (status_sparse != KaczmarzSolverStatus::Converged)
+  {
     std::cout
         << "The serial Kaczmarz solver for sparse matrices didn't converge!"
         << std::endl;
@@ -84,14 +109,16 @@ int main() {
   const Vector x_eigen_sparse = sparse_lse.eigen_solve();
 
   std::cout << "\n\nSparse Kaczmarz solution: \n";
-  for (int i = 0; i < cols; i++) {
+  for (int i = 0; i < cols; i++)
+  {
     std::cout << x_kaczmarz_sparse[i] << std::endl;
   }
 
   std::cout << "\n\n";
 
   std::cout << "Eigen solution: \n";
-  for (unsigned i = 0; i < cols; i++) {
+  for (unsigned i = 0; i < cols; i++)
+  {
     std::cout << x_eigen_sparse[i] << std::endl;
   }
 }
