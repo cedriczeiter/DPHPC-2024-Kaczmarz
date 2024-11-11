@@ -45,7 +45,7 @@ int main() {
 
   // Print the solution from the randomized Kaczmarz solver
   std::cout << "Randomized Kaczmarz solution: \n";
-  for (int i = 0; i < dim; i++) {
+  for (unsigned i = 0; i < dim; i++) {
     std::cout << x_kaczmarz_random[i] << std::endl;
   }
 
@@ -84,7 +84,7 @@ int main() {
   const Vector x_eigen_sparse = sparse_lse.eigen_solve();
 
   std::cout << "\n\nSparse Kaczmarz solution: \n";
-  for (int i = 0; i < cols; i++) {
+  for (unsigned i = 0; i < cols; i++) {
     std::cout << x_kaczmarz_sparse[i] << std::endl;
   }
 

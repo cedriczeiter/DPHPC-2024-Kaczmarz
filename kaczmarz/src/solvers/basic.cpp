@@ -32,10 +32,6 @@ KaczmarzSolverStatus dense_kaczmarz(const DenseLinearSystem &lse, double *x,
 
   // Iterate through a maximum of max_iterations
   for (unsigned iter = 0; iter < max_iterations; iter++) {
-    // the algorithm has converged iff none of the rows in an iteration caused a
-    // substantial correction
-    bool substantial_correction = false;
-
     if (iter % convergence_step_rate == 0) {
       const auto end = std::chrono::high_resolution_clock::now();
       std::chrono::duration<double> elapsed = end - start;
@@ -79,7 +75,6 @@ KaczmarzSolverStatus dense_kaczmarz(const DenseLinearSystem &lse, double *x,
         return KaczmarzSolverStatus::ZeroNormRow;
       }
 
-      // Check if the correction is substantial
       const double correction = (lse.b()[i] - dot_product) / row_sq_norm;
       for (unsigned j = 0; j < cols; j++) {
         x[j] += a_row[j] * correction;
@@ -98,7 +93,6 @@ KaczmarzSolverStatus sparse_kaczmarz(
     std::vector<double> &times_residuals, std::vector<double> &residuals,
     std::vector<int> &iterations, const int convergence_step_rate) {
   const unsigned rows = lse.row_count();
-  const unsigned cols = lse.column_count();
   // squared norms of rows of A (so that we don't need to recompute them in
   // each iteration
   Vector sq_norms(rows);
@@ -113,8 +107,6 @@ KaczmarzSolverStatus sparse_kaczmarz(
 
   // same algorithm as in the dense case
   for (unsigned iter = 0; iter < max_iterations; iter++) {
-    bool substantial_update = false;
-
     if (iter % convergence_step_rate == 0) {
       const auto end = std::chrono::high_resolution_clock::now();
       std::chrono::duration<double> elapsed = end - start;
