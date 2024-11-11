@@ -1,6 +1,10 @@
 
 #include <chrono>
 #include <cmath>
+#include "common.hpp"
+#include "linear_systems/dense.hpp"
+#include "linear_systems/sparse.hpp"
+
 
 KaczmarzSolverStatus dense_kaczmarz(const DenseLinearSystem &lse, double *x,
                                     const unsigned max_iterations,
