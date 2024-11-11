@@ -1,13 +1,15 @@
 cmake_minimum_required(VERSION 3.10)
-project(parallel_kaczmarz_pde C CXX)
+project(parallel_kaczmarz_pde C CXX CUDA)
 
 # Set C standard
 set(CMAKE_C_STANDARD 11)
 #setup CXX standard 
 set(CMAKE_CXX_STANDARD 20)
 
+set(CUDA_ARCHITECTURES 75)
+
 # Enable all warnings and extra warnings
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -pthread -fopenmp")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -pthread -fopenmp -g")
 
 find_package (Eigen3 3.3 REQUIRED NO_MODULE)
 
@@ -15,6 +17,7 @@ find_package (Eigen3 3.3 REQUIRED NO_MODULE)
 set(SOURCE_DIR ${CMAKE_SOURCE_DIR}/src)
 set(SOURCES
   ${SOURCE_DIR}/solvers/banded.cpp
+  ${SOURCE_DIR}/solvers/banded.cu
   ${SOURCE_DIR}/solvers/basic.cpp
   ${SOURCE_DIR}/solvers/common.cpp
   ${SOURCE_DIR}/solvers/random.cpp
@@ -47,6 +50,12 @@ CONFIGURE_FILE(${SOURCE_DIR}/plot.py ${PATH_TO_BUILD} plot.py COPYONLY)
 CONFIGURE_FILE(${SOURCE_DIR}/plot_convergence.py ${PATH_TO_BUILD} plot_convergence.py COPYONLY)
 CONFIGURE_FILE(${SOURCE_DIR}/plot_dense.py ${PATH_TO_BUILD} plot_dense.py COPYONLY)
 CONFIGURE_FILE(${SOURCE_DIR}/plot_sparse.py ${PATH_TO_BUILD} plot_sparse.py COPYONLY)
+
+set_target_properties(kaczmarz_example PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+set_target_properties(testing PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+set_target_properties(benchmark_executable PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+set_target_properties(benchmark_one PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+set_target_properties(benchmark_convergence PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 
 add_subdirectory(../linear_systems linear_systems_build)
 

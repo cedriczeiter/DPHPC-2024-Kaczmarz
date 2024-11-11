@@ -47,7 +47,7 @@ int main() {
             << std::chrono::duration_cast<std::chrono::milliseconds>(
                    kaczmarz_end - kaczmarz_start)
                    .count()
-            << std::endl;
+            << " milliseconds" << std::endl;
   std::cout << "Kaczmarz solver status: " << kaczmarz_status_string(status)
             << std::endl;
 

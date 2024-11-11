@@ -1,9 +1,9 @@
 #include "banded.hpp"
 
 #include <cassert>
-#include <iostream>
 #include <numeric>
 
+#include "banded_cuda.hpp"
 #include "omp.h"
 
 KaczmarzSolverStatus kaczmarz_banded_2_cpu_threads(
@@ -256,4 +256,68 @@ KaczmarzSolverStatus kaczmarz_banded_serial(const BandedLinearSystem& lse,
   }
 
   return KaczmarzSolverStatus::OutOfIterations;
+}
+
+KaczmarzSolverStatus kaczmarz_banded_cuda(const BandedLinearSystem& lse,
+                                          Eigen::VectorXd& x,
+                                          const unsigned _max_iterations,
+                                          const double _precision) {
+  const unsigned bandwidth = lse.bandwidth();
+  const unsigned dim = lse.dim();
+
+  // reshuffling / padding memory on the CPU
+
+  const unsigned thread_count = (dim - 1) / (2 * bandwidth + 1) + 1;
+  const unsigned dim_padded = thread_count * (2 * bandwidth + 1);
+  std::vector<double> x_padded(bandwidth + dim_padded + bandwidth, 0.0);
+  std::copy(x.begin(), x.end(), x_padded.begin() + bandwidth);
+  std::vector<double> A_data_padded(dim_padded * (2 * bandwidth + 1), 0.0);
+  unsigned elem_idx = 0;
+  for (unsigned row_idx = 0; row_idx < bandwidth; row_idx++) {
+    const unsigned to_copy_count = row_idx + 1 + bandwidth;
+    std::copy_n(lse.A_data().begin() + elem_idx, to_copy_count,
+                A_data_padded.begin() + row_idx * (2 * bandwidth + 1) +
+                    (bandwidth - row_idx));
+    elem_idx += to_copy_count;
+  }
+  const unsigned middle_to_copy_count =
+      (dim - 2 * bandwidth) * (2 * bandwidth + 1);
+  std::copy_n(lse.A_data().begin() + elem_idx, middle_to_copy_count,
+              A_data_padded.begin() + bandwidth * (2 * bandwidth + 1));
+  elem_idx += middle_to_copy_count;
+  for (unsigned row_i = 0; row_i < bandwidth; row_i++) {
+    const unsigned to_copy_count = 2 * bandwidth - row_i;
+    std::copy_n(lse.A_data().begin() + elem_idx, to_copy_count,
+                A_data_padded.begin() +
+                    (dim - bandwidth + row_i) * (2 * bandwidth + 1));
+    elem_idx += to_copy_count;
+  }
+  for (unsigned pad_row_idx = dim; pad_row_idx < dim_padded; pad_row_idx++) {
+    A_data_padded[pad_row_idx * (2 * bandwidth + 1) + bandwidth] = 1.0;
+  }
+  const std::vector<double> sq_norms_padded = [bandwidth, dim, dim_padded,
+                                               &lse]() {
+    std::vector<double> sq_norms(dim_padded, 1.0);
+    unsigned elem_idx = 0;
+    for (unsigned row_idx = 0; row_idx < dim; row_idx++) {
+      const unsigned row_nnz =
+          std::min({2 * bandwidth + 1, bandwidth + 1 + row_idx,
+                    bandwidth + 1 + (dim - 1 - row_idx)});
+      sq_norms[row_idx] =
+          std::inner_product(lse.A_data().begin() + elem_idx,
+                             lse.A_data().begin() + elem_idx + row_nnz,
+                             lse.A_data().begin() + elem_idx, 0.0);
+      elem_idx += row_nnz;
+    }
+    return sq_norms;
+  }();
+  std::vector<double> b_padded(dim_padded, 0.0);
+  std::copy(lse.b().begin(), lse.b().end(), b_padded.begin());
+
+  invoke_kaczmarz_banded_update(bandwidth, thread_count, A_data_padded,
+                                x_padded, sq_norms_padded, b_padded);
+
+  std::copy_n(x_padded.begin() + bandwidth, dim, x.begin());
+
+  return KaczmarzSolverStatus::Converged;
 }
