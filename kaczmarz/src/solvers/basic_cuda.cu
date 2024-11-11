@@ -1,12 +1,3 @@
-
-/*#include <chrono>
-#include <cmath>
-
-#include "common.hpp"
-#include "linear_systems/dense.hpp"
-#include "linear_systems/sparse.hpp"*/
-
-#include <iostream>
 #include <cassert>
 
 
