@@ -9,9 +9,17 @@ set(CMAKE_CXX_STANDARD 20)
 # Enable all warnings and extra warnings
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -pthread -fopenmp")
 
-# Allow users to specify the Eigen installation path
-option(EIGEN_PATH "Path to Eigen library" "${CMAKE_SOURCE_DIR}/../eigen3")
-include_directories(${EIGEN_PATH})
+# Fetch Eigen if it's not installed
+include(FetchContent)
+FetchContent_Declare(
+  eigen
+  GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git
+  GIT_TAG 3.4.0  # You can specify a stable version here
+)
+FetchContent_MakeAvailable(eigen)
+
+# Add Eigen include directory
+include_directories(${eigen_SOURCE_DIR})
 
 # Set up the source directory and the sources
 set(SOURCE_DIR ${CMAKE_SOURCE_DIR}/src)
