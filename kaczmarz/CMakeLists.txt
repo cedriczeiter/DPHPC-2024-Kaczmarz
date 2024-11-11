@@ -102,9 +102,6 @@ set(CMAKE_CUDA_ARCHITECTURES 60 70 75 86)
 # Add CUDA executables
 add_executable(testing_cuda ${CUDA_SOURCES} src/main_cuda.cpp)
 
-# Ensure the linear_systems library is built
-add_library(linear_systems STATIC ${SOURCE_DIR}/linear_systems/some_source_file.cpp)
-
 # Link the CUDA executables with the necessary libraries
 target_link_libraries(testing_cuda PRIVATE linear_systems)
 
