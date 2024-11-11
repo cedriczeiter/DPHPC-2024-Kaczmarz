@@ -58,6 +58,7 @@ set(SOURCES
   ${SOURCE_DIR}/solvers/basic.cpp
   ${SOURCE_DIR}/solvers/common.cpp
   ${SOURCE_DIR}/solvers/random.cpp
+  ${SOURCE_DIR}/solvers/cuda_basic.cpp
   ${SOURCE_DIR}/solvers/cuda_funcs.cu
 )
 
@@ -77,12 +78,17 @@ endforeach()
 # Create an object library for the shared C++ sources
 add_library(shared_sources OBJECT ${CXX_SOURCES})
 
-# Set include directories for shared sources
+# Set include directories for shared sources (like .hpp files)
 target_include_directories(shared_sources PRIVATE ${EIGEN3_INCLUDE_DIR} ${CMAKE_SOURCE_DIR}/../linear_systems/src/linear_systems ${SOURCE_DIR}/solvers)
+
 
 ############################################
 #### Add executables and link libraries ####
 ############################################
+
+# Set include directories for all executables
+set(EXECUTABLE_INCLUDE_DIRS ${EIGEN3_INCLUDE_DIR} ${LINEAR_SYSTEMS_INCLUDE_DIR} ${SOURCE_DIR}/solvers)
+
 
 # Create executables for your different benchmarks
 add_executable(benchmark_convergence ${SOURCE_DIR}/benchmarking_convergence.cpp)
@@ -92,11 +98,11 @@ add_executable(testing ${SOURCE_DIR}/testing.cpp)
 add_executable(benchmark_one ${SOURCE_DIR}/benchmark_one.cpp)
 
 # Link C++ executables with linear_systems, shared_sources, and GoogleTest for testing
-target_include_directories(benchmark_convergence PRIVATE ${LINEAR_SYSTEMS_INCLUDE_DIR})
-target_include_directories(benchmark_executable PRIVATE ${LINEAR_SYSTEMS_INCLUDE_DIR})
-target_include_directories(kaczmarz_example PRIVATE ${LINEAR_SYSTEMS_INCLUDE_DIR})
-target_include_directories(testing PRIVATE ${LINEAR_SYSTEMS_INCLUDE_DIR})
-target_include_directories(benchmark_one PRIVATE ${LINEAR_SYSTEMS_INCLUDE_DIR})
+target_include_directories(benchmark_convergence PRIVATE ${LINEAR_SYSTEMS_INCLUDE_DIR} ${EXECUTABLE_INCLUDE_DIRS})
+target_include_directories(benchmark_executable PRIVATE ${LINEAR_SYSTEMS_INCLUDE_DIR} ${EXECUTABLE_INCLUDE_DIRS})
+target_include_directories(kaczmarz_example PRIVATE ${LINEAR_SYSTEMS_INCLUDE_DIR} ${EXECUTABLE_INCLUDE_DIRS})
+target_include_directories(testing PRIVATE ${LINEAR_SYSTEMS_INCLUDE_DIR} ${EXECUTABLE_INCLUDE_DIRS})
+target_include_directories(benchmark_one PRIVATE ${LINEAR_SYSTEMS_INCLUDE_DIR} ${EXECUTABLE_INCLUDE_DIRS})
 
 target_link_libraries(benchmark_convergence PRIVATE linear_systems $<TARGET_OBJECTS:shared_sources>)
 target_link_libraries(benchmark_executable PRIVATE linear_systems $<TARGET_OBJECTS:shared_sources>)
