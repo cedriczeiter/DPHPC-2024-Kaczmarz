@@ -1,8 +1,6 @@
 #include <iostream>
 #include <cassert>
-
-void squared_norm_cuda(const double *h_A, double *h_result, const unsigned rows, const unsigned cols);
-void dot_product_cuda(const double *h_A, const double *h_x, double *h_result, const unsigned rows, const unsigned cols);
+#include "cuda_funcs.hpp"
 
 void test_squared_norm_cuda() {
   const unsigned rows = 2, cols = 3;
