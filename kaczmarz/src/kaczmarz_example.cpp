@@ -44,7 +44,7 @@ int main()
 
   const auto status_dense_cuda =
       dense_kaczmarz_cuda(lse, &x_kaczmarz_cuda[0], 100000, 1e-10, times_residuals,
-                          residuals, iterations, 100000);
+                          residuals, iterations, 100);
   if (status_dense_cuda != KaczmarzSolverStatus::Converged)
   {
     std::cout << "The cuda Kaczmarz solver didn't converge!" << std::endl;

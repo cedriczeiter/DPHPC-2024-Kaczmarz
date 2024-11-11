@@ -20,6 +20,7 @@ KaczmarzSolverStatus dense_kaczmarz_cuda(const DenseLinearSystem &lse, double *x
   const double *h_A = lse.A();
   std::vector<double> h_result(rows);
 
+  // Compute the squared norm of the matrix, but cuda is not timed anyways here
   squared_norm_cuda(h_A, h_result.data(), rows, cols);
   for (unsigned k = 0; k < rows; k++)
   {
@@ -34,27 +35,20 @@ KaczmarzSolverStatus dense_kaczmarz_cuda(const DenseLinearSystem &lse, double *x
   // Iterate through a maximum of max_iterations
   for (unsigned iter = 0; iter < max_iterations; iter++)
   {
-    // the algorithm has converged iff none of the rows in an iteration caused a
-    // substantial correction
-    bool substantial_correction = false;
-
     if (iter % convergence_step_rate == 0)
     {
       const auto end = std::chrono::high_resolution_clock::now();
       std::chrono::duration<double> elapsed = end - start;
       times_residuals.push_back(elapsed.count());
       double residual_norm_sq = 0.0;
+
+      // Compute the squared norm of the matrix, but cuda is not timed anyways here
+      squared_norm_cuda(h_A, h_result.data(), rows, cols);
       for (unsigned k = 0; k < rows; k++)
       {
-        double row_residual = 0.0;
-        const double *row = lse.A() + k * cols;
-        for (unsigned j = 0; j < cols; j++)
-        {
-          row_residual += row[j] * x[j];
-        }
-        row_residual -= lse.b()[k];
-        residual_norm_sq += row_residual * row_residual;
+        residual_norm_sq += h_result[k];
       }
+
 
       residual_norm_now = std::sqrt(residual_norm_sq);
       residuals.push_back(residual_norm_now /
