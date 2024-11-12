@@ -17,10 +17,10 @@ using hrclock = std::chrono::high_resolution_clock;
  */
 
 int main() {
-  constexpr unsigned dim = 2000;
-  constexpr unsigned bandwidth = 6;
-  constexpr unsigned max_iterations = 1'000'000'000;
-  constexpr double precision = 1e-5;
+  constexpr unsigned dim = 500;
+  constexpr unsigned bandwidth = 2;
+  constexpr unsigned max_iterations = 1'000'000;
+  constexpr double precision = 1e-30;
 
   std::mt19937 rng(21);
   const BandedLinearSystem lse =
@@ -40,7 +40,7 @@ int main() {
 
   const auto kaczmarz_start = hrclock::now();
   const auto status =
-      kaczmarz_banded_2_cpu_threads(lse, x_kaczmarz, max_iterations, precision);
+      kaczmarz_banded_serial(lse, x_kaczmarz, max_iterations, precision);
   const auto kaczmarz_end = hrclock::now();
 
   std::cout << "Kaczmarz solution computed in "

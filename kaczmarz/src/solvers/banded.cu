@@ -4,7 +4,7 @@
  * Expects x and A_data padded so that edge cases need not be dealt with.
  */
 __global__ void kaczmarz_banded_update(double *x, double *A_data, double *sq_norms, double *b, const int bandwidth) {
-  for (unsigned iter = 0; iter < 2'000'000; iter++) {
+  for (unsigned iter = 0; iter < 1'000'000; iter++) {
     for (int row_i = 0; row_i < 2 * bandwidth + 1; row_i++) {
       const int row_idx = threadIdx.x * (2 * bandwidth + 1) + row_i;
       double dot = 0.0;
