@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(parallel_kaczmarz_pde C CXX CUDA)
+project(kaczmarz)
 
 # Set C and C++ standards
 set(CMAKE_C_STANDARD 11)
@@ -111,6 +111,8 @@ if (CMAKE_CUDA_COMPILER)
   target_link_libraries(kaczmarz_example PRIVATE non_cuda_library cuda_library linear_systems)
   target_link_libraries(benchmark_one PRIVATE non_cuda_library cuda_library linear_systems)
 
+else()
+  message(STATUS "No CUDA compiler found, skipping CUDA targets")
 endif()
 
 ################################
