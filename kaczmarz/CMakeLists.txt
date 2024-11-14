@@ -63,7 +63,6 @@ set(CUDA_SOURCES
 ################################
 
 include_directories(
-  ${CMAKE_SOURCE_DIR}/../linear_systems
   ${CMAKE_SOURCE_DIR}/../linear_systems/src
   ${SOURCE_DIR}/solvers
 )
