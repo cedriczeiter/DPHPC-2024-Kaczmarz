@@ -260,8 +260,8 @@ KaczmarzSolverStatus kaczmarz_banded_serial(const BandedLinearSystem& lse,
 
 KaczmarzSolverStatus kaczmarz_banded_cuda(const BandedLinearSystem& lse,
                                           Eigen::VectorXd& x,
-                                          const unsigned _max_iterations,
-                                          const double _precision) {
+                                          const unsigned /* max_iterations */,
+                                          const double /* precision */) {
   const unsigned bandwidth = lse.bandwidth();
   const unsigned dim = lse.dim();
 
