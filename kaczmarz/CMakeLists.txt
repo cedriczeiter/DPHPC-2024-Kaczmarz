@@ -8,7 +8,7 @@ set(CMAKE_CXX_STANDARD 20)
 # Enable all warnings and extra warnings
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -pthread -fopenmp -g")
 
-# download eigen
+# Download Eigen
 include(FetchContent)
 FetchContent_Declare(
   eigen
@@ -16,7 +16,6 @@ FetchContent_Declare(
   GIT_TAG        3.4.0
 )
 FetchContent_MakeAvailable(eigen)
-
 
 # Define source directories
 set(SOURCE_DIR ${CMAKE_SOURCE_DIR}/src)
@@ -27,11 +26,17 @@ set(NON_CUDA_SOURCES
   ${SOURCE_DIR}/solvers/random.cpp
 )
 
+set(CUDA_SOURCES
+  ${SOURCE_DIR}/solvers/banded.cu
+  ${SOURCE_DIR}/solvers/banded.cpp
+)
+
 include_directories(
-  ${CMAKE_SOURCE_DIR}/linear_systems
-  ${CMAKE_SOURCE_DIR}/linear_systems/src
+  ${CMAKE_SOURCE_DIR}/../linear_systems
+  ${CMAKE_SOURCE_DIR}/../linear_systems/src
   ${SOURCE_DIR}/solvers
 )
+
 # Fetch GoogleTest from GitHub
 include(FetchContent)
 FetchContent_Declare(
@@ -41,44 +46,36 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(googletest)
 
-# Always build the `testing` target (only with non-CUDA sources)
-add_executable(testing ${SOURCE_DIR}/testing.cpp ${NON_CUDA_SOURCES})
-target_link_libraries(testing PRIVATE Eigen3::Eigen linear_systems gtest) # this part is a weird dependency, because we need to build the linear_systems cmake first
+# Create non-CUDA library
+add_library(non_cuda_library STATIC ${NON_CUDA_SOURCES})
+target_link_libraries(non_cuda_library PRIVATE Eigen3::Eigen)
 
-# Conditionally add CUDA executables
+# Always build the `testing` target (only with non-CUDA library)
+add_executable(testing ${SOURCE_DIR}/testing.cpp)
+target_link_libraries(testing PRIVATE non_cuda_library linear_systems gtest)
+
+# Conditionally add CUDA library and executables if CUDA is available
 if (CMAKE_CUDA_COMPILER)
- #allow all relevant cuda architectures
+  # Allow all relevant CUDA architectures
   set(CUDA_ARCHITECTURES 60 61 70 75 80 86)
+  
+  # Create CUDA library
+  add_library(cuda_library STATIC ${CUDA_SOURCES})
+  set_target_properties(cuda_library PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+  target_link_libraries(cuda_library PRIVATE Eigen3::Eigen)
 
-  set(CUDA_SOURCES
-    ${SOURCE_DIR}/solvers/banded.cu
-    ${SOURCE_DIR}/solvers/banded.cpp
-  )
-  
-  
   # CUDA-enabled executables
-  add_executable(benchmark_convergence ${SOURCE_DIR}/benchmarking_convergence.cpp ${NON_CUDA_SOURCES} ${CUDA_SOURCES})
-  add_executable(benchmark_executable ${SOURCE_DIR}/benchmarking.cpp ${NON_CUDA_SOURCES} ${CUDA_SOURCES})
-  add_executable(kaczmarz_example ${SOURCE_DIR}/kaczmarz_example.cpp ${NON_CUDA_SOURCES} ${CUDA_SOURCES} )
-  add_executable(benchmark_one ${SOURCE_DIR}/benchmark_one.cpp ${NON_CUDA_SOURCES} ${CUDA_SOURCES})
+  add_executable(benchmark_convergence ${SOURCE_DIR}/benchmarking_convergence.cpp)
+  add_executable(benchmark_executable ${SOURCE_DIR}/benchmarking.cpp)
+  add_executable(kaczmarz_example ${SOURCE_DIR}/kaczmarz_example.cpp)
+  add_executable(benchmark_one ${SOURCE_DIR}/benchmark_one.cpp)
 
-  # Set CUDA-specific properties
-  set_target_properties(kaczmarz_example PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
-  set_target_properties(benchmark_executable PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
-  set_target_properties(benchmark_convergence PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
-  set_target_properties(benchmark_one PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+  # Link the non-CUDA and CUDA libraries to the executables
+  target_link_libraries(benchmark_convergence PRIVATE non_cuda_library cuda_library linear_systems)
+  target_link_libraries(benchmark_executable PRIVATE non_cuda_library cuda_library linear_systems)
+  target_link_libraries(kaczmarz_example PRIVATE non_cuda_library cuda_library linear_systems)
+  target_link_libraries(benchmark_one PRIVATE non_cuda_library cuda_library linear_systems)
 
-  # Include directories for CUDA targets
-  target_include_directories(kaczmarz_example PRIVATE ${CMAKE_SOURCE_DIR}/linear_systems ${CMAKE_SOURCE_DIR}/linear_systems/src ${SOURCE_DIR}/solvers) 
-  target_include_directories(benchmark_executable PRIVATE ${CMAKE_SOURCE_DIR}/linear_systems ${CMAKE_SOURCE_DIR}/linear_systems/src ${SOURCE_DIR}/solvers)
-  target_include_directories(benchmark_convergence PRIVATE ${CMAKE_SOURCE_DIR}/linear_systems ${CMAKE_SOURCE_DIR}/linear_systems/src ${SOURCE_DIR}/solvers)
-  target_include_directories(benchmark_one PRIVATE ${CMAKE_SOURCE_DIR}/linear_systems ${CMAKE_SOURCE_DIR}/linear_systems/src ${SOURCE_DIR}/solvers)
-
-  # Link libraries for CUDA targets
-  target_link_libraries(kaczmarz_example PRIVATE Eigen3::Eigen linear_systems )
-  target_link_libraries(benchmark_executable PRIVATE Eigen3::Eigen linear_systems )
-  target_link_libraries(benchmark_convergence PRIVATE Eigen3::Eigen linear_systems )
-  target_link_libraries(benchmark_one PRIVATE Eigen3::Eigen linear_systems )
 endif()
 
 # Configure files
