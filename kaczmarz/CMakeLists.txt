@@ -1,5 +1,9 @@
 cmake_minimum_required(VERSION 3.10)
-project(kaczmarz LANGUAGES CXX CUDA)
+project(kaczmarz LANGUAGES CXX)
+find_package(CUDA)
+if (CUDA_FOUND)
+  enable_language(CUDA)
+endif()
 
 # Set C and C++ standards
 set(CMAKE_C_STANDARD 11)
