@@ -9,8 +9,53 @@
 #include "asynchronous.hpp"
 #include "common.hpp"
 
+__global__ void solve_async(const int* A_outerIndex, const int* A_innerIndex, const double* A_values, const double* b, const unsigned rows, const double *sq_norms, double *x, const unsigned max_iterations, const unsigned runs_before_sync, bool *converged, const unsigned L, const double precision){
+  unsigned tid = blockIdx.x * blockDim.x + threadIdx.x;
+  curandState state;
+  curand_init(21, tid, 0, &state);
 
-__global__ void solve_async(const SparseLinearSystem &lse, const double *sq_norms, double *x, const unsigned max_iterations, const unsigned runs_before_sync, bool *converged, const unsigned L, const double precision);
+
+  for (unsigned iter = 0; iter < max_iterations; iter++){
+    for (unsigned i = 0; i < runs_before_sync; i++){
+      //get random row
+      unsigned k = curand(&state) % rows;
+
+      //compute dot product row * x
+      double dot_product = 0.;
+      for (unsigned i = A_outerIndex[k]; i <= A_outerIndex[k+1]; i++){
+        dot_product += A_values[i] * x[A_innerIndex[i]];
+      }
+
+      const double update_coeff = (b[k] - dot_product) / sq_norms[k];
+
+      //update x
+      for (unsigned i = A_outerIndex[k]; i <= A_outerIndex[k+1]; i++){
+        const double update = update_coeff * A_values[i];
+        atomicAdd(x + A_innerIndex[i], update);
+      }
+    }
+    //sync all threads to guarantee convergence
+    __syncthreads();
+    if (iter % L == 0 && iter > 0 && tid == 0) {
+            double residual = 0.0;
+            for (unsigned i = 0; i < rows; i++) {
+                double dot_product = 0.0;
+                for (unsigned j = A_outerIndex[i]; j <= A_outerIndex[i+1]; j++){
+                    dot_product += A_values[j] * x[A_innerIndex[j]];
+                }
+                residual += (dot_product - b[i]) * (dot_product - b[i]);
+            }
+            residual = sqrt(residual);
+
+            if (residual < precision) {
+                *converged = true;
+                break;
+            }
+        }
+    __syncthreads();
+    if (*converged) break;
+  }
+}
 
 KaczmarzSolverStatus sparse_kaczmarz_parallel(const SparseLinearSystem &lse,
                                               Vector &x,
@@ -18,7 +63,7 @@ KaczmarzSolverStatus sparse_kaczmarz_parallel(const SparseLinearSystem &lse,
                                               const double precision,
                                               const unsigned num_threads) {
   const unsigned rows = lse.row_count();
-  cont unsigned nnz = lse.nonZeros();
+  const unsigned nnz = lse.A().nonZeros();
   // const unsigned cols = lse.column_count();
 
   assert(num_threads <=
@@ -69,9 +114,10 @@ KaczmarzSolverStatus sparse_kaczmarz_parallel(const SparseLinearSystem &lse,
                             cudaMemcpyHostToDevice);
 
   //create convergence flag and move to device
-  bool h_converged;
+  bool *h_converged = new bool(false);
   bool *d_converged;
   cudaMalloc(&d_converged, sizeof(bool));
+  cudaMemcpy(&h_converged, d_converged, sizeof(bool), cudaMemcpyHostToDevice);
 
   //move A to device
   int *d_A_outer;
@@ -80,11 +126,13 @@ KaczmarzSolverStatus sparse_kaczmarz_parallel(const SparseLinearSystem &lse,
   cudaMalloc(&d_A_outer, rows*sizeof(int));
   cudaMalloc(&d_A_inner, nnz*sizeof(int));
   cudaMalloc(&d_A_values, nnz*sizeof(double));
-  cudaMemcpy(lse.A().outerIndexPtr(), d_A_outer, rows*sizeof(int), cudaMemcpyHostToDevice);
-  cudaMemcpy(lse.A().innerIndexPtr(), d_A_inner, nnzs*sizeof(int), cudaMemcpyHostToDevice);
-  cudaMemcpy(lse.A().valuePtr(), d_A_values, nnz*sizeof(double), cudaMemcpyHostToDevice);
+  cudaMemcpy((void *)lse.A().outerIndexPtr(), d_A_outer, rows*sizeof(int), cudaMemcpyHostToDevice);
+  cudaMemcpy((void *)lse.A().innerIndexPtr(), d_A_inner, nnz*sizeof(int), cudaMemcpyHostToDevice);
+  cudaMemcpy((void *)lse.A().valuePtr(), d_A_values, nnz*sizeof(double), cudaMemcpyHostToDevice);
   //solve LSE
-  solve_async<<<1, num_threads>>>(d_A_outer, d_A_inner, d_A_values, rows, d_sq_norms, d_x, max_iterations, runs_before_sync, d_converged, L, precision);
+  solve_async<<<1, num_threads>>>(d_A_outer, d_A_inner, d_A_values, lse.b().data(), rows, d_sq_norms, d_x, max_iterations, runs_before_sync, d_converged, L, precision);
+
+  //(const int* A_outerIndex, const int* A_innerIndex, const double* A_values, const double* b, const unsigned rows, const double *sq_norms, double *x, const unsigned max_iterations, const unsigned runs_before_sync, bool *converged, const unsigned L, const double precision){
 
   //copy back x and convergence
   cudaMemcpy(&h_converged, d_converged, sizeof(bool), cudaMemcpyDeviceToHost);
@@ -100,53 +148,6 @@ KaczmarzSolverStatus sparse_kaczmarz_parallel(const SparseLinearSystem &lse,
   return KaczmarzSolverStatus::OutOfIterations;
 }
 
-__global__ void solve_async(const int* A_outerIndex, const int* A_innerIndex, const double* A_values, const double* b, const unsigned rows, const double *sq_norms, double *x, const unsigned max_iterations, const unsigned runs_before_sync, bool *converged, const unsigned L, const double precision){
-  unsigned tid = blockIdx.x * blockDim.x + threadIdx.x;
-  curandState state;
-  curand_init(21, tid, 0, &state);
-
-
-  for (unsigned iter = 0; iter < max_iterations; iter++){
-    for (unsigned i = 0; i < runs_before_sync; i++){
-      //get random row
-      unsigned k = curand(&state) % rows;
-
-      //compute dot product row * x
-      double dot_product = 0.;
-      for (unsigned i = A_outerIndex[k]; i <= A_outerIndex[k+1]; i++){
-        dot_product += A_values[i] * x[A_innerIndex[i]];
-      }
-
-      const double update_coeff = (b[k] - dot_product) / sq_norms[k];
-
-      //update x
-      for (unsigned i = A_outerIndex[k]; i <= A_outerIndex[k+1]; i++){
-        const double update = update_coeff * A_values[i];
-        atomicAdd(x[A_innerIndex[i]], update);
-      }
-    }
-    //sync all threads to guarantee convergence
-    __syncthreads();
-    if (iter % L == 0 && iter > 0 && tid == 0) {
-            double residual = 0.0;
-            for (unsigned i = 0; i < rows; i++) {
-                double dot_product = 0.0;
-                for (unsigned i = A_outerIndex[k]; i <= A_outerIndex[k+1]; i++){
-                    dot_product += A_values[i] * x[A_innerIndex[i]];
-                }
-                residual += (dot_product - b[i]) * (dot_product - b[i]);
-            }
-            residual = sqrt(residual);
-
-            if (residual < precision) {
-                *converged = true;
-                break;
-            }
-        }
-    __syncthreads();
-    if (*converged) break;
-  }
-}
 
 /*#pragma omp parallel
   {
