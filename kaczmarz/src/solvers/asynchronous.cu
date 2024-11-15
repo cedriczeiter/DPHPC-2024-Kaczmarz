@@ -84,7 +84,7 @@ KaczmarzSolverStatus sparse_kaczmarz_parallel(const SparseLinearSystem &lse,
   cudaMemcpy(lse.A().innerIndexPtr(), d_A_inner, nnzs*sizeof(int), cudaMemcpyHostToDevice);
   cudaMemcpy(lse.A().valuePtr(), d_A_values, nnz*sizeof(double), cudaMemcpyHostToDevice);
   //solve LSE
-  solve_async<<<1, num_threads>>>(d_A_outer, d_A_inner, d_A_values, d_sq_norms, d_x, max_iterations, runs_before_sync, d_converged, L, precision);
+  solve_async<<<1, num_threads>>>(d_A_outer, d_A_inner, d_A_values, rows, d_sq_norms, d_x, max_iterations, runs_before_sync, d_converged, L, precision);
 
   //copy back x and convergence
   cudaMemcpy(&h_converged, d_converged, sizeof(bool), cudaMemcpyDeviceToHost);
@@ -100,14 +100,11 @@ KaczmarzSolverStatus sparse_kaczmarz_parallel(const SparseLinearSystem &lse,
   return KaczmarzSolverStatus::OutOfIterations;
 }
 
-__global__ void solve_async(const int* A_outerIndex, const int* A_innerIndex, const double* A_values, const double* b, const double *sq_norms, double *x, const unsigned max_iterations, const unsigned runs_before_sync, bool *converged, const unsigned L, const double precision){
+__global__ void solve_async(const int* A_outerIndex, const int* A_innerIndex, const double* A_values, const double* b, const unsigned rows, const double *sq_norms, double *x, const unsigned max_iterations, const unsigned runs_before_sync, bool *converged, const unsigned L, const double precision){
   unsigned tid = blockIdx.x * blockDim.x + threadIdx.x;
   curandState state;
   curand_init(21, tid, 0, &state);
 
-  auto A = lse.A();
-  auto b = lse.b();
-  const unsigned rows = A.rows();
 
   for (unsigned iter = 0; iter < max_iterations; iter++){
     for (unsigned i = 0; i < runs_before_sync; i++){
@@ -116,16 +113,16 @@ __global__ void solve_async(const int* A_outerIndex, const int* A_innerIndex, co
 
       //compute dot product row * x
       double dot_product = 0.;
-      for (Eigen::SparseMatrix<double, Eigen::RowMajor>::InnerIterator it(A, k); it; ++it){
-        dot_product += it.value() * *(x + it.col());
+      for (unsigned i = A_outerIndex[k]; i <= A_outerIndex[k+1]; i++){
+        dot_product += A_values[i] * x[A_innerIndex[i]];
       }
 
       const double update_coeff = (b[k] - dot_product) / sq_norms[k];
 
       //update x
-      for (Eigen::SparseMatrix<double, Eigen::RowMajor>::InnerIterator it(A, k); it; ++it){
-        const double update = update_coeff * it.value();
-        atomicAdd(x + it.col(), update);
+      for (unsigned i = A_outerIndex[k]; i <= A_outerIndex[k+1]; i++){
+        const double update = update_coeff * A_values[i];
+        atomicAdd(x[A_innerIndex[i]], update);
       }
     }
     //sync all threads to guarantee convergence
@@ -134,8 +131,8 @@ __global__ void solve_async(const int* A_outerIndex, const int* A_innerIndex, co
             double residual = 0.0;
             for (unsigned i = 0; i < rows; i++) {
                 double dot_product = 0.0;
-                for (Eigen::SparseMatrix<double, Eigen::RowMajor>::InnerIterator it(A, i); it; ++it) {
-                    dot_product += it.value() * x[it.col()];
+                for (unsigned i = A_outerIndex[k]; i <= A_outerIndex[k+1]; i++){
+                    dot_product += A_values[i] * x[A_innerIndex[i]];
                 }
                 residual += (dot_product - b[i]) * (dot_product - b[i]);
             }
