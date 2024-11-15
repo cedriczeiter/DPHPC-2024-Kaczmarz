@@ -9,18 +9,23 @@
 #include "asynchronous.hpp"
 #include "common.hpp"
 
+
+__global__ void solve_async(const SparseLinearSystem &lse, const double *sq_norms, double *x, const unsigned max_iterations, const unsigned runs_before_sync, bool *converged, const unsigned L, const double precision);
+
 KaczmarzSolverStatus sparse_kaczmarz_parallel(const SparseLinearSystem &lse,
                                               Vector &x,
                                               const unsigned max_iterations,
                                               const double precision,
                                               const unsigned num_threads) {
   const unsigned rows = lse.row_count();
+  cont unsigned nnz = lse.nonZeros();
   // const unsigned cols = lse.column_count();
 
   assert(num_threads <=
          rows);  // necessary for allowing each thread to have local rows
 
   const unsigned L = 500;  // we check for convergence every L steps
+  const unsigned runs_before_sync = 30;
   bool converged = false;
 
   const unsigned runs_per_thread = 15;
@@ -34,9 +39,9 @@ KaczmarzSolverStatus sparse_kaczmarz_parallel(const SparseLinearSystem &lse,
   }
   // allocate move squared norms on device
   double *d_sq_norms;
-  cudaCheckError(cudaMalloc(&d_sq_norms, rows * sizeof(double)));
-  cudaCheckError(cudaMemcpy(h_sq_norms.data(), d_sq_norms,
-                            rows * sizeof(double), cudaMemcpyHostToDevice));
+  cudaMalloc(&d_sq_norms, rows * sizeof(double));
+  cudaMemcpy(h_sq_norms.data(), d_sq_norms,
+                            rows * sizeof(double), cudaMemcpyHostToDevice);
 
   // each thread chooses randomly from own set of rows
   unsigned rows_per_thread = (unsigned)(rows / num_threads);
@@ -59,17 +64,27 @@ KaczmarzSolverStatus sparse_kaczmarz_parallel(const SparseLinearSystem &lse,
 
   // move x to device
   double *d_x;
-  cudaCheckError(cudaMalloc(&d_x, x.size() * sizeof(double)));
-  cudaCheckError(cudaMemcpy(x.data(), d_x, x.size() * sizeof(double),
-                            cudaMemcpyHostToDevice));
+  cudaMalloc(&d_x, x.size() * sizeof(double));
+  cudaMemcpy(x.data(), d_x, x.size() * sizeof(double),
+                            cudaMemcpyHostToDevice);
 
   //create convergence flag and move to device
   bool h_converged;
   bool *d_converged;
   cudaMalloc(&d_converged, sizeof(bool));
 
+  //move A to device
+  int *d_A_outer;
+  int *d_A_inner;
+  double *d_A_values;
+  cudaMalloc(&d_A_outer, rows*sizeof(int));
+  cudaMalloc(&d_A_inner, nnz*sizeof(int));
+  cudaMalloc(&d_A_values, nnz*sizeof(double));
+  cudaMemcpy(lse.A().outerIndexPtr(), d_A_outer, rows*sizeof(int), cudaMemcpyHostToDevice);
+  cudaMemcpy(lse.A().innerIndexPtr(), d_A_inner, nnzs*sizeof(int), cudaMemcpyHostToDevice);
+  cudaMemcpy(lse.A().valuePtr(), d_A_values, nnz*sizeof(double), cudaMemcpyHostToDevice);
   //solve LSE
-  solve_async<<<max_blocks, block>>>(lse, d_sq_norms, d_x, max_iterations, runs_before_sync, d_converged);
+  solve_async<<<1, num_threads>>>(d_A_outer, d_A_inner, d_A_values, d_sq_norms, d_x, max_iterations, runs_before_sync, d_converged, L, precision);
 
   //copy back x and convergence
   cudaMemcpy(&h_converged, d_converged, sizeof(bool), cudaMemcpyDeviceToHost);
@@ -85,7 +100,7 @@ KaczmarzSolverStatus sparse_kaczmarz_parallel(const SparseLinearSystem &lse,
   return KaczmarzSolverStatus::OutOfIterations;
 }
 
-__global__ void solve_async(const SparseLinearSystem &lse, const double *sq_norms, double *x, const unsigned max_iterations, const unsigned runs_before_sync, bool *converged){
+__global__ void solve_async(const int* A_outerIndex, const int* A_innerIndex, const double* A_values, const double* b, const double *sq_norms, double *x, const unsigned max_iterations, const unsigned runs_before_sync, bool *converged, const unsigned L, const double precision){
   unsigned tid = blockIdx.x * blockDim.x + threadIdx.x;
   curandState state;
   curand_init(21, tid, 0, &state);
@@ -115,7 +130,7 @@ __global__ void solve_async(const SparseLinearSystem &lse, const double *sq_norm
     }
     //sync all threads to guarantee convergence
     __syncthreads();
-    if (iter % L == 0 && iter > 0 && thread_num == 0) {
+    if (iter % L == 0 && iter > 0 && tid == 0) {
             double residual = 0.0;
             for (unsigned i = 0; i < rows; i++) {
                 double dot_product = 0.0;

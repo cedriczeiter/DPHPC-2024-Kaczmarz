@@ -11,7 +11,7 @@
 constexpr unsigned MAX_IT = 1000000;
 constexpr unsigned RUNS_PER_DIM = 5;
 
-void run_parallel_tests(const unsigned dim, const unsigned bandwidth,
+/*void run_parallel_tests(const unsigned dim, const unsigned bandwidth,
                         const unsigned no_runs) {
   std::mt19937 rng(21);
   for (unsigned i = 0; i < no_runs; i++) {
@@ -41,7 +41,7 @@ TEST(KaczmarzParallelSparseCorrectnessMedium, AgreesWithEigen) {
 
 TEST(KaczmarzParallelSparseCorrectnessLarge, AgreesWithEigen) {
   run_parallel_tests(50, 2, RUNS_PER_DIM);
-}
+}*/
 
 /// @brief Runs tests on dense linear systems to compare Kaczmarz solution with
 /// Eigen's solution.

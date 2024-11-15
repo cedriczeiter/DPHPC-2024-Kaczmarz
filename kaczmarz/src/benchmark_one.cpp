@@ -4,6 +4,7 @@
 
 #include "linear_systems/sparse.hpp"
 #include "solvers/banded.hpp"
+#include "solvers/asynchronous.hpp"
 
 using hrclock = std::chrono::high_resolution_clock;
 
@@ -39,8 +40,9 @@ int main() {
   Vector x_kaczmarz = Vector::Zero(dim);
 
   const auto kaczmarz_start = hrclock::now();
-  const auto status =
-      kaczmarz_banded_serial(lse, x_kaczmarz, max_iterations, precision);
+  /*const auto status =
+      kaczmarz_banded_serial(lse, x_kaczmarz, max_iterations, precision);*/
+  const auto status = sparse_kaczmarz_parallel(lse.to_sparse_system(), x_kaczmarz, max_iterations, precision, 120);
   const auto kaczmarz_end = hrclock::now();
 
   std::cout << "Kaczmarz solution computed in "
