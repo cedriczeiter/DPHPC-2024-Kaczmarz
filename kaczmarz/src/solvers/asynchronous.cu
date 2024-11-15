@@ -12,55 +12,48 @@
 
 __global__ void solve_async(const int* A_outerIndex, const int* A_innerIndex, const double* A_values, const double* b, const unsigned rows, const double *sq_norms, double *x, const unsigned max_iterations, const unsigned runs_before_sync, bool *converged, const unsigned L, const double precision){
   
-  printf("starting...%u\n", rows);
   unsigned tid = blockIdx.x * blockDim.x + threadIdx.x;
   curandState state;
-  curand_init(21, tid, 0, &state);
+  curand_init(13, tid, 0, &state);
 
-  for (int i = 0; i < rows; i++){
-    printf("Row: %u, Norm: %f\n", i, sq_norms[i]);
-  }
 
-  //printf("before loop...\n");
   for (unsigned iter = 0; iter < max_iterations; iter++){
-    //printf("inside outer loop...\n");
-    for (unsigned i = 0; i < runs_before_sync; i++){
-      //printf("inside inner loop...\n");
+    for (unsigned inner_iter = 0; inner_iter < runs_before_sync; inner_iter++){
+
       //get random row
-      unsigned k = curand(&state) % rows;
-      //printf("got random number...%u\n", k);
+      const unsigned k = curand(&state) % rows;
+
+
       //compute dot product row * x
       double dot_product = 0.;
       for (unsigned i = A_outerIndex[k]; i < A_outerIndex[k+1]; i++){
         dot_product += A_values[i] * x[A_innerIndex[i]];
       }
-      printf("after dot product: %f\n", dot_product);
+
+      /*printf("k: %d\n", k);
+      printf("dot product: %f\n", dot_product);
 
       printf("norm: %f\n", sq_norms[k]);
 
-      printf("b_k: %f\n", b[k]);
+      printf("b_k: %f\n", b[k]);*/
 
       const double update_coeff = (b[k] - dot_product) / sq_norms[k];
 
-      printf("Update Coeff: %f\n", update_coeff);
+      //printf("Update Coeff: %f\n", update_coeff);
 
       //update x
-      //printf("before update x...\n");
       for (unsigned i = A_outerIndex[k]; i < A_outerIndex[k+1]; i++){
         const double update = update_coeff * A_values[i];
-        printf("Old x at %d: %f", A_innerIndex[i], x[A_innerIndex[i]]);
         atomicAdd((x + A_innerIndex[i]), update);
-        printf("    Update: %f      New x: %f\n", update, x[A_innerIndex[i]]);
       }
-      //printf("after update x...\n");
     }
     //sync all threads to guarantee convergence
     __syncthreads();
-    if (iter % L == 0 && iter > 0 && tid == 0) {
+    if (iter % 1 == 0 && iter > 0 && tid == 0) {
             double residual = 0.0;
             for (unsigned i = 0; i < rows; i++) {
                 double dot_product = 0.0;
-                for (unsigned j = A_outerIndex[i]; j <= A_outerIndex[i+1]; j++){
+                for (unsigned j = A_outerIndex[i]; j < A_outerIndex[i+1]; j++){
                     dot_product += A_values[j] * x[A_innerIndex[j]];
                 }
                 residual += (dot_product - b[i]) * (dot_product - b[i]);
@@ -153,17 +146,6 @@ KaczmarzSolverStatus sparse_kaczmarz_parallel(const SparseLinearSystem &lse,
   cudaMemcpy( d_A_inner,  lse.A().innerIndexPtr(), nnz*sizeof(int), cudaMemcpyHostToDevice);
   cudaMemcpy( d_A_values,  lse.A().valuePtr(), nnz*sizeof(double), cudaMemcpyHostToDevice);
 
-  //for testing
-  std::cout << lse.A() << std::endl;
-  std::cout << "Using pointers: " << std::endl;
-  auto outer = lse.A().outerIndexPtr();
-  auto values = lse.A().valuePtr();
-  for (int j = 0; j < rows; j++){
-    for (int i = outer[j]; i < outer[j+1]; i++){
-      std::cout << values[i] << " ";
-    }
-    std::cout << std::endl;
-  }
 
   //move b to device
   double *d_b;
@@ -171,17 +153,34 @@ KaczmarzSolverStatus sparse_kaczmarz_parallel(const SparseLinearSystem &lse,
   cudaMemcpy( d_b,  lse.b().data(), x.size()*sizeof(double), cudaMemcpyHostToDevice);
   //solve LSE
   std::cout << "Calling kernel\n";
-  solve_async<<<1, num_threads>>>(d_A_outer, d_A_inner, d_A_values, d_b, rows, d_sq_norms, d_x, 40, runs_before_sync, d_converged, L, precision);
+  solve_async<<<1, num_threads>>>(d_A_outer, d_A_inner, d_A_values, d_b, rows, d_sq_norms, d_x, 10000000, runs_before_sync, d_converged, L, precision);
   cudaDeviceSynchronize();
   std::cout << "Kernel done\n";
   //copy back x and convergence
   cudaMemcpy(h_converged, d_converged, sizeof(bool), cudaMemcpyDeviceToHost);
   cudaMemcpy( x.data(),  d_x, x.size()*sizeof(double), cudaMemcpyDeviceToHost);
 
-  for (int i = 0; i < x.size(); i++){
+  /*for (int i = 0; i < x.size(); i++){
     std::cout << (lse.b())[i] << " ";
   }
-  std::cout << std::endl;
+  std::cout << std::endl;*/
+
+  //for testing
+  std::cout << "Normal: " << std::endl;
+  for (int i = 0; i < rows; i++){
+    std::cout << (lse.A().row(i)).dot(x) << std::endl;
+  }
+  std::cout << "Using pointers: " << std::endl;
+  auto outer = lse.A().outerIndexPtr();
+  auto values = lse.A().valuePtr();
+  auto inner = lse.A().innerIndexPtr();
+  for (int j = 0; j < rows; j++){
+    double dot = 0;
+    for (int i = outer[j]; i < outer[j+1]; i++){
+      dot += x[inner[i]]*values[i];
+    }
+    std::cout << dot << std::endl;
+  }
 
   //free memory
   cudaFree(d_converged);
