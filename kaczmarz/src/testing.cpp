@@ -72,7 +72,7 @@ void run_dense_tests(const unsigned dim, const unsigned no_runs) {
     const Vector x_eigen = lse.eigen_solve();
 
     double norm = 0;
-    for (int i = 0; i < dim; i++) {
+    for (unsigned i = 0; i < dim; i++) {
       norm += (x_kaczmarz[i] - x_eigen[i]) * (x_kaczmarz[i] - x_eigen[i]);
     }
     norm = std::sqrt(norm);

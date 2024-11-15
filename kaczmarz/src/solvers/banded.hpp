@@ -31,4 +31,9 @@ KaczmarzSolverStatus kaczmarz_banded_serial(const BandedLinearSystem& lse,
                                             unsigned max_iterations,
                                             double precision);
 
+KaczmarzSolverStatus kaczmarz_banded_cuda(const BandedLinearSystem& lse,
+                                          Eigen::VectorXd& x,
+                                          unsigned max_iterations,
+                                          double precision);
+
 #endif  // BANDED_HPP
