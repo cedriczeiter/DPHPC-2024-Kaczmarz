@@ -42,7 +42,7 @@ int main() {
   const auto kaczmarz_start = hrclock::now();
   /*const auto status =
       kaczmarz_banded_serial(lse, x_kaczmarz, max_iterations, precision);*/
-  const auto status = sparse_kaczmarz_parallel(lse.to_sparse_system(), x_kaczmarz, max_iterations, precision, std::min(dim, 120u));
+  const auto status = sparse_kaczmarz_parallel(lse.to_sparse_system(), x_kaczmarz, max_iterations, precision, 1);
   const auto kaczmarz_end = hrclock::now();
 
   std::cout << "Kaczmarz solution computed in "
@@ -67,4 +67,5 @@ std::cout << "\nKaczmarz: " << std::endl;
 for (int i = 0; i < dim; i++){
   std::cout << x_kaczmarz[i] << "   ";
 }
+std::cout << std::endl;
 }

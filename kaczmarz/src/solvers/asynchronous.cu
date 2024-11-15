@@ -1,5 +1,6 @@
 #include <unistd.h>
 #include <curand_kernel.h>
+#include <cuda_runtime.h>
 
 #include <cmath>
 #include <cstdlib>
@@ -10,29 +11,49 @@
 #include "common.hpp"
 
 __global__ void solve_async(const int* A_outerIndex, const int* A_innerIndex, const double* A_values, const double* b, const unsigned rows, const double *sq_norms, double *x, const unsigned max_iterations, const unsigned runs_before_sync, bool *converged, const unsigned L, const double precision){
+  
+  printf("starting...%u\n", rows);
   unsigned tid = blockIdx.x * blockDim.x + threadIdx.x;
   curandState state;
   curand_init(21, tid, 0, &state);
 
+  for (int i = 0; i < rows; i++){
+    printf("Row: %u, Norm: %f\n", i, sq_norms[i]);
+  }
 
+  //printf("before loop...\n");
   for (unsigned iter = 0; iter < max_iterations; iter++){
+    //printf("inside outer loop...\n");
     for (unsigned i = 0; i < runs_before_sync; i++){
+      //printf("inside inner loop...\n");
       //get random row
       unsigned k = curand(&state) % rows;
-
+      //printf("got random number...%u\n", k);
       //compute dot product row * x
       double dot_product = 0.;
       for (unsigned i = A_outerIndex[k]; i <= A_outerIndex[k+1]; i++){
         dot_product += A_values[i] * x[A_innerIndex[i]];
       }
+      printf("after dot product: %f\n", dot_product);
+
+      printf("norm: %f\n", sq_norms[k]);
+
+      printf("b_k: %f\n", b[k]);
 
       const double update_coeff = (b[k] - dot_product) / sq_norms[k];
 
+      printf("Update Coeff: %f\n", update_coeff);
+
       //update x
+      //printf("before update x...\n");
       for (unsigned i = A_outerIndex[k]; i <= A_outerIndex[k+1]; i++){
         const double update = update_coeff * A_values[i];
+        printf("Old x at %d: %f", A_innerIndex[i], x[A_innerIndex[i]]);
         atomicAdd(x + A_innerIndex[i], update);
+        printf("    Update: %f      New x: %f\n", update, x[A_innerIndex[i]]);
+        //printf("New value: %f", x[A_innerIndex[i]]);
       }
+      //printf("after update x...\n");
     }
     //sync all threads to guarantee convergence
     __syncthreads();
@@ -47,14 +68,16 @@ __global__ void solve_async(const int* A_outerIndex, const int* A_innerIndex, co
             }
             residual = sqrt(residual);
 
+            printf("Residual: %f\n", residual);
+
             if (residual < precision) {
                 *converged = true;
-                break;
             }
         }
     __syncthreads();
     if (*converged) break;
   }
+  printf("HUHU\n");
 }
 
 KaczmarzSolverStatus sparse_kaczmarz_parallel(const SparseLinearSystem &lse,
@@ -73,19 +96,18 @@ KaczmarzSolverStatus sparse_kaczmarz_parallel(const SparseLinearSystem &lse,
   const unsigned runs_before_sync = 30;
   bool converged = false;
 
-  const unsigned runs_per_thread = 15;
-
   // squared norms of rows of A (so that we don't need to recompute them in each
   // iteration
   std::vector<double> h_sq_norms(rows);
   for (unsigned i = 0; i < rows; i++) {
     h_sq_norms[i] = lse.A().row(i).dot(lse.A().row(i));
+    std::cout << "Row: " << i << " Norm: " << h_sq_norms[i] << std::endl;
     if (h_sq_norms[i] < 1e-7) return KaczmarzSolverStatus::ZeroNormRow;
   }
   // allocate move squared norms on device
   double *d_sq_norms;
-  cudaMalloc(&d_sq_norms, rows * sizeof(double));
-  cudaMemcpy(h_sq_norms.data(), d_sq_norms,
+  cudaMalloc((void **)&d_sq_norms, rows * sizeof(double));
+  cudaMemcpy(d_sq_norms, h_sq_norms.data(),
                             rows * sizeof(double), cudaMemcpyHostToDevice);
 
   // each thread chooses randomly from own set of rows
@@ -109,102 +131,51 @@ KaczmarzSolverStatus sparse_kaczmarz_parallel(const SparseLinearSystem &lse,
 
   // move x to device
   double *d_x;
-  cudaMalloc(&d_x, x.size() * sizeof(double));
-  cudaMemcpy(x.data(), d_x, x.size() * sizeof(double),
+  cudaMalloc((void **)&d_x, x.size() * sizeof(double));
+  cudaMemcpy(d_x, x.data(), x.size() * sizeof(double),
                             cudaMemcpyHostToDevice);
 
   //create convergence flag and move to device
   bool *h_converged = new bool(false);
   bool *d_converged;
-  cudaMalloc(&d_converged, sizeof(bool));
-  cudaMemcpy(&h_converged, d_converged, sizeof(bool), cudaMemcpyHostToDevice);
+  cudaMalloc((void **)&d_converged, sizeof(bool));
+  cudaMemcpy(d_converged, h_converged, sizeof(bool), cudaMemcpyHostToDevice);
+
 
   //move A to device
   int *d_A_outer;
   int *d_A_inner;
   double *d_A_values;
-  cudaMalloc(&d_A_outer, rows*sizeof(int));
-  cudaMalloc(&d_A_inner, nnz*sizeof(int));
-  cudaMalloc(&d_A_values, nnz*sizeof(double));
-  cudaMemcpy((void *)lse.A().outerIndexPtr(), d_A_outer, rows*sizeof(int), cudaMemcpyHostToDevice);
-  cudaMemcpy((void *)lse.A().innerIndexPtr(), d_A_inner, nnz*sizeof(int), cudaMemcpyHostToDevice);
-  cudaMemcpy((void *)lse.A().valuePtr(), d_A_values, nnz*sizeof(double), cudaMemcpyHostToDevice);
+  cudaMalloc((void **)&d_A_outer, rows*sizeof(int));
+  cudaMalloc((void **)&d_A_inner, nnz*sizeof(int));
+  cudaMalloc((void **)&d_A_values, nnz*sizeof(double));
+  cudaMemcpy(d_A_outer,  lse.A().outerIndexPtr(), rows*sizeof(int), cudaMemcpyHostToDevice);
+  cudaMemcpy( d_A_inner,  lse.A().innerIndexPtr(), nnz*sizeof(int), cudaMemcpyHostToDevice);
+  cudaMemcpy( d_A_values,  lse.A().valuePtr(), nnz*sizeof(double), cudaMemcpyHostToDevice);
+
+  //move b to device
+  double *d_b;
+  cudaMalloc((void **)&d_b, x.size()*sizeof(double));
+  cudaMemcpy( d_b,  lse.b().data(), x.size()*sizeof(double), cudaMemcpyHostToDevice);
   //solve LSE
-  solve_async<<<1, num_threads>>>(d_A_outer, d_A_inner, d_A_values, lse.b().data(), rows, d_sq_norms, d_x, max_iterations, runs_before_sync, d_converged, L, precision);
-
-  //(const int* A_outerIndex, const int* A_innerIndex, const double* A_values, const double* b, const unsigned rows, const double *sq_norms, double *x, const unsigned max_iterations, const unsigned runs_before_sync, bool *converged, const unsigned L, const double precision){
-
+  std::cout << "Calling kernel\n";
+  solve_async<<<1, num_threads>>>(d_A_outer, d_A_inner, d_A_values, d_b, rows, d_sq_norms, d_x, 40, runs_before_sync, d_converged, L, precision);
+  cudaDeviceSynchronize();
+  std::cout << "Kernel done\n";
   //copy back x and convergence
-  cudaMemcpy(&h_converged, d_converged, sizeof(bool), cudaMemcpyDeviceToHost);
-  cudaMemcpy(x.data(), d_x, x.size()*sizeof(double), cudaMemcpyDeviceToHost);
+  cudaMemcpy(h_converged, d_converged, sizeof(bool), cudaMemcpyDeviceToHost);
+  cudaMemcpy( x.data(),  d_x, x.size()*sizeof(double), cudaMemcpyDeviceToHost);
 
   //free memory
   cudaFree(d_converged);
   cudaFree(d_x);
   cudaFree(d_sq_norms);
+  cudaFree(d_A_outer);
+  cudaFree(d_A_inner);
+  cudaFree(d_A_values);
+  cudaFree(d_b);
 
   //check for convergence
-  if (h_converged) return KaczmarzSolverStatus::Converged;
+  if (*h_converged) return KaczmarzSolverStatus::Converged;
   return KaczmarzSolverStatus::OutOfIterations;
 }
-
-
-/*#pragma omp parallel
-  {
-    const auto A = lse.A();
-    const auto b = lse.b();
-    std::mt19937 rng(21);
-
-    const unsigned thread_num = omp_get_thread_num();
-    const unsigned local_rows_size = local_rows[thread_num].size();
-    std::uniform_int_distribution<> distr(0, local_rows_size - 1);
-
-    // Loop performed by all threads
-    for (unsigned iter = 0; iter < max_iterations; iter++) {
-      for (unsigned i = 0; i < runs_per_thread; i++) {
-        // Randomly select a row
-        unsigned k = local_rows[thread_num].at(distr(rng));
-
-        double dot_product = 0.0;
-        for (Eigen::SparseMatrix<double, Eigen::RowMajor>::InnerIterator it(A,
-                                                                            k);
-             it; ++it) {
-          double x_value;
-#pragma omp atomic read
-          x_value = x[it.col()];
-          dot_product += it.value() * x_value;
-        }
-
-        double update_coeff = ((b[k] - dot_product) / sq_norms[k]);
-        //  update
-        for (SparseMatrix::InnerIterator it(A, k); it; ++it) {
-          const double update = update_coeff * it.value();
-#pragma omp atomic update
-          x[it.col()] += update;
-        }
-      }
-// we synchronize all threads, so we comply with the convergence
-// conditions of the asynchronous algorithms
-#pragma omp barrier
-
-      // stopping criterion
-      if (thread_num == 0 && iter % L == 0 &&
-          iter > 0) {  // Check every L iterations
-        double residual = (A * x - b).norm();
-        if (residual < precision) {
-#pragma omp atomic write
-          converged = true;
-        }
-        // std::cout << residual << std::endl;
-      }
-      if (converged) {
-#pragma omp cancel parallel
-      }
-
-#pragma omp cancellation point parallel
-    }
-  }
-  if (converged) return KaczmarzSolverStatus::Converged;
-
-  return KaczmarzSolverStatus::OutOfIterations;
-}*/
