@@ -12,9 +12,9 @@
 #include "common.hpp"
 
 KaczmarzSolverStatus carp_gpu(const SparseLinearSystem& lse, Vector& x,
-                                      const unsigned max_iterations,
-                                      const double precision,
-                                      const unsigned num_threads) {
+                              const unsigned max_iterations,
+                              const double precision,
+                              const unsigned num_threads) {
   // squared norms of rows of A (so that we don't need to recompute them in each
   // iteration
 
@@ -34,6 +34,6 @@ KaczmarzSolverStatus carp_gpu(const SparseLinearSystem& lse, Vector& x,
   }
 
   return invoke_carp_solver_gpu(A_outer, A_inner, A_values, b, x.data(),
-                                        h_sq_norms.data(), rows, cols, nnz,
-                                        max_iterations, precision);
+                                h_sq_norms.data(), rows, cols, nnz,
+                                max_iterations, precision);
 }

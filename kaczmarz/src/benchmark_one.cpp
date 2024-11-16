@@ -44,7 +44,7 @@ int main() {
   /*const auto status =
       kaczmarz_banded_serial(lse, x_kaczmarz, max_iterations, precision);*/
   const auto status = carp_gpu(lse.to_sparse_system(), x_kaczmarz,
-                                       max_iterations, precision, 10);
+                               max_iterations, precision, 10);
   const auto kaczmarz_end = hrclock::now();
 
   std::cout << "Kaczmarz solution computed in "

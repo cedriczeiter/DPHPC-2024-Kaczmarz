@@ -7,8 +7,8 @@
 #include "linear_systems/types.hpp"
 
 KaczmarzSolverStatus carp_gpu(const SparseLinearSystem& lse, Vector& x,
-                                      const unsigned max_iterations,
-                                      const double precision,
-                                      const unsigned num_threads);
+                              const unsigned max_iterations,
+                              const double precision,
+                              const unsigned num_threads);
 
-                                      #endif
+#endif
