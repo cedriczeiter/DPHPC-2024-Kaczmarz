@@ -7,7 +7,9 @@
 #include <iostream>
 #include <random>
 
-#include "asynchronous.hpp"
+#include <cassert>
+
+
 #include "common.hpp"
 
 __global__ void solve_async(const int *A_outerIndex, const int *A_innerIndex,
@@ -86,7 +88,6 @@ KaczmarzSolverStatus invoke_asynchronous_solver_gpu(
 
   const unsigned L = 5000;  // we check for convergence every L steps
   const unsigned runs_before_sync = 500;
-  bool converged = false;
 
   // allocate move squared norms on device
   double *d_sq_norms;
