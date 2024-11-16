@@ -10,51 +10,63 @@
 #include "asynchronous.hpp"
 #include "common.hpp"
 
-__global__ void solve_async(const int* A_outerIndex, const int* A_innerIndex, const double* A_values, const double* b, const unsigned rows, const double *sq_norms, double *x, const unsigned max_iterations, const unsigned runs_before_sync, bool *converged, const unsigned L, const double precision){
+__global__ void solve_async(const int* A_outerIndex, const int* A_innerIndex, const double* A_values, const double* b, const unsigned rows, const unsigned cols, const double *sq_norms, double *x, const unsigned max_iterations, const unsigned runs_before_sync, bool *converged, const unsigned L, const double precision, const unsigned num_threads){
   
   unsigned tid = blockIdx.x * blockDim.x + threadIdx.x;
   curandState state;
   curand_init(13, tid, 0, &state);
+
+  //we want each thread to operate on set of own rows (mutually almost exclusive)
+  const unsigned n_own_rows = (rows/num_threads) + 1;
+  const unsigned thread_offset = n_own_rows*tid;
+
+  printf("B: \n");
+  for (int i = 0; i < cols; i++){
+    printf("%f\n", b[i]);
+  }
 
 
   for (unsigned iter = 0; iter < max_iterations; iter++){
     for (unsigned inner_iter = 0; inner_iter < runs_before_sync; inner_iter++){
 
       //get random row
-      const unsigned k = curand(&state) % rows;
+      const unsigned k = thread_offset + (curand(&state) % n_own_rows);
+
+      if (k >= rows) continue;
 
 
       //compute dot product row * x
       double dot_product = 0.;
       for (unsigned i = A_outerIndex[k]; i < A_outerIndex[k+1]; i++){
-        dot_product += A_values[i] * x[A_innerIndex[i]];
+        const double x_value = atomicAdd(&x[A_innerIndex[i]], 0.);
+        dot_product += A_values[i] * x_value;
       }
 
-      /*printf("k: %d\n", k);
+      printf("k: %d\n", k);
       printf("dot product: %f\n", dot_product);
 
       printf("norm: %f\n", sq_norms[k]);
 
-      printf("b_k: %f\n", b[k]);*/
+      printf("b_k: %f\n", b[k]);
 
-      const double update_coeff = (b[k] - dot_product) / sq_norms[k];
+      const double update_coeff = ((b[k] - dot_product) / sq_norms[k]);
 
-      //printf("Update Coeff: %f\n", update_coeff);
+      printf("Update Coeff: %f\n", update_coeff);
 
       //update x
       for (unsigned i = A_outerIndex[k]; i < A_outerIndex[k+1]; i++){
         const double update = update_coeff * A_values[i];
-        atomicAdd((x + A_innerIndex[i]), update);
+        atomicAdd(&x[A_innerIndex[i]], update);
       }
     }
     //sync all threads to guarantee convergence
     __syncthreads();
-    if (iter % 1 == 0 && iter > 0 && tid == 0) {
+    if (iter % 10 == 0 && iter > 0 && tid == 0) {
             double residual = 0.0;
             for (unsigned i = 0; i < rows; i++) {
                 double dot_product = 0.0;
                 for (unsigned j = A_outerIndex[i]; j < A_outerIndex[i+1]; j++){
-                    dot_product += A_values[j] * x[A_innerIndex[j]];
+                    dot_product += A_values[j] * atomicAdd(&x[A_innerIndex[j]], 0);
                 }
                 residual += (dot_product - b[i]) * (dot_product - b[i]);
             }
@@ -66,6 +78,7 @@ __global__ void solve_async(const int* A_outerIndex, const int* A_innerIndex, co
                 *converged = true;
             }
         }
+        __threadfence();
     __syncthreads();
     if (*converged) break;
   }
@@ -78,7 +91,7 @@ KaczmarzSolverStatus sparse_kaczmarz_parallel(const SparseLinearSystem &lse,
                                               const unsigned num_threads) {
   const unsigned rows = lse.row_count();
   const unsigned nnz = lse.A().nonZeros();
-  // const unsigned cols = lse.column_count();
+  const unsigned cols = lse.column_count();
   
 
   assert(num_threads <=
@@ -153,7 +166,7 @@ KaczmarzSolverStatus sparse_kaczmarz_parallel(const SparseLinearSystem &lse,
   cudaMemcpy( d_b,  lse.b().data(), x.size()*sizeof(double), cudaMemcpyHostToDevice);
   //solve LSE
   std::cout << "Calling kernel\n";
-  solve_async<<<1, num_threads>>>(d_A_outer, d_A_inner, d_A_values, d_b, rows, d_sq_norms, d_x, 10000000, runs_before_sync, d_converged, L, precision);
+  solve_async<<<1, num_threads>>>(d_A_outer, d_A_inner, d_A_values, d_b, rows, cols, d_sq_norms, d_x, 1000, runs_before_sync, d_converged, L, precision, num_threads);
   cudaDeviceSynchronize();
   std::cout << "Kernel done\n";
   //copy back x and convergence
