@@ -5,10 +5,43 @@
 #include "gtest/gtest.h"
 #include "linear_systems/dense.hpp"
 #include "linear_systems/sparse.hpp"
+#include "solvers/asynchronous.hpp"
 #include "solvers/basic.hpp"
 
 constexpr unsigned MAX_IT = 1000000;
 constexpr unsigned RUNS_PER_DIM = 5;
+
+/*void run_parallel_tests(const unsigned dim, const unsigned bandwidth,
+                        const unsigned no_runs) {
+  std::mt19937 rng(21);
+  for (unsigned i = 0; i < no_runs; i++) {
+    const SparseLinearSystem lse =
+        SparseLinearSystem::generate_random_banded_regular(rng, dim, bandwidth);
+
+    Vector x_kaczmarz = Vector::Zero(dim);
+
+    auto result = sparse_kaczmarz_parallel(lse, x_kaczmarz, MAX_IT * dim, 1e-9,
+                                           std::min(dim, 8u));
+
+    ASSERT_EQ(KaczmarzSolverStatus::Converged, result);
+
+    const Vector x_eigen = lse.eigen_solve();
+
+    ASSERT_LE((x_kaczmarz - x_eigen).norm(), 1e-6);
+  }
+}
+
+TEST(KaczmarzParallelSparseCorrectnessSmall, AgreesWithEigen) {
+  run_parallel_tests(5, 1, RUNS_PER_DIM);
+}
+
+TEST(KaczmarzParallelSparseCorrectnessMedium, AgreesWithEigen) {
+  run_parallel_tests(20, 2, RUNS_PER_DIM);
+}
+
+TEST(KaczmarzParallelSparseCorrectnessLarge, AgreesWithEigen) {
+  run_parallel_tests(50, 2, RUNS_PER_DIM);
+}*/
 
 /// @brief Runs tests on dense linear systems to compare Kaczmarz solution with
 /// Eigen's solution.

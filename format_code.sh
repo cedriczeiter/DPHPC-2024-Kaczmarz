@@ -13,6 +13,6 @@ STYLE="Google"
 echo "Formatting all C++ files in the project using clang-format with style: $STYLE"
 
 # Find and format all .cpp and .hpp files while skipping all paths that contain a directory "build"
-find . -path '*/build' -prune -o \( -iname '*.hpp' -o -iname '*.cpp' \) | xargs clang-format -i --style=$STYLE
+find . -path '*/build' -prune -o \( -iname '*.hpp' -o -iname '*.cpp' -o -iname '*.cu' \) | xargs clang-format -i --style=$STYLE
 
 echo "Formatting complete."
