@@ -5,6 +5,7 @@
 #include "linear_systems/sparse.hpp"
 #include "solvers/asynchronous.hpp"
 #include "solvers/banded.hpp"
+#include "solvers/carp.hpp"
 
 using hrclock = std::chrono::high_resolution_clock;
 
@@ -18,9 +19,9 @@ using hrclock = std::chrono::high_resolution_clock;
  */
 
 int main() {
-  constexpr unsigned dim = 100;
+  constexpr unsigned dim = 1024;
   constexpr unsigned bandwidth = 2;
-  constexpr unsigned max_iterations = 1'000'000;
+  constexpr unsigned max_iterations = 1'00000;
   constexpr double precision = 1e-7;
 
   std::mt19937 rng(21);
@@ -42,7 +43,7 @@ int main() {
   const auto kaczmarz_start = hrclock::now();
   /*const auto status =
       kaczmarz_banded_serial(lse, x_kaczmarz, max_iterations, precision);*/
-  const auto status = asynchronous_gpu(lse.to_sparse_system(), x_kaczmarz,
+  const auto status = carp_gpu(lse.to_sparse_system(), x_kaczmarz,
                                        max_iterations, precision, 10);
   const auto kaczmarz_end = hrclock::now();
 
@@ -60,13 +61,13 @@ int main() {
   std::cout << "L1 = " << error.lpNorm<1>() << "\n";
   std::cout << "L_inf = " << error.lpNorm<Eigen::Infinity>() << std::endl;
 
-  /*std::cout << "Eigen: " <<std::endl;
+  std::cout << "Eigen: " <<std::endl;
   for (int i = 0; i < dim; i++){
     std::cout << x_eigen[i] << "   ";
   }
   std::cout << "\nKaczmarz: " << std::endl;
   for (int i = 0; i < dim; i++){
     std::cout << x_kaczmarz[i] << "   ";
-  }*/
+  }
   std::cout << std::endl;
 }

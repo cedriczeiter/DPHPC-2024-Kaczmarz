@@ -56,8 +56,10 @@ set(NON_CUDA_SOURCES
 set(CUDA_SOURCES
   ${SOURCE_DIR}/solvers/banded.cu
   ${SOURCE_DIR}/solvers/banded.cpp
-  ${SOURCE_DIR}/solvers/asynchronous.cu
-  ${SOURCE_DIR}/solvers/asynchronous.cpp
+  #${SOURCE_DIR}/solvers/asynchronous.cu
+  #${SOURCE_DIR}/solvers/asynchronous.cpp
+  ${SOURCE_DIR}/solvers/carp.cu
+  ${SOURCE_DIR}/solvers/carp.cpp
 )
 
 ################################
@@ -81,8 +83,8 @@ add_library(non_cuda_library STATIC ${NON_CUDA_SOURCES})
 target_link_libraries(non_cuda_library PRIVATE Eigen3::Eigen)
 
 # Always build the `testing` target (only with non-CUDA library)
-add_executable(testing ${SOURCE_DIR}/testing.cpp)
-target_link_libraries(testing PRIVATE non_cuda_library linear_systems gtest)
+#add_executable(testing ${SOURCE_DIR}/testing.cpp)
+#target_link_libraries(testing PRIVATE non_cuda_library linear_systems gtest)
 
 ################################
 ## Now stuff that needs Cuda follows
