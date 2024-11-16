@@ -1,5 +1,4 @@
 #include "asynchronous.hpp"
-#include "asynchronous_cuda.hpp"
 
 #include <omp.h>
 #include <unistd.h>
@@ -9,13 +8,13 @@
 #include <iostream>
 #include <random>
 
+#include "asynchronous_cuda.hpp"
 #include "common.hpp"
 
-KaczmarzSolverStatus asynchronous_cpu(const SparseLinearSystem &lse,
-                                              Vector &x,
-                                              const unsigned max_iterations,
-                                              const double precision,
-                                              const unsigned num_threads) {
+KaczmarzSolverStatus asynchronous_cpu(const SparseLinearSystem& lse, Vector& x,
+                                      const unsigned max_iterations,
+                                      const double precision,
+                                      const unsigned num_threads) {
   assert(omp_get_cancellation());  // we need cancellation enabled for this
                                    // algorithm
   omp_set_num_threads(num_threads);
@@ -112,16 +111,14 @@ KaczmarzSolverStatus asynchronous_cpu(const SparseLinearSystem &lse,
   return KaczmarzSolverStatus::OutOfIterations;
 }
 
-KaczmarzSolverStatus asynchronous_gpu(const SparseLinearSystem &lse,
-                                              Vector &x,
-                                              const unsigned max_iterations,
-                                              const double precision,
-                                              const unsigned num_threads){
-                                                
-                                                // squared norms of rows of A (so that we don't need to recompute them in each
+KaczmarzSolverStatus asynchronous_gpu(const SparseLinearSystem& lse, Vector& x,
+                                      const unsigned max_iterations,
+                                      const double precision,
+                                      const unsigned num_threads) {
+  // squared norms of rows of A (so that we don't need to recompute them in each
   // iteration
 
-const int* A_outer = lse.A().outerIndexPtr();
+  const int* A_outer = lse.A().outerIndexPtr();
   const int* A_inner = lse.A().innerIndexPtr();
   const double* A_values = lse.A().valuePtr();
 
@@ -130,12 +127,13 @@ const int* A_outer = lse.A().outerIndexPtr();
   const unsigned cols = lse.column_count();
   const unsigned nnz = lse.A().nonZeros();
 
-
   std::vector<double> h_sq_norms(rows);
   for (unsigned i = 0; i < rows; i++) {
     h_sq_norms[i] = lse.A().row(i).dot(lse.A().row(i));
     if (h_sq_norms[i] < 1e-7) return KaczmarzSolverStatus::ZeroNormRow;
   }
 
-  return invoke_asynchronous_solver_gpu(A_outer, A_inner, A_values, b, x.data(), h_sq_norms.data(), rows, cols, nnz, max_iterations, precision, num_threads);
+  return invoke_asynchronous_solver_gpu(A_outer, A_inner, A_values, b, x.data(),
+                                        h_sq_norms.data(), rows, cols, nnz,
+                                        max_iterations, precision, num_threads);
 }
