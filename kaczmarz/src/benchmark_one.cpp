@@ -19,9 +19,9 @@ using hrclock = std::chrono::high_resolution_clock;
  */
 
 int main() {
-  constexpr unsigned dim = 1024;
+  constexpr unsigned dim = 40000;
   constexpr unsigned bandwidth = 2;
-  constexpr unsigned max_iterations = 1'00000;
+  constexpr unsigned max_iterations = 1'000'000'000;
   constexpr double precision = 1e-7;
 
   std::mt19937 rng(21);
@@ -57,7 +57,7 @@ int main() {
 
   const Vector error = x_kaczmarz - x_eigen;
 
-  std::cout << "error norms:\n";
+  /*std::cout << "error norms:\n";
   std::cout << "L1 = " << error.lpNorm<1>() << "\n";
   std::cout << "L_inf = " << error.lpNorm<Eigen::Infinity>() << std::endl;
 
@@ -69,5 +69,5 @@ int main() {
   for (int i = 0; i < dim; i++){
     std::cout << x_kaczmarz[i] << "   ";
   }
-  std::cout << std::endl;
+  std::cout << std::endl;*/
 }
