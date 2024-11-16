@@ -2,9 +2,10 @@
 #include <iostream>
 #include <random>
 
-#include "linear_systems/sparse.hpp"
+#include "linear_systems/dense.hpp"
 #include "solvers/asynchronous.hpp"
 #include "solvers/banded.hpp"
+#include "solvers/basic_cuda.hpp"
 
 using hrclock = std::chrono::high_resolution_clock;
 
@@ -18,17 +19,16 @@ using hrclock = std::chrono::high_resolution_clock;
  */
 
 int main() {
-  constexpr unsigned dim = 100;
-  constexpr unsigned bandwidth = 2;
-  constexpr unsigned max_iterations = 1'000'000;
+  constexpr unsigned dim = 50;
+  constexpr unsigned max_iterations = 100000;
   constexpr double precision = 1e-7;
 
   std::mt19937 rng(21);
-  const BandedLinearSystem lse =
-      BandedLinearSystem::generate_random_regular(rng, dim, bandwidth);
+  const DenseLinearSystem lse =
+      DenseLinearSystem::generate_random_regular(rng, dim);
 
   const auto eigen_start = hrclock::now();
-  const Vector x_eigen = lse.to_sparse_system().eigen_solve();
+  const Vector x_eigen = lse.eigen_solve();
   const auto eigen_end = hrclock::now();
 
   std::cout << "Eigen solution computed in "
@@ -40,10 +40,13 @@ int main() {
   Vector x_kaczmarz = Vector::Zero(dim);
 
   const auto kaczmarz_start = hrclock::now();
-  /*const auto status =
-      kaczmarz_banded_serial(lse, x_kaczmarz, max_iterations, precision);*/
-  const auto status = asynchronous_gpu(lse.to_sparse_system(), x_kaczmarz,
-                                       max_iterations, precision, 10);
+
+    std::vector<double> times_residuals;
+  std::vector<double> residuals;
+  std::vector<int> iterations;
+  const int convergence_step_rate = 10000;
+
+  const auto status = dense_kaczmarz_cuda(lse, x_kaczmarz.data(), max_iterations, precision, times_residuals, residuals, iterations, convergence_step_rate);
   const auto kaczmarz_end = hrclock::now();
 
   std::cout << "Kaczmarz solution computed in "
@@ -59,6 +62,7 @@ int main() {
   std::cout << "error norms:\n";
   std::cout << "L1 = " << error.lpNorm<1>() << "\n";
   std::cout << "L_inf = " << error.lpNorm<Eigen::Infinity>() << std::endl;
+
 
   /*std::cout << "Eigen: " <<std::endl;
   for (int i = 0; i < dim; i++){
