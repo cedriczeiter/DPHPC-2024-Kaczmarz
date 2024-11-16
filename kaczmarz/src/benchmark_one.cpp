@@ -18,10 +18,10 @@ using hrclock = std::chrono::high_resolution_clock;
  */
 
 int main() {
-  constexpr unsigned dim = 10;
+  constexpr unsigned dim = 1000;
   constexpr unsigned bandwidth = 2;
   constexpr unsigned max_iterations = 1'000'000;
-  constexpr double precision = 1e-15;
+  constexpr double precision = 1e-7;
 
   std::mt19937 rng(21);
   const BandedLinearSystem lse =
@@ -40,10 +40,9 @@ int main() {
   Vector x_kaczmarz = Vector::Zero(dim);
 
   const auto kaczmarz_start = hrclock::now();
-  std::cout << "B: " << lse.b() << std::endl;
   /*const auto status =
       kaczmarz_banded_serial(lse, x_kaczmarz, max_iterations, precision);*/
-  const auto status = sparse_kaczmarz_parallel(lse.to_sparse_system(), x_kaczmarz, max_iterations, precision, 1);
+  const auto status = sparse_kaczmarz_parallel(lse.to_sparse_system(), x_kaczmarz, max_iterations, precision, 50);
   const auto kaczmarz_end = hrclock::now();
 
   std::cout << "Kaczmarz solution computed in "
@@ -60,13 +59,13 @@ int main() {
   std::cout << "L1 = " << error.lpNorm<1>() << "\n";
   std::cout << "L_inf = " << error.lpNorm<Eigen::Infinity>() << std::endl;
 
-std::cout << "Eigen: " <<std::endl;
+/*std::cout << "Eigen: " <<std::endl;
 for (int i = 0; i < dim; i++){
   std::cout << x_eigen[i] << "   ";
 }
 std::cout << "\nKaczmarz: " << std::endl;
 for (int i = 0; i < dim; i++){
   std::cout << x_kaczmarz[i] << "   ";
-}
+}*/
 std::cout << std::endl;
 }

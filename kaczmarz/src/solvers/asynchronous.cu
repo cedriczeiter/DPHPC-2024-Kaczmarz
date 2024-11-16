@@ -20,10 +20,10 @@ __global__ void solve_async(const int* A_outerIndex, const int* A_innerIndex, co
   const unsigned n_own_rows = (rows/num_threads) + 1;
   const unsigned thread_offset = n_own_rows*tid;
 
-  printf("B: \n");
+  /*printf("B: \n");
   for (int i = 0; i < cols; i++){
     printf("%f\n", b[i]);
-  }
+  }*/
 
 
   for (unsigned iter = 0; iter < max_iterations; iter++){
@@ -42,16 +42,16 @@ __global__ void solve_async(const int* A_outerIndex, const int* A_innerIndex, co
         dot_product += A_values[i] * x_value;
       }
 
-      printf("k: %d\n", k);
+      /*printf("k: %d\n", k);
       printf("dot product: %f\n", dot_product);
 
       printf("norm: %f\n", sq_norms[k]);
 
-      printf("b_k: %f\n", b[k]);
+      printf("b_k: %f\n", b[k]);*/
 
       const double update_coeff = ((b[k] - dot_product) / sq_norms[k]);
 
-      printf("Update Coeff: %f\n", update_coeff);
+      //printf("Update Coeff: %f\n", update_coeff);
 
       //update x
       for (unsigned i = A_outerIndex[k]; i < A_outerIndex[k+1]; i++){
@@ -61,7 +61,7 @@ __global__ void solve_async(const int* A_outerIndex, const int* A_innerIndex, co
     }
     //sync all threads to guarantee convergence
     __syncthreads();
-    if (iter % 10 == 0 && iter > 0 && tid == 0) {
+    if (iter % L == 0 && iter > 0 && tid == 0) {
             double residual = 0.0;
             for (unsigned i = 0; i < rows; i++) {
                 double dot_product = 0.0;
@@ -97,8 +97,8 @@ KaczmarzSolverStatus sparse_kaczmarz_parallel(const SparseLinearSystem &lse,
   assert(num_threads <=
          rows);  // necessary for allowing each thread to have local rows
 
-  const unsigned L = 500;  // we check for convergence every L steps
-  const unsigned runs_before_sync = 30;
+  const unsigned L = 5000;  // we check for convergence every L steps
+  const unsigned runs_before_sync = 500;
   bool converged = false;
 
   // squared norms of rows of A (so that we don't need to recompute them in each
@@ -106,7 +106,6 @@ KaczmarzSolverStatus sparse_kaczmarz_parallel(const SparseLinearSystem &lse,
   std::vector<double> h_sq_norms(rows);
   for (unsigned i = 0; i < rows; i++) {
     h_sq_norms[i] = lse.A().row(i).dot(lse.A().row(i));
-    std::cout << "Row: " << i << " Norm: " << h_sq_norms[i] << std::endl;
     if (h_sq_norms[i] < 1e-7) return KaczmarzSolverStatus::ZeroNormRow;
   }
   // allocate move squared norms on device
@@ -116,24 +115,6 @@ KaczmarzSolverStatus sparse_kaczmarz_parallel(const SparseLinearSystem &lse,
                             rows * sizeof(double), cudaMemcpyHostToDevice);
 
 
-  /*// each thread chooses randomly from own set of rows
-  unsigned rows_per_thread = (unsigned)(rows / num_threads);
-  std::vector<std::vector<unsigned> > h_local_rows(num_threads);
-  for (unsigned i = 0; i < num_threads; i++) {
-    for (unsigned j = rows_per_thread * i;
-         j < rows && j < rows_per_thread * (i + 1); j++) {
-      h_local_rows.at(i).push_back(j);
-    }
-  }
-  for (unsigned j = rows_per_thread * num_threads; j < rows; j++) {
-    h_local_rows.at(num_threads - 1).push_back(j);
-  }*/
-  /*// move local rows on device
-  unsigned *d_local_rows;
-  cudaCheckError(cudaMalloc(&d_local_rows, num_threads * sizeof(unsigned)));
-  cudaCheckError(cudaMemcpy(h_local_rows.data(), d_local_rows,
-                            num_threads * sizeof(unsigned),
-                            cudaMemcpyHostToDevice));*/
 
   // move x to device
   double *d_x;
@@ -152,10 +133,10 @@ KaczmarzSolverStatus sparse_kaczmarz_parallel(const SparseLinearSystem &lse,
   int *d_A_outer;
   int *d_A_inner;
   double *d_A_values;
-  cudaMalloc((void **)&d_A_outer, rows*sizeof(int));
+  cudaMalloc((void **)&d_A_outer, (rows+1)*sizeof(int));
   cudaMalloc((void **)&d_A_inner, nnz*sizeof(int));
   cudaMalloc((void **)&d_A_values, nnz*sizeof(double));
-  cudaMemcpy(d_A_outer,  lse.A().outerIndexPtr(), rows*sizeof(int), cudaMemcpyHostToDevice);
+  cudaMemcpy(d_A_outer,  lse.A().outerIndexPtr(), (rows+1)*sizeof(int), cudaMemcpyHostToDevice);
   cudaMemcpy( d_A_inner,  lse.A().innerIndexPtr(), nnz*sizeof(int), cudaMemcpyHostToDevice);
   cudaMemcpy( d_A_values,  lse.A().valuePtr(), nnz*sizeof(double), cudaMemcpyHostToDevice);
 
@@ -166,20 +147,17 @@ KaczmarzSolverStatus sparse_kaczmarz_parallel(const SparseLinearSystem &lse,
   cudaMemcpy( d_b,  lse.b().data(), x.size()*sizeof(double), cudaMemcpyHostToDevice);
   //solve LSE
   std::cout << "Calling kernel\n";
-  solve_async<<<1, num_threads>>>(d_A_outer, d_A_inner, d_A_values, d_b, rows, cols, d_sq_norms, d_x, 1000, runs_before_sync, d_converged, L, precision, num_threads);
+  solve_async<<<1, num_threads>>>(d_A_outer, d_A_inner, d_A_values, d_b, rows, cols, d_sq_norms, d_x, 1000000, runs_before_sync, d_converged, L, precision, num_threads);
   cudaDeviceSynchronize();
   std::cout << "Kernel done\n";
   //copy back x and convergence
   cudaMemcpy(h_converged, d_converged, sizeof(bool), cudaMemcpyDeviceToHost);
   cudaMemcpy( x.data(),  d_x, x.size()*sizeof(double), cudaMemcpyDeviceToHost);
 
-  /*for (int i = 0; i < x.size(); i++){
-    std::cout << (lse.b())[i] << " ";
-  }
-  std::cout << std::endl;*/
+  
 
   //for testing
-  std::cout << "Normal: " << std::endl;
+  /*std::cout << "Normal: " << std::endl;
   for (int i = 0; i < rows; i++){
     std::cout << (lse.A().row(i)).dot(x) << std::endl;
   }
@@ -194,6 +172,15 @@ KaczmarzSolverStatus sparse_kaczmarz_parallel(const SparseLinearSystem &lse,
     }
     std::cout << dot << std::endl;
   }
+std::cout << "\n\nFrom LSE: ";
+  for (SparseMatrix::InnerIterator it(lse.A(), 0); it; ++it){
+    std::cout << it.value() << " " << it.col() << std::endl;
+  }
+  std::cout << "\n\nFrom Pointers: ";
+  for (int i = outer[0]; i < outer[1]; i++){
+    std::cout << values[i] << " " << inner[i] << std::endl;
+  }*/
+
 
   //free memory
   cudaFree(d_converged);
