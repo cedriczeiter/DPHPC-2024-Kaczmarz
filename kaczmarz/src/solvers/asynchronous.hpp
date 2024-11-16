@@ -1,3 +1,5 @@
+#ifndef ASYNC_HPP 
+#define ASYNC_HPP
 #include <unistd.h>
 
 #include "common.hpp"
@@ -16,3 +18,5 @@ KaczmarzSolverStatus asynchronous_cpu(const SparseLinearSystem &lse,
                                               const unsigned max_iterations,
                                               const double precision,
                                               const unsigned num_threads);
+
+                                              #endif

@@ -65,6 +65,7 @@ __global__ void solve_async(const int* A_outerIndex, const int* A_innerIndex, co
                 *converged = true;
             }
         }
+        __threadfence();
     __syncthreads();
     if (*converged) break;
   }
@@ -129,8 +130,10 @@ const unsigned rows, const unsigned cols, const unsigned nnz,
   cudaMemcpy( d_b,  h_b, cols*sizeof(double), cudaMemcpyHostToDevice);
 
   //solve LSE
+  std::cout << "Calling kernel\n";
   solve_async<<<1, num_threads>>>(d_A_outer, d_A_inner, d_A_values, d_b, rows, cols, d_sq_norms, d_x, max_iterations, runs_before_sync, d_converged, L, precision, num_threads);
   cudaDeviceSynchronize();
+  std::cout << "Kernel done\n";
 
   //copy back x and convergence
   cudaMemcpy(h_converged, d_converged, sizeof(bool), cudaMemcpyDeviceToHost);
