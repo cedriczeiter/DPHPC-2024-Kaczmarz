@@ -61,6 +61,7 @@ set(CUDA_SOURCES
   ${SOURCE_DIR}/solvers/banded.cu
   ${SOURCE_DIR}/solvers/banded.cpp
   ${SOURCE_DIR}/solvers/asynchronous.cu
+  ${SOURCE_DIR}/solvers/asynchronous.cpp
 )
 
 ################################

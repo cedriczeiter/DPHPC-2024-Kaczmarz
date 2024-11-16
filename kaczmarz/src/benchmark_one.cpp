@@ -18,7 +18,7 @@ using hrclock = std::chrono::high_resolution_clock;
  */
 
 int main() {
-  constexpr unsigned dim = 1000;
+  constexpr unsigned dim = 100;
   constexpr unsigned bandwidth = 2;
   constexpr unsigned max_iterations = 1'000'000;
   constexpr double precision = 1e-7;
@@ -42,7 +42,7 @@ int main() {
   const auto kaczmarz_start = hrclock::now();
   /*const auto status =
       kaczmarz_banded_serial(lse, x_kaczmarz, max_iterations, precision);*/
-  const auto status = sparse_kaczmarz_parallel(lse.to_sparse_system(), x_kaczmarz, max_iterations, precision, 50);
+  const auto status = asynchronous_gpu(lse.to_sparse_system(), x_kaczmarz, max_iterations, precision, 5);
   const auto kaczmarz_end = hrclock::now();
 
   std::cout << "Kaczmarz solution computed in "
