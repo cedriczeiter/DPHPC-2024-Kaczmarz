@@ -19,24 +19,56 @@
 __global__ void step(const int *A_outerIndex, const int *A_innerIndex,
                             const double *A_values, const double *b,
                             const unsigned rows, const unsigned cols,
-                            const double *sq_norms, double *x, double *X) {
+                            const double *sq_norms, double *x, double *X, const unsigned rows_per_thread) {
   const unsigned tid = blockIdx.x * blockDim.x + threadIdx.x;
-  if (tid < rows){
-    //perform one update step for assigned row
-    
-    // compute dot product row * x
-    double dot_product = 0.;
-    for (unsigned i = A_outerIndex[tid]; i < A_outerIndex[tid + 1]; i++) {
-        const double x_value = x[A_innerIndex[i]];
-        dot_product += A_values[i] * x_value;
+  //printf("Before allocating\n");
+  extern __shared__ int data[];
+  int *A_outer = data;
+  int *A_inner = &data[rows*rows];
+  double* A_values_shared = (double*)&A_inner[rows*rows];
+  double *X_local = (double*)&A_values_shared[rows*rows];
+  //printf("After allocating\n");
+
+  if (tid*rows_per_thread < rows){
+    //copy over A to shared memory
+    for (unsigned k = 0; k <= rows_per_thread; k++){
+      A_outer[tid*rows_per_thread + k] = A_outerIndex[tid*rows_per_thread + k];
     }
-    //calculate update
-    const double update_coeff = ((b[tid] - dot_product) / sq_norms[tid]);
-    // save update for x in global matrix, will be used in average step
-    for (unsigned i = A_outerIndex[tid]; i < A_outerIndex[tid + 1]; i++) {
-        const double update = update_coeff * A_values[i];
-        if (tid*rows + A_innerIndex[i] > rows*rows-1) printf("FUCK\n");
-        X[tid*rows + A_innerIndex[i]] = 1.5*update;
+    //printf("A_outer\n");
+    for (unsigned k = A_outer[tid*rows_per_thread]; k < A_outer[(tid+1)*rows_per_thread]; k++){
+      A_inner[k] = A_innerIndex[k];
+      A_values_shared[k] = A_values[k];
+    }
+    //copy over X
+    for (unsigned k = A_outer[tid*rows_per_thread]; k < A_outer[(tid+1)*rows_per_thread]; k++){
+      X_local[tid*rows + A_inner[k]] = x[A_inner[k]];
+      printf("X at %d: %f\n", A_inner[k], x[A_inner[k]]);
+    }
+    //printf("A_inner and values\n");
+    //perform one update step for assigned row
+    for (unsigned k = 0; k < rows_per_thread; k++){
+      //printf("Thread: %d, Assigned row: %d\n", tid, tid*rows_per_thread+k);
+      // compute dot product row * x
+      double dot_product = 0.;
+      for (unsigned i = A_outer[tid*rows_per_thread + k]; i < A_outer[tid*rows_per_thread + k + 1]; i++) {
+          const double x_value = X_local[tid*rows+A_inner[i]];
+          dot_product += A_values_shared[i] * x_value;
+      }
+      //calculate update
+      const double update_coeff = ((b[tid*rows_per_thread + k] - dot_product) / sq_norms[tid*rows_per_thread + k]);
+      // save update for x in global matrix, will be used in average step
+      for (unsigned i = A_outer[tid*rows_per_thread + k]; i < A_outer[tid*rows_per_thread + k + 1]; i++) {
+          const double update = update_coeff * A_values_shared[i];
+          X_local[tid*rows + A_inner[i]] += 1.5*update;
+          printf("Update: %f\n", update);
+      }
+    }
+
+    //set all values back in global matrix for averaging step
+    for (int k = 0; k < rows_per_thread; k++){
+      for (unsigned i = A_outer[tid*rows_per_thread + k]; i < A_outer[tid*rows_per_thread + k + 1]; i++) {
+        X[(tid*rows_per_thread+k)*rows + i] = X_local[tid*rows + A_inner[i]];
+      }
     }
   }
 }
@@ -44,26 +76,28 @@ __global__ void step(const int *A_outerIndex, const int *A_innerIndex,
 __global__ void update(const int *A_outerIndex, const int *A_innerIndex,
                             const double *A_values, const double *b,
                             const unsigned rows, const unsigned cols,
-                            const double *sq_norms, double *x, double *X, int *affected) {
+                            const double *sq_norms, double *x, double *X, int *affected, const unsigned rows_per_thread) {
   const unsigned tid = blockIdx.x * blockDim.x + threadIdx.x;
-  if (tid < cols){
-    //sum up updates for assigned entry
-    double sum = 0;
-    int counter = 0;
-    while (true){
-        int affecting_thread = affected[tid*rows + counter];
-        if (affecting_thread < 0) break;
-        counter++;
-        const double value = X[affecting_thread*rows + tid];
-        //printf("Update read: %f\n", value);
-        sum += value;
-        X[affecting_thread*rows + tid] = 0;
+  if (tid*rows_per_thread < cols){
+    for (unsigned k = 0; k < rows_per_thread; k++){
+      //sum up updates for assigned entry
+      double sum = 0;
+      int counter = 0;
+      while (true){
+          int affecting_thread = affected[(tid*rows_per_thread + k)*rows + counter];
+          if (affecting_thread < 0) break;
+          counter++;
+          const double value = X[affecting_thread*rows + tid*rows_per_thread + k];
+          //printf("Update read: %f\n", value);
+          sum += value;
+          X[affecting_thread*rows + tid*rows_per_thread + k] = 0;
+      }
+      printf("thread: %d, row: %d, sum: %f, count: %d\n", tid, tid*rows_per_thread + k, sum, counter);
+      //if (count > 0.5) printf("total update: %f\n", sum/count);
+      //printf("position: %d, x before: %f, ", tid, x[tid]);
+      if (counter > 0) x[tid*rows_per_thread + k] = sum/(double)counter;
+      //printf("x now: %f\n ", x[tid]);
     }
-    //printf("sum: %f, count: %d\n", sum, counter);
-    //if (count > 0.5) printf("total update: %f\n", sum/count);
-    //printf("position: %d, x before: %f, ", tid, x[tid]);
-    if (counter > 0) x[tid] += sum/(double)counter;
-    //printf("x now: %f\n ", x[tid]);
   }
 }
 
@@ -106,7 +140,7 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
              cudaMemcpyHostToDevice);
   //std::cout << "Before affecting" << std::endl;
   //calculate indices which affect other rows, and move to device
-  std::vector<std::vector<unsigned>> affects(rows); //coding: affects[thread][i]: the assigned entry of thread i is affected by thread i
+  std::vector<std::vector<unsigned>> affects(rows); //coding: affects[j][i]: the x at position j is affected by thread i
   for (unsigned k = 0; k < rows; k++){
     for (unsigned i = h_A_outer[k]; i < h_A_outer[k+1]; i++){
       unsigned row = k;
@@ -148,17 +182,17 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
 
   // solve LSE
   for (int iter = 0; iter < max_iterations; iter++){
-    step<<<blocks, threads_per_block>>>(
-        d_A_outer, d_A_inner, d_A_values, d_b, rows, cols, d_sq_norms, d_x, d_X);
+    step<<<blocks, threads_per_block, 10000>>>(
+        d_A_outer, d_A_inner, d_A_values, d_b, rows, cols, d_sq_norms, d_x, d_X, 10);
         auto res = cudaDeviceSynchronize();
         assert(res == 0);
     update<<<blocks, threads_per_block>>>(
-        d_A_outer, d_A_inner, d_A_values, d_b, rows, cols, d_sq_norms, d_x, d_X, d_affected);
+        d_A_outer, d_A_inner, d_A_values, d_b, rows, cols, d_sq_norms, d_x, d_X, d_affected, 10);
         res = cudaDeviceSynchronize();
         assert(res == 0);
     
     //calculate residual every L iterations
-    if (iter % L == 0 and iter > 0){
+    if (iter % 1 == 0 and iter > 0){
       cudaMemcpy(h_x, d_x, cols * sizeof(double), cudaMemcpyDeviceToHost);
       double residual = 0.0;
 
