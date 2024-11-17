@@ -42,32 +42,34 @@ __global__ void step(const int *A_outerIndex, const int *A_innerIndex,
     //copy over X
     for (unsigned k = A_outer[tid*rows_per_thread]; k < A_outer[(tid+1)*rows_per_thread]; k++){
       X_local[tid*rows + A_inner[k]] = x[A_inner[k]];
-      printf("X at %d: %f\n", A_inner[k], x[A_inner[k]]);
+      //printf("X at %d: %f\n", A_inner[k], x[A_inner[k]]);
     }
     //printf("A_inner and values\n");
     //perform one update step for assigned row
-    for (unsigned k = 0; k < rows_per_thread; k++){
-      //printf("Thread: %d, Assigned row: %d\n", tid, tid*rows_per_thread+k);
-      // compute dot product row * x
-      double dot_product = 0.;
-      for (unsigned i = A_outer[tid*rows_per_thread + k]; i < A_outer[tid*rows_per_thread + k + 1]; i++) {
-          const double x_value = X_local[tid*rows+A_inner[i]];
-          dot_product += A_values_shared[i] * x_value;
-      }
-      //calculate update
-      const double update_coeff = ((b[tid*rows_per_thread + k] - dot_product) / sq_norms[tid*rows_per_thread + k]);
-      // save update for x in global matrix, will be used in average step
-      for (unsigned i = A_outer[tid*rows_per_thread + k]; i < A_outer[tid*rows_per_thread + k + 1]; i++) {
-          const double update = update_coeff * A_values_shared[i];
-          X_local[tid*rows + A_inner[i]] += 1.5*update;
-          printf("Update: %f\n", update);
+    for (unsigned local_iter = 0; local_iter < 10; local_iter++){
+      for (unsigned k = 0; k < rows_per_thread; k++){
+        //printf("Thread: %d, Assigned row: %d\n", tid, tid*rows_per_thread+k);
+        // compute dot product row * x
+        double dot_product = 0.;
+        for (unsigned i = A_outer[tid*rows_per_thread + k]; i < A_outer[tid*rows_per_thread + k + 1]; i++) {
+            const double x_value = X_local[tid*rows+A_inner[i]];
+            dot_product += A_values_shared[i] * x_value;
+        }
+        //calculate update
+        const double update_coeff = ((b[tid*rows_per_thread + k] - dot_product) / sq_norms[tid*rows_per_thread + k]);
+        // save update for x in global matrix, will be used in average step
+        for (unsigned i = A_outer[tid*rows_per_thread + k]; i < A_outer[tid*rows_per_thread + k + 1]; i++) {
+            const double update = update_coeff * A_values_shared[i];
+            X_local[tid*rows + A_inner[i]] += 1.5*update;
+            //printf("Update: %f\n", update);
+        }
       }
     }
 
     //set all values back in global matrix for averaging step
     for (int k = 0; k < rows_per_thread; k++){
       for (unsigned i = A_outer[tid*rows_per_thread + k]; i < A_outer[tid*rows_per_thread + k + 1]; i++) {
-        X[(tid*rows_per_thread+k)*rows + i] = X_local[tid*rows + A_inner[i]];
+        X[(tid*rows_per_thread+k)*rows + A_inner[i]] = X_local[tid*rows + A_inner[i]];
       }
     }
   }
@@ -90,9 +92,8 @@ __global__ void update(const int *A_outerIndex, const int *A_innerIndex,
           const double value = X[affecting_thread*rows + tid*rows_per_thread + k];
           //printf("Update read: %f\n", value);
           sum += value;
-          X[affecting_thread*rows + tid*rows_per_thread + k] = 0;
       }
-      printf("thread: %d, row: %d, sum: %f, count: %d\n", tid, tid*rows_per_thread + k, sum, counter);
+      //printf("thread: %d, row: %d, sum: %f, count: %d\n", tid, tid*rows_per_thread + k, sum, counter);
       //if (count > 0.5) printf("total update: %f\n", sum/count);
       //printf("position: %d, x before: %f, ", tid, x[tid]);
       if (counter > 0) x[tid*rows_per_thread + k] = sum/(double)counter;
