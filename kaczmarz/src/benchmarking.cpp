@@ -7,10 +7,9 @@
 
 #include "linear_systems/dense.hpp"
 #include "linear_systems/sparse.hpp"
+#include "solvers/asynchronous.hpp"
 #include "solvers/basic.hpp"
 #include "solvers/random.hpp"
-#include "solvers/asynchronous.hpp"
-#include "solvers/asynchronous.hpp"
 
 #define MAX_IT 1000000
 #define BANDWIDTH 4
@@ -40,14 +39,15 @@ void compute_statistics(const std::vector<double>& times, double& avgTime,
   stdDev = std::sqrt(variance);
 }
 
-/// @brief Benchmarks the Kaczmarz algorithm run on cuda on a dense linear system.
+/// @brief Benchmarks the Kaczmarz algorithm run on cuda on a dense linear
+/// system.
 /// @param dim Dimension of the system.
 /// @param numIterations Number of iterations for timing.
 /// @param stdDev Output parameter for the computed standard deviation.
 /// @param rng Random generator for system generation.
 /// @return Average time taken for solution.
 double benchmark_cudasolver_dense(const int dim, const int numIterations,
-                                    double& stdDev, std::mt19937& rng) {
+                                  double& stdDev, std::mt19937& rng) {
   std::vector<double> times;
   for (int i = 0; i < numIterations; ++i) {
     const DenseLinearSystem lse =
@@ -61,7 +61,6 @@ double benchmark_cudasolver_dense(const int dim, const int numIterations,
     const auto start = std::chrono::high_resolution_clock::now();
 
     // Here call the cuda implementation
-    
 
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
@@ -73,14 +72,17 @@ double benchmark_cudasolver_dense(const int dim, const int numIterations,
   return avgTime;
 }
 
-/// @brief Benchmarks the asynchronous Kaczmarz algorithm run on cuda on a dense linear system.
+/// @brief Benchmarks the asynchronous Kaczmarz algorithm run on cuda on a dense
+/// linear system.
 /// @param dim Dimension of the system.
 /// @param numIterations Number of iterations for timing.
 /// @param stdDev Output parameter for the computed standard deviation.
 /// @param rng Random generator for system generation.
 /// @return Average time taken for solution.
-double benchmark_asynchronouscuda_solver_dense(const int dim, const int numIterations,
-                                    double& stdDev, std::mt19937& rng) {
+double benchmark_asynchronouscuda_solver_dense(const int dim,
+                                               const int numIterations,
+                                               double& stdDev,
+                                               std::mt19937& rng) {
   std::vector<double> times;
   for (int i = 0; i < numIterations; ++i) {
     const DenseLinearSystem lse =
@@ -93,8 +95,8 @@ double benchmark_asynchronouscuda_solver_dense(const int dim, const int numItera
     std::vector<int> iterations;
     const auto start = std::chrono::high_resolution_clock::now();
 
-    asynchronous_gpu(lse,&x_kaczmarz[0], MAX_IT * dim, PRECISION,NUM_THREADS);
-    
+    asynchronous_gpu(lse, &x_kaczmarz[0], MAX_IT * dim, PRECISION, NUM_THREADS);
+
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
     times.push_back(elapsed.count());
@@ -105,14 +107,17 @@ double benchmark_asynchronouscuda_solver_dense(const int dim, const int numItera
   return avgTime;
 }
 
-/// @brief Benchmarks the Kaczmarz algorithm run on cuda on a dense linear system.
+/// @brief Benchmarks the Kaczmarz algorithm run on cuda on a dense linear
+/// system.
 /// @param dim Dimension of the system.
 /// @param numIterations Number of iterations for timing.
 /// @param stdDev Output parameter for the computed standard deviation.
 /// @param rng Random generator for system generation.
 /// @return Average time taken for solution.
-double benchmark_asynchronouscpu_solver_dense(const int dim, const int numIterations,
-                                    double& stdDev, std::mt19937& rng) {
+double benchmark_asynchronouscpu_solver_dense(const int dim,
+                                              const int numIterations,
+                                              double& stdDev,
+                                              std::mt19937& rng) {
   std::vector<double> times;
   for (int i = 0; i < numIterations; ++i) {
     const DenseLinearSystem lse =
@@ -125,7 +130,7 @@ double benchmark_asynchronouscpu_solver_dense(const int dim, const int numIterat
     std::vector<int> iterations;
     const auto start = std::chrono::high_resolution_clock::now();
 
-    asynchronous_cpu(lse,&x_kaczmarz[0], MAX_IT * dim, PRECISION,NUM_THREADS);
+    asynchronous_cpu(lse, &x_kaczmarz[0], MAX_IT * dim, PRECISION, NUM_THREADS);
 
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
@@ -136,7 +141,6 @@ double benchmark_asynchronouscpu_solver_dense(const int dim, const int numIterat
   compute_statistics(times, avgTime, stdDev);
   return avgTime;
 }
-
 
 /// @brief Benchmarks the Kaczmarz algorithm on a dense linear system.
 /// @param dim Dimension of the system.
@@ -323,8 +327,8 @@ int main() {
   // Loop over problem sizes, benchmark, and write to file
   for (int dim = 1; dim <= MAX_DIM; dim *= 2) {
     double stdDev;
-    double avgTime =
-        benchmark_asynchronouscuda_solver_dense(dim, numIterations, stdDev, rng);
+    double avgTime = benchmark_asynchronouscuda_solver_dense(dim, numIterations,
+                                                             stdDev, rng);
 
     // Write results to the file
     outFileND << dim << "," << avgTime << "," << stdDev << "\n";
@@ -349,7 +353,6 @@ int main() {
     outFileND << dim << "," << avgTime << "," << stdDev << "\n";
   }
   outFileND.close();  // Close the file after writing
-
 
   //////////////////////////////////////////
   /// Normal Solver Sparse///
