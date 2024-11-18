@@ -20,7 +20,7 @@ using hrclock = std::chrono::high_resolution_clock;
 
 int main() {
   constexpr unsigned dim = 50;
-  constexpr unsigned max_iterations = 1000;
+  constexpr unsigned max_iterations = 10000;
   constexpr double precision = 1e-7;
 
   std::mt19937 rng(21);
@@ -64,13 +64,13 @@ int main() {
   std::cout << "L_inf = " << error.lpNorm<Eigen::Infinity>() << std::endl;
 
 
-  /*std::cout << "Eigen: " <<std::endl;
+ std::cout << "Eigen: " <<std::endl;
   for (int i = 0; i < dim; i++){
     std::cout << x_eigen[i] << "   ";
   }
   std::cout << "\nKaczmarz: " << std::endl;
   for (int i = 0; i < dim; i++){
     std::cout << x_kaczmarz[i] << "   ";
-  }*/
+  }
   std::cout << std::endl;
 }

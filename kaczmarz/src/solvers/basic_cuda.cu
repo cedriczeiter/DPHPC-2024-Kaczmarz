@@ -1,83 +1,86 @@
 #include "basic_cuda.hpp"
-#include <cuda_runtime.h>
-#include <curand_kernel.h>
-#include <unistd.h>
 
+// Kernel to compute dot_product and row_sq_norm for a row
+__global__ void computeRowSumsKernel(const double *A, const double *x, double *dot_product, double *row_sq_norm, int cols)
+{
 
-#define CUDA_CHECK(call) \
-  do { \
-    cudaError_t err = call; \
-    if (err != cudaSuccess) { \
-      fprintf(stderr, "CUDA error in %s at line %d: %s\n", __FILE__, __LINE__, cudaGetErrorString(err)); \
-      exit(err); \
-    } \
-  } while (0)
+  // Get the right stuff onto GPU
+  extern __shared__ double shared_mem[];
 
+  double *partial_dot = shared_mem;
+  double *partial_row_sq = shared_mem + blockDim.x;
 
+  int tid = threadIdx.x;
+  int idx = blockIdx.x * cols + tid;
 
-__global__ void kaczmarz_dense_update(double *x, const double *A, const double *b,
-                                      const unsigned rows, const unsigned cols,
-                                      double *row_sq_norms) {
-  const unsigned row_idx = blockIdx.x * blockDim.x + threadIdx.x;
-  if (row_idx < rows) {
-    const double *const a_row = A + row_idx * cols;
-    double dot_product = 0.0;
-    double row_sq_norm = 0.0;
+  // Initialize the values that we work with
+  partial_dot[tid] = 0.0;
+  partial_row_sq[tid] = 0.0;
 
-    // Compute the dot product and squared norm
-    for (unsigned j = 0; j < cols; j++) {
-      dot_product += a_row[j] * x[j];
-      row_sq_norm += a_row[j] * a_row[j];
+  // Compute the dot product and row square norm for every element in the row, one thread per element
+  if (tid < cols)
+  {
+    double a_val = A[idx];
+    partial_dot[tid] = a_val * x[tid];
+    partial_row_sq[tid] = a_val * a_val; 
+  }
+  else //Handling of unused threads
+  {
+    partial_dot[tid] = 0.0;
+    partial_row_sq[tid] = 0.0;
+  }
+
+  // Wait for all threads to finish
+  __syncthreads();
+
+  // Add up all the values with the stride pattern to get the final dot product and row square norm
+  for (int stride = blockDim.x / 2; stride > 0; stride /= 2)
+  {
+    if (tid < stride)
+    {
+      partial_dot[tid] += partial_dot[tid + stride];
+      partial_row_sq[tid] += partial_row_sq[tid + stride];
     }
+    __syncthreads();
+  }
 
-    // Store the row squared norm
-    row_sq_norms[row_idx] = row_sq_norm;
-
-    // Stop if the squared norm of the row is zero
-    if (row_sq_norm < 1e-10) {
-      return;
-    }
-
-    const double correction = (b[row_idx] - dot_product) / row_sq_norm;
-    for (unsigned j = 0; j < cols; j++) {
-      x[j] += a_row[j] * correction;
-    }
+  // If tid is 0, write the final result to the output arrays
+  if (tid == 0)
+  {
+    dot_product[blockIdx.x] = partial_dot[0];
+    row_sq_norm[blockIdx.x] = partial_row_sq[0];
   }
 }
 
+// Wrapper function for invoking the kernel
+bool computeRowSums(const std::vector<double> &A, const std::vector<double> &x,
+                    std::vector<double> &dot_product, std::vector<double> &row_sq_norm,
+                    int rows, int cols)
+{
+  double *d_A, *d_x, *d_dot_product, *d_row_sq_norm;
 
-double invoke_dense_kaczmarz_update(const DenseLinearSystem &lse, double *x, const unsigned rows, const unsigned cols) {
-  const unsigned thread_count = 64; // Use a reasonable number of threads per block
-  CUDA_CHECK(cudaDeviceReset());
-  // Copying memory to the GPU
-  const auto gpu_malloc_and_copy = [](const double *v, const size_t byte_count) {
-    double *gpu_memory;
-    CUDA_CHECK(cudaMalloc(&gpu_memory, byte_count));
-    CUDA_CHECK(cudaMemcpy(gpu_memory, v, byte_count, cudaMemcpyHostToDevice));
-    return gpu_memory;
-  };
-  double *x_gpu = gpu_malloc_and_copy(x, cols * sizeof(double));
-  double *A_gpu = gpu_malloc_and_copy(lse.A(), rows * cols * sizeof(double));
-  double *b_gpu = gpu_malloc_and_copy(lse.b(), rows * sizeof(double));
-  // Allocate memory for row squared norms on the GPU
-  double *row_sq_norms_gpu;
-  CUDA_CHECK(cudaMalloc(&row_sq_norms_gpu, rows * sizeof(double)));
+  // Allocate memory on the GPU
+  cudaMalloc((void **)&d_A, rows * cols * sizeof(double));
+  cudaMalloc((void **)&d_x, cols * sizeof(double));
+  cudaMalloc((void **)&d_dot_product, rows * sizeof(double));
+  cudaMalloc((void **)&d_row_sq_norm, rows * sizeof(double));
+
+  cudaMemcpy(d_A, A.data(), rows * cols * sizeof(double), cudaMemcpyHostToDevice);
+  cudaMemcpy(d_x, x.data(), cols * sizeof(double), cudaMemcpyHostToDevice);
+
   // Launch the kernel
-  kaczmarz_dense_update<<<(rows + thread_count - 1) / thread_count, thread_count>>>(
-      x_gpu, A_gpu, b_gpu, rows, cols, row_sq_norms_gpu);
-  CUDA_CHECK(cudaGetLastError()); // Check for kernel launch errors
-  // Copy the updated x back to the host
-  CUDA_CHECK(cudaMemcpy(x, x_gpu, cols * sizeof(double), cudaMemcpyDeviceToHost));
-  // Copy the row squared norms back to the host
-  std::vector<double> row_sq_norms(rows);
-  CUDA_CHECK(cudaMemcpy(row_sq_norms.data(), row_sq_norms_gpu, rows * sizeof(double), cudaMemcpyDeviceToHost));
-  // Free GPU memory
-  CUDA_CHECK(cudaFree(x_gpu));
-  CUDA_CHECK(cudaFree(A_gpu));
-  CUDA_CHECK(cudaFree(b_gpu));
-  CUDA_CHECK(cudaFree(row_sq_norms_gpu));
-  CUDA_CHECK(cudaDeviceReset());
-  // Find and return the smallest row squared norm
-  double smallest_row_sq_norm = *std::min_element(row_sq_norms.begin(), row_sq_norms.end());
-  return smallest_row_sq_norm;
+  int threadsPerBlock = cols;
+  computeRowSumsKernel<<<rows, threadsPerBlock, threadsPerBlock * 2 * sizeof(double)>>>(d_A, d_x, d_dot_product, d_row_sq_norm, cols);
+
+  // Copy the results back to the host
+  cudaMemcpy(dot_product.data(), d_dot_product, rows * sizeof(double), cudaMemcpyDeviceToHost);
+  cudaMemcpy(row_sq_norm.data(), d_row_sq_norm, rows * sizeof(double), cudaMemcpyDeviceToHost);
+
+  // Free the memory
+  cudaFree(d_A);
+  cudaFree(d_x);
+  cudaFree(d_dot_product);
+  cudaFree(d_row_sq_norm);
+
+  return cudaGetLastError() == cudaSuccess;
 }

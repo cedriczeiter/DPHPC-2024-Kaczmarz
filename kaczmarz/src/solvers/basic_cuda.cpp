@@ -16,8 +16,6 @@ KaczmarzSolverStatus dense_kaczmarz_cuda(const DenseLinearSystem &lse, double *x
   const unsigned rows = lse.row_count();
   const unsigned cols = lse.column_count();
 
-  std::cout << "dense_kaczmarz_cuda starting" << std::endl;
-
   // Calculate the residual norm in the beginning to check for convergence
   double residual_norm_sq = 0.0;
   for (unsigned k = 0; k < rows; k++) {
@@ -42,8 +40,6 @@ KaczmarzSolverStatus dense_kaczmarz_cuda(const DenseLinearSystem &lse, double *x
       std::chrono::duration<double> elapsed = end - start;
       times_residuals.push_back(elapsed.count());
       double residual_norm_sq = 0.0;
-      
-      
       for (unsigned k = 0; k < rows; k++) {
         double row_residual = 0.0;
         const double *row = lse.A() + k * cols;
@@ -55,8 +51,7 @@ KaczmarzSolverStatus dense_kaczmarz_cuda(const DenseLinearSystem &lse, double *x
       }
 
       residual_norm_now = std::sqrt(residual_norm_sq);
-      residuals.push_back(residual_norm_now /
-                          residual_norm_0);  // Takes residual fraction
+      residuals.push_back(residual_norm_now / residual_norm_0);  // Takes residual fraction
       iterations.push_back(iter);
 
       // if residual converged enough, return
@@ -65,23 +60,38 @@ KaczmarzSolverStatus dense_kaczmarz_cuda(const DenseLinearSystem &lse, double *x
       }
     }
 
-
-
-    ///////////////////////////////
-    // From here on the relevant stuff to parallelize
-    ///////////////////////////////
-
     // Process each row of matrix A
+    std::vector<double> dot_product(rows);
+    std::vector<double> row_sq_norm(rows);
     
-    double smallestRowSqNorm = invoke_dense_kaczmarz_update(lse, x,
-                                  rows, cols);
-    if (smallestRowSqNorm < 1e-10) {
-      return KaczmarzSolverStatus::ZeroNormRow;
+    // Offload dot product and squared row norm computations to GPU
+  computeRowSums(
+          std::vector<double>(lse.A(), lse.A() + rows * cols), 
+          std::vector<double>(x, x + cols),
+          dot_product, 
+          row_sq_norm, 
+          rows, 
+          cols);
+
+          std::cout << "Dot product: ";
+          for (int i = 0; i < rows; i++){
+            std::cout << dot_product[i] << "   ";
+          }
+
+    // Use GPU results for correction
+    for (unsigned i = 0; i < rows; i++) {
+      // Stop if a row squared norm of a row is zero
+      if (row_sq_norm[i] < 1e-10) {
+        return KaczmarzSolverStatus::ZeroNormRow;
+      }
+
+      const double correction = (lse.b()[i] - dot_product[i]) / row_sq_norm[i];
+      for (unsigned j = 0; j < cols; j++) {
+        x[j] += lse.A()[i * cols + j] * correction;
+      }
     }
   }
 
-  // If it didnt return earlier, then max iterations reached and not
-  // converged.
+  // If it didn't return earlier, then max iterations reached and not converged.
   return KaczmarzSolverStatus::OutOfIterations;
 }
-

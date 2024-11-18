@@ -14,7 +14,7 @@ KaczmarzSolverStatus dense_kaczmarz_cuda(const DenseLinearSystem& lse, double* x
                                          std::vector<int>& iterations,
                                          const int convergence_step_rate);
 
-double invoke_dense_kaczmarz_update(const DenseLinearSystem &lse, double *x,
-                             const unsigned rows, const unsigned cols);
-
+bool computeRowSums(const std::vector<double>& A, const std::vector<double>& x, 
+                                        std::vector<double>& dot_product, std::vector<double>& row_sq_norm, 
+                                        int rows, int cols);
 #endif // BASIC_CUDA_HPP
