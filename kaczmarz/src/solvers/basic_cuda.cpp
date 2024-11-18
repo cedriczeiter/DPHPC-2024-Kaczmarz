@@ -73,7 +73,8 @@ KaczmarzSolverStatus dense_kaczmarz_cuda(const DenseLinearSystem &lse, double *x
 
     // Process each row of matrix A
     
-    double smallestRowSqNorm = invoke_dense_kaczmarz_update(lse, x, rows, cols);
+    double smallestRowSqNorm = invoke_dense_kaczmarz_update(lse, x,
+                                  rows, cols);
     if (smallestRowSqNorm < 1e-10) {
       return KaczmarzSolverStatus::ZeroNormRow;
     }

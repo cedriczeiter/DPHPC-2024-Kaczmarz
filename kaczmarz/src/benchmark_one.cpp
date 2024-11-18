@@ -20,7 +20,7 @@ using hrclock = std::chrono::high_resolution_clock;
 
 int main() {
   constexpr unsigned dim = 50;
-  constexpr unsigned max_iterations = 100000;
+  constexpr unsigned max_iterations = 1000;
   constexpr double precision = 1e-7;
 
   std::mt19937 rng(21);
