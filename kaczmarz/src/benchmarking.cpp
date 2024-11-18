@@ -222,7 +222,7 @@ double benchmark_randomsolver_dense(const int dim, const int numIterations,
     const auto start = std::chrono::high_resolution_clock::now();
 
     kaczmarz_random_solver(lse, &x_kaczmarz_random[0], MAX_IT * dim, PRECISION,
-                           times_residuals, residuals, iterations, 100000);
+                           times_residuals, residuals, iterations, 10000);
 
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
