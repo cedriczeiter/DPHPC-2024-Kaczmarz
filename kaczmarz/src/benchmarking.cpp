@@ -305,58 +305,58 @@ int main() {
   /// Cuda Solver Dense///
   //////////////////////////////////////////
 
-  // Open the file for output
-  std::ofstream outFileND2("results_cudasolver_dense.csv");
-  outFileND2 << "Dim,AvgTime,StdDev\n";  // Write the header for the CSV file
+  // // Open the file for output
+  // std::ofstream outFileND2("results_cudasolver_dense.csv");
+  // outFileND2 << "Dim,AvgTime,StdDev\n";  // Write the header for the CSV file
 
-  // Loop over problem sizes, benchmark, and write to file
-  for (int dim = MIN_DIM; dim <= MAX_DIM; dim *= 2) {
-    double stdDev;
-    double avgTime =
-        benchmark_cudasolver_dense(dim, numIterations, stdDev, rng);
+  // // Loop over problem sizes, benchmark, and write to file
+  // for (int dim = MIN_DIM; dim <= MAX_DIM; dim *= 2) {
+  //   double stdDev;
+  //   double avgTime =
+  //       benchmark_cudasolver_dense(dim, numIterations, stdDev, rng);
 
-    // Write results to the file
-    outFileND2 << dim << "," << avgTime << "," << stdDev << "\n";
-  }
-  outFileND2.close();  // Close the file after writing
+  //   // Write results to the file
+  //   outFileND2 << dim << "," << avgTime << "," << stdDev << "\n";
+  // }
+  // outFileND2.close();  // Close the file after writing
 
   //////////////////////////////////////////
   /// Cuda Asynchronous Solver Sparse///
   //////////////////////////////////////////
 
-  // Open the file for output
-  std::ofstream outFileNS1("results_asynchronous_cuda_sparse.csv");
-  outFileNS1 << "Dim,AvgTime,StdDev\n";  // Write the header for the CSV file
+  // // Open the file for output
+  // std::ofstream outFileNS1("results_asynchronous_cuda_sparse.csv");
+  // outFileNS1 << "Dim,AvgTime,StdDev\n";  // Write the header for the CSV file
 
-  // Loop over problem sizes, benchmark, and write to file
-  for (int dim = MIN_DIM; dim <= MAX_DIM; dim *= 2) {
-    double stdDev;
-    double avgTime = benchmark_asynchronouscuda_solver_sparse(
-        dim, numIterations, stdDev, rng);
+  // // Loop over problem sizes, benchmark, and write to file
+  // for (int dim = MIN_DIM; dim <= MAX_DIM; dim *= 2) {
+  //   double stdDev;
+  //   double avgTime = benchmark_asynchronouscuda_solver_sparse(
+  //       dim, numIterations, stdDev, rng);
 
-    // Write results to the file
-    outFileNS1 << dim << "," << avgTime << "," << stdDev << "\n";
-  }
-  outFileNS1.close();  // Close the file after writing
+  //   // Write results to the file
+  //   outFileNS1 << dim << "," << avgTime << "," << stdDev << "\n";
+  // }
+  // outFileNS1.close();  // Close the file after writing
 
   //////////////////////////////////////////
   /// CPU Asynchronous Solver Sparse///
   //////////////////////////////////////////
 
-  // Open the file for output
-  std::ofstream outFileNS2("results_asynchronous_cpu_sparse.csv");
-  outFileNS2 << "Dim,AvgTime,StdDev\n";  // Write the header for the CSV file
+  // // Open the file for output
+  // std::ofstream outFileNS2("results_asynchronous_cpu_sparse.csv");
+  // outFileNS2 << "Dim,AvgTime,StdDev\n";  // Write the header for the CSV file
 
-  // Loop over problem sizes, benchmark, and write to file
-  for (int dim = MIN_DIM; dim <= MAX_DIM; dim *= 2) {
-    double stdDev;
-    double avgTime = benchmark_asynchronouscpu_solver_sparse(dim, numIterations,
-                                                             stdDev, rng);
+  // // Loop over problem sizes, benchmark, and write to file
+  // for (int dim = MIN_DIM; dim <= MAX_DIM; dim *= 2) {
+  //   double stdDev;
+  //   double avgTime = benchmark_asynchronouscpu_solver_sparse(dim, numIterations,
+  //                                                            stdDev, rng);
 
-    // Write results to the file
-    outFileNS2 << dim << "," << avgTime << "," << stdDev << "\n";
-  }
-  outFileNS2.close();  // Close the file after writing
+  //   // Write results to the file
+  //   outFileNS2 << dim << "," << avgTime << "," << stdDev << "\n";
+  // }
+  // outFileNS2.close();  // Close the file after writing
 
   //////////////////////////////////////////
   /// Normal Solver Sparse///
