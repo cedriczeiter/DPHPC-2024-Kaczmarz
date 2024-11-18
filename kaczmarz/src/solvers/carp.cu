@@ -24,7 +24,7 @@ __global__ void step(const int *A_outerIndex, const int *A_innerIndex,
                             const unsigned rows, const unsigned cols,
                             const double *sq_norms, double *x, double *X, const unsigned rows_per_thread, const unsigned nnz, const unsigned max_nnz_in_row) {
   const unsigned tid = blockIdx.x * blockDim.x + threadIdx.x;
-  printf("Before allocating\n");
+  //printf("Before allocating\n");
   const unsigned total_threads = (unsigned)(rows/ROWS_PER_THREAD);
   extern __shared__ int data[];
   int *A_outer = data;
@@ -33,7 +33,7 @@ __global__ void step(const int *A_outerIndex, const int *A_innerIndex,
   double *X_local = (double*)&A_values_shared[nnz+1];
   double *b_local = (double*)&X_local[total_threads*max_nnz_in_row+1];
   double *sq_norms_local = (double*)&b_local[rows+1];
-  printf("After allocating\n");
+  //printf("After allocating\n");
 
   if (tid*rows_per_thread < rows){
     printf("TID: %d, ROW PER THREAD: %d, ROWS: %d\n", tid, rows_per_thread, rows);
@@ -41,7 +41,7 @@ __global__ void step(const int *A_outerIndex, const int *A_innerIndex,
     for (unsigned k = 0; k <= rows_per_thread; k++){
       A_outer[tid*rows_per_thread + k] = A_outerIndex[tid*rows_per_thread + k];
     }
-    printf("Thread: %d, A_outer\n", tid);
+    //printf("Thread: %d, A_outer\n", tid);
     for (unsigned k = A_outer[tid*rows_per_thread]; k < A_outer[(tid+1)*rows_per_thread]; k++){
       //printf("Thread: %d, k: %d, global: %d\n", tid, k, A_innerIndex[k]);
       A_inner[k] = A_innerIndex[k];
@@ -49,15 +49,15 @@ __global__ void step(const int *A_outerIndex, const int *A_innerIndex,
       A_values_shared[k] = A_values[k];
     }
     //copy over X
-    printf("Thread: %d, A_inner\n", tid);
+    //printf("Thread: %d, A_inner\n", tid);
     for (unsigned k = 0; k < rows_per_thread; k++){
       for (unsigned i = A_outer[tid*rows_per_thread + k]; i < A_outer[tid*rows_per_thread + k + 1]; i++){
         X_local[tid*max_nnz_in_row + (i - A_outer[tid*rows_per_thread + k])] = x[A_inner[i]];
-        printf("X at %d: %f\n", A_inner[k], x[A_inner[k]]);
+        printf("X at %d: %f\n", A_inner[i], x[A_inner[i]]);
       }
     }
     //copy over b
-    printf("Thread: %d, X\n", tid);
+    //printf("Thread: %d, X\n", tid);
     for (unsigned k = 0; k < rows_per_thread; k++){
       b_local[tid*rows_per_thread + k] = b[tid*rows_per_thread + k];
     }
@@ -65,7 +65,7 @@ __global__ void step(const int *A_outerIndex, const int *A_innerIndex,
     for (unsigned k = 0; k < rows_per_thread; k++){
       sq_norms_local[tid*rows_per_thread + k] = sq_norms[tid*rows_per_thread + k];
     }
-    printf("A_inner and values\n");
+    //printf("A_inner and values\n");
     //perform one update step for assigned row
     for (unsigned local_iter = 0; local_iter < LOCAL_RUNS_PER_THREAD; local_iter++){
       for (unsigned k = 0; k < rows_per_thread; k++){
@@ -74,7 +74,7 @@ __global__ void step(const int *A_outerIndex, const int *A_innerIndex,
         double dot_product = 0.;
         for (unsigned i = A_outer[tid*rows_per_thread + k]; i < A_outer[tid*rows_per_thread + k + 1]; i++) {
             //printf("local: %f, global: %f, i: %d, A_inner: %d\n", X_local[tid*max_nnz_in_row + (i - A_outer[tid*rows_per_thread+k])], X[(tid*rows_per_thread+k)*rows + A_inner[i]], i, A_inner[i]);
-            const double x_value = X_local[tid*max_nnz_in_row + (i - A_outer[tid*rows_per_thread+k])];
+            const double x_value = X_local[tid*max_nnz_in_row + (i - A_outer[tid*rows_per_thread + k])];
             dot_product += A_values_shared[i] * x_value;
         }
         //calculate update
@@ -221,7 +221,7 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
   double base_residual = 0;
   const unsigned shared_size = (rows+1 + nnz+1)*sizeof(int) + (nnz+1 + total_threads*max_nnz_in_row+1)*sizeof(double) + 2*(rows+1)*sizeof(double);
   std::cout << "Size: " << shared_size << std::endl;
-  for (int iter = 0; iter < 50; iter++){
+  for (int iter = 0; iter < 2; iter++){
 
     //calculate residual every L iterations
     if (iter % 1 == 0){
