@@ -15,7 +15,7 @@
 #define BANDWIDTH 4
 #define MAX_DIM 32
 #define PRECISION 1e-10
-#define NUM_THREADS 4
+#define NUM_THREADS 2
 #define MIN_DIM 8
 
 /// @brief Computes the average and standard deviation of a vector of times.
