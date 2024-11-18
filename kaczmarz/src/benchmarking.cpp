@@ -11,7 +11,7 @@
 #include "solvers/basic.hpp"
 #include "solvers/random.hpp"
 
-#define MAX_IT 1000000
+#define MAX_IT 100000
 #define BANDWIDTH 4
 #define MAX_DIM 32
 #define PRECISION 1e-10
