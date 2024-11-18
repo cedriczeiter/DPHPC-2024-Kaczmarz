@@ -33,7 +33,16 @@ KaczmarzSolverStatus carp_gpu(const SparseLinearSystem& lse, Vector& x,
     if (h_sq_norms[i] < 1e-7) return KaczmarzSolverStatus::ZeroNormRow;
   }
 
+  //get maximum nr of nnz in row
+  int max_nnz_in_row = 0;
+  for (int i = 0; i < rows; i++){
+    std::cout << "index: " << i << std::endl;
+    const int nnz_in_row = A_outer[i+1] - A_outer[i];
+    if (nnz_in_row > max_nnz_in_row) max_nnz_in_row = nnz_in_row;
+  }
+  std::cout << "MAX NNZ: " << max_nnz_in_row << std::endl;
+
   return invoke_carp_solver_gpu(A_outer, A_inner, A_values, b, x.data(),
                                         h_sq_norms.data(), rows, cols, nnz,
-                                        max_iterations, precision);
+                                        max_iterations, precision, max_nnz_in_row);
 }
