@@ -2,13 +2,11 @@
 #include <curand_kernel.h>
 #include <unistd.h>
 
+#include <cassert>
 #include <cmath>
 #include <cstdlib>
 #include <iostream>
 #include <random>
-
-#include <cassert>
-
 
 #include "common.hpp"
 
