@@ -8,6 +8,7 @@
 #include <random>
 #include <cstring>
 #include <cassert>
+#include <set>
 
 
 #include "common.hpp"
@@ -95,15 +96,16 @@ __global__ void step(const int *A_outerIndex, const int *A_innerIndex,
 __global__ void update(const int *A_outerIndex, const int *A_innerIndex,
                             const double *A_values, const double *b,
                             const unsigned rows, const unsigned cols,
-                            const double *sq_norms, double *x, double *X, int *affected, const unsigned rows_per_thread) {
+                            const double *sq_norms, double *x, double *X, int *affected, const unsigned rows_per_thread, const unsigned total_threads) {
   const unsigned tid = blockIdx.x * blockDim.x + threadIdx.x;
   if (tid*rows_per_thread < cols){
+    //printf("Starting update\n");
     for (unsigned k = 0; k < rows_per_thread; k++){
       //sum up updates for assigned entry
       double sum = 0;
       int counter = 0;
       while (true){
-          int affecting_thread = affected[(tid*rows_per_thread + k)*rows + counter];
+          int affecting_thread = affected[(tid*rows_per_thread + k)*total_threads + counter];
           if (affecting_thread < 0) break;
           counter++;
           const double value = X[affecting_thread*rows + tid*rows_per_thread + k];
@@ -158,40 +160,45 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
   cudaMemcpy(d_A_inner, h_A_inner, nnz * sizeof(int), cudaMemcpyHostToDevice);
   cudaMemcpy(d_A_values, h_A_values, nnz * sizeof(double),
              cudaMemcpyHostToDevice);
-  std::cout << "Before affecting" << std::endl;
+  //std::cout << "Before affecting" << std::endl;
   //calculate indices which affect other rows, and move to device
-  std::vector<std::vector<unsigned>> affects(rows); //coding: affects[j][i]: the x at position j is affected by thread i
+  std::vector<std::set<unsigned>> affects(rows); //coding: affects[j: the x at position j is affected by thread in set
     for (unsigned k = 0; k < rows; k++){
       for (unsigned i = h_A_outer[k]; i < h_A_outer[k+1]; i++){
         unsigned row = k;
         unsigned thread = (unsigned)(h_A_inner[i]/ROWS_PER_THREAD);
-        affects.at(row).push_back(thread);
+        affects.at(row).insert(thread);
       }
     }
-  std::cout << "Affecting middle" << std::endl;
+  //std::cout << "Affecting middle" << std::endl;
   int* h_affected = new int[rows * total_threads];
   //std::cout << "Before memsetting" << std::endl;
+  //std::cout << "SIZE: " << rows*total_threads << std::endl;
   std::memset(h_affected, -1, rows*total_threads*sizeof(int));
   for (int k = 0; k < affects.size(); k++){
-    for (int i = 0; i < affects.at(k).size(); i++){
+    unsigned counter = 0;
+    for (auto it = affects.at(k).begin(); it != affects.at(k).end(); ++it){
       //std::cout << "K: " << k << " I: " << i << " Outer size: " << affects.size() << " Inner size: " << affects.at(k).size() << std::endl;
       //only add if not in already TODO
-      h_affected[k*rows + i] = affects.at(k).at(i);
+      h_affected[k*total_threads + counter] = *it;
+      //std::cout << "Index: " << k*total_threads + counter << std::endl;
+      counter++;
     }
   }
-  std::cout << "After affecting " << total_threads << std::endl;
+  //std::cout << "After affecting " << total_threads << std::endl;
+  //std::cout << "Rows: " << rows << " Threads: " << total_threads << " Size: " <<rows*total_threads*sizeof(int) <<std::endl;
   int *d_affected;
   cudaMalloc((void **)&d_affected, rows*total_threads*sizeof(int));
-  std::cout << "after malloc\n";
+  //std::cout << "after malloc\n";
   cudaMemcpy(d_affected, h_affected, rows*total_threads*sizeof(int), cudaMemcpyHostToDevice);
-  std::cout << "After copying affected" << std::endl;
+  //std::cout << "After copying affected" << std::endl;
 
   // move b to device
   double *d_b;
   cudaMalloc((void **)&d_b, cols * sizeof(double));
   cudaMemcpy(d_b, h_b, cols * sizeof(double), cudaMemcpyHostToDevice);
 
-  std::cout << "after copying b" << std::endl;
+  //std::cout << "after copying b" << std::endl;
 
   //move X to device
   double *d_X;
@@ -207,7 +214,7 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
   // solve LSE
   double base_residual = 0;
   const unsigned shared_size = (rows+1 + nnz+1)*sizeof(int) + (nnz+1 + rows*rows+1)*sizeof(double) + 2*(rows+1)*sizeof(double);
-  std::cout << "Size: " << shared_size << std::endl;
+  //std::cout << "Size: " << shared_size << std::endl;
   for (int iter = 0; iter < max_iterations; iter++){
 
     //calculate residual every L iterations
@@ -239,7 +246,7 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
         auto res = cudaDeviceSynchronize();
         assert(res == 0);
     update<<<blocks, threads_per_block>>>(
-        d_A_outer, d_A_inner, d_A_values, d_b, rows, cols, d_sq_norms, d_x, d_X, d_affected, ROWS_PER_THREAD);
+        d_A_outer, d_A_inner, d_A_values, d_b, rows, cols, d_sq_norms, d_x, d_X, d_affected, ROWS_PER_THREAD, total_threads);
         res = cudaDeviceSynchronize();
         assert(res == 0);
   }
