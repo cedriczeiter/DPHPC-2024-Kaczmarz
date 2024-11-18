@@ -16,6 +16,7 @@
 #define MAX_DIM 32
 #define PRECISION 1e-10
 #define NUM_THREADS 4
+#define MIN_DIM 8
 
 /// @brief Computes the average and standard deviation of a vector of times.
 /// @param times A vector of times recorded for benchmarking in seconds.
@@ -290,7 +291,7 @@ int main() {
   outFileND1 << "Dim,AvgTime,StdDev\n";  // Write the header for the CSV file
 
   // Loop over problem sizes, benchmark, and write to file
-  for (int dim = 2; dim <= MAX_DIM; dim *= 2) {
+  for (int dim = MIN_DIM; dim <= MAX_DIM; dim *= 2) {
     double stdDev;
     double avgTime =
         benchmark_normalsolver_dense(dim, numIterations, stdDev, rng);
@@ -309,7 +310,7 @@ int main() {
   outFileND2 << "Dim,AvgTime,StdDev\n";  // Write the header for the CSV file
 
   // Loop over problem sizes, benchmark, and write to file
-  for (int dim = 2; dim <= MAX_DIM; dim *= 2) {
+  for (int dim = MIN_DIM; dim <= MAX_DIM; dim *= 2) {
     double stdDev;
     double avgTime =
         benchmark_cudasolver_dense(dim, numIterations, stdDev, rng);
@@ -328,7 +329,7 @@ int main() {
   outFileNS1 << "Dim,AvgTime,StdDev\n";  // Write the header for the CSV file
 
   // Loop over problem sizes, benchmark, and write to file
-  for (int dim = 2; dim <= MAX_DIM; dim *= 2) {
+  for (int dim = MIN_DIM; dim <= MAX_DIM; dim *= 2) {
     double stdDev;
     double avgTime = benchmark_asynchronouscuda_solver_sparse(
         dim, numIterations, stdDev, rng);
@@ -347,7 +348,7 @@ int main() {
   outFileNS2 << "Dim,AvgTime,StdDev\n";  // Write the header for the CSV file
 
   // Loop over problem sizes, benchmark, and write to file
-  for (int dim = 2; dim <= MAX_DIM; dim *= 2) {
+  for (int dim = MIN_DIM; dim <= MAX_DIM; dim *= 2) {
     double stdDev;
     double avgTime = benchmark_asynchronouscpu_solver_sparse(dim, numIterations,
                                                              stdDev, rng);
@@ -366,7 +367,7 @@ int main() {
   outFileNS3 << "Dim,AvgTime,StdDev\n";  // Write the header for the CSV file
 
   // Loop over problem sizes, benchmark, and write to file
-  for (int dim = 2; dim <= MAX_DIM; dim *= 2) {
+  for (int dim = MIN_DIM; dim <= MAX_DIM; dim *= 2) {
     double stdDev;
     double avgTime =
         benchmark_sparsesolver_sparse(dim, numIterations, stdDev, rng);
@@ -385,7 +386,7 @@ int main() {
   outFileRD << "Dim,AvgTime,StdDev\n";  // Write the header for the CSV file
 
   // Loop over problem sizes, benchmark, and write to file
-  for (int dim = 2; dim <= MAX_DIM; dim *= 2) {
+  for (int dim = MIN_DIM; dim <= MAX_DIM; dim *= 2) {
     double stdDev;
     double avgTime =
         benchmark_randomsolver_dense(dim, numIterations, stdDev, rng);
@@ -404,7 +405,7 @@ int main() {
   outFileED << "Dim,AvgTime,StdDev\n";  // Write the header for the CSV file
 
   // Loop over problem sizes, benchmark, and write to file
-  for (int dim = 2; dim <= MAX_DIM; dim *= 2) {
+  for (int dim = MIN_DIM; dim <= MAX_DIM; dim *= 2) {
     double stdDev;
     double avgTime =
         benchmark_EigenSolver_dense(dim, numIterations, stdDev, rng);
@@ -423,7 +424,7 @@ int main() {
   outFileES << "Dim,AvgTime,StdDev\n";  // Write the header for the CSV file
 
   // Loop over problem sizes, benchmark, and write to file
-  for (int dim = 2; dim <= MAX_DIM; dim *= 2) {
+  for (int dim = MIN_DIM; dim <= MAX_DIM; dim *= 2) {
     double stdDev;
     double avgTime =
         benchmark_EigenSolver_sparse(dim, numIterations, stdDev, rng);
