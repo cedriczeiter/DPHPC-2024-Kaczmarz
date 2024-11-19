@@ -15,6 +15,7 @@
 #define L_RESIDUAL 500
 #define ROWS_PER_THREAD 10
 #define LOCAL_RUNS_PER_THREAD 5
+#define THREADS_PER_BLOCK 32
 
 // IMPORTANT: ONLY WORKS ON SQUARE MATRICES ATM AND IF ROWS_PER_THREAD DIVIDES
 // TOTAL ROWS
@@ -184,9 +185,8 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
   cudaMemset((void **)d_X, 0, total_threads * cols * sizeof(double));
 
   // calculate nr of blocks and threads
-  const int threads_per_block = 34;
   const int blocks =
-      (total_threads + threads_per_block - 1) / threads_per_block;
+      (total_threads + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
 
   // solve LSE
   double base_residual = 0;
@@ -225,7 +225,7 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
     // the real work begins here
 
     // perform iteration steps and updates
-    step<<<blocks, threads_per_block>>>(d_A_outer, d_A_inner, d_A_values, d_b,
+    step<<<blocks, THREADS_PER_BLOCK>>>(d_A_outer, d_A_inner, d_A_values, d_b,
                                         rows, cols, d_sq_norms, d_x, d_X,
                                         ROWS_PER_THREAD, nnz, max_nnz_in_row);
 
@@ -234,7 +234,7 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
     assert(res == 0);
 
     // update x
-    update<<<blocks, threads_per_block>>>(
+    update<<<blocks, THREADS_PER_BLOCK>>>(
         d_A_outer, d_A_inner, d_A_values, d_b, rows, cols, d_sq_norms, d_x, d_X,
         d_affected, ROWS_PER_THREAD, total_threads);
     // synchronize threads and check for errors
