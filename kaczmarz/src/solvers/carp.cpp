@@ -36,7 +36,7 @@ KaczmarzSolverStatus carp_gpu(const SparseLinearSystem& lse, Vector& x,
 
   //get maximum nr of nnz in row
   int max_nnz_in_row = 0;
-  for (int i = 0; i < rows; i++){
+  for (unsigned i = 0; i < rows; i++){
     //std::cout << "index: " << i << std::endl;
     const int nnz_in_row = A_outer[i+1] - A_outer[i];
     if (nnz_in_row > max_nnz_in_row) max_nnz_in_row = nnz_in_row;
@@ -45,7 +45,7 @@ KaczmarzSolverStatus carp_gpu(const SparseLinearSystem& lse, Vector& x,
 
 
   //call carp solver for beginning
-  invoke_carp_solver_gpu(A_outer, A_inner, A_values, b, x.data(),
+  return invoke_carp_solver_gpu(A_outer, A_inner, A_values, b, x.data(),
                                         h_sq_norms.data(), rows, cols, nnz,
                                         max_iterations, precision, max_nnz_in_row);
 }
