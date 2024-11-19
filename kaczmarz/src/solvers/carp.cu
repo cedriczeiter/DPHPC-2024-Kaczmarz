@@ -19,27 +19,32 @@
 
 //IMPORTANT: ONLY WORKS ON SQUARE MATRICES ATM AND IF ROWS_PER_THREAD DIVIDES TOTAL ROWS
 
-__global__ void step(const int *A_outerIndex, const int *A_innerIndex,
-                            const double *A_values, const double *b,
+__global__ void step(const int *A_outer, const int *A_inner,
+                            const double *A_values_shared, const double *b_local,
                             const unsigned rows, const unsigned cols,
-                            const double *sq_norms, double *x, double *X, const unsigned rows_per_thread, const unsigned nnz, const unsigned max_nnz_in_row) {
+                            const double *sq_norms_local, double *x, double *X, const unsigned rows_per_thread, const unsigned nnz, const unsigned max_nnz_in_row) {
   const unsigned tid = blockIdx.x * blockDim.x + threadIdx.x;
   //printf("Before allocating\n");
   //const unsigned total_threads = (unsigned)(rows/ROWS_PER_THREAD);
-  extern __shared__ int data[];
+  /*extern __shared__ int data[];
   int *A_outer = data; //(rows+1+nnz)*sizeof(int) + (2*nnz + 2*rows)*sizeof(double)
   int *A_inner = (int*)&A_outer[rows+1];
   double* A_values_shared = (double*)&A_inner[nnz+1];
   //double *X_local = (double*)&A_values_shared[nnz+1];
   double *b_local = (double*)&A_values_shared[nnz+1];
-  double *sq_norms_local = (double*)&b_local[rows+1];
+  double *sq_norms_local = (double*)&b_local[rows+1];*/
   //printf("After allocating\n");
+  /*const int* A_outer = A_outerIndex;
+  const int* A_inner = A_innerIndex;
+  const double* A_values_shared = A_values;
+  const double* b_local = b;
+  const double* sq_norms_local = sq_norms_local;*/
 
   if (tid*rows_per_thread < rows){
     double *X_local = (double*)malloc(rows*sizeof(double));
     //printf("TID: %d, ROW PER THREAD: %d, ROWS: %d\n", tid, rows_per_thread, rows);
     //copy over A to shared memory
-    for (unsigned k = 0; k <= rows_per_thread; k++){
+    /*for (unsigned k = 0; k <= rows_per_thread; k++){
       A_outer[tid*rows_per_thread + k] = A_outerIndex[tid*rows_per_thread + k];
     }
     //printf("Thread: %d, A_outer\n", tid);
@@ -51,12 +56,12 @@ __global__ void step(const int *A_outerIndex, const int *A_innerIndex,
     }
     //copy over X
     //printf("Thread: %d, A_inner\n", tid);
-    for (unsigned k = 0; k < rows_per_thread; k++){
+    */for (unsigned k = 0; k < rows_per_thread; k++){
       for (unsigned i = A_outer[tid*rows_per_thread + k]; i < A_outer[tid*rows_per_thread + k + 1]; i++){
         X_local[A_inner[i]] = x[A_inner[i]];
         //printf("X at %d: %f\n", A_inner[i], x[A_inner[i]]);
       }
-    }
+    }/*
     //copy over b
     //printf("Thread: %d, X\n", tid);
     for (unsigned k = 0; k < rows_per_thread; k++){
@@ -65,7 +70,7 @@ __global__ void step(const int *A_outerIndex, const int *A_innerIndex,
     //copy over sq norms
     for (unsigned k = 0; k < rows_per_thread; k++){
       sq_norms_local[tid*rows_per_thread + k] = sq_norms[tid*rows_per_thread + k];
-    }
+    }*/
     //printf("A_inner and values\n");
     //perform one update step for assigned row
     for (unsigned local_iter = 0; local_iter < LOCAL_RUNS_PER_THREAD; local_iter++){
@@ -229,9 +234,9 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
 
   // solve LSE
   double base_residual = 0;
-  const unsigned shared_size = (rows+nnz+2)*sizeof(int) + (2*nnz + 2*rows + 3)*sizeof(double);
+  //const unsigned shared_size = (rows+nnz+2)*sizeof(int) + (2*nnz + 2*rows + 3)*sizeof(double);
   //std::cout << "Size: " << shared_size << std::endl;
-  assert(shared_size < 64000);
+  //assert(shared_size < 64000);
   for (int iter = 0; iter < max_iterations; iter++){
 
     //calculate residual every L iterations
@@ -258,7 +263,7 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
     }
 
     //perform iteration steps and updates
-    step<<<blocks, threads_per_block, shared_size>>>(
+    step<<<blocks, threads_per_block>>>(
         d_A_outer, d_A_inner, d_A_values, d_b, rows, cols, d_sq_norms, d_x, d_X, ROWS_PER_THREAD,nnz,  max_nnz_in_row);
         auto res = cudaDeviceSynchronize();
         //std::cout << res << std::endl;
