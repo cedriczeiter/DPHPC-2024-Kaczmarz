@@ -19,10 +19,10 @@ using hrclock = std::chrono::high_resolution_clock;
  */
 
 int main() {
-  constexpr unsigned dim = 300;
+  constexpr unsigned dim = 50;
   constexpr unsigned bandwidth = 2;
   constexpr unsigned max_iterations = 100'000;
-  constexpr double precision = 1e-7;
+  constexpr double precision = 1e-3;
 
   std::mt19937 rng(21);
   const BandedLinearSystem lse =
@@ -57,11 +57,11 @@ int main() {
 
   const Vector error = x_kaczmarz - x_eigen;
 
-  /*std::cout << "error norms:\n";
+  std::cout << "error norms:\n";
   std::cout << "L1 = " << error.lpNorm<1>() << "\n";
   std::cout << "L_inf = " << error.lpNorm<Eigen::Infinity>() << std::endl;
 
-  std::cout << "Eigen: " <<std::endl;
+  /*std::cout << "Eigen: " <<std::endl;
   for (int i = 0; i < dim; i++){
     std::cout << x_eigen[i] << "   ";
   }

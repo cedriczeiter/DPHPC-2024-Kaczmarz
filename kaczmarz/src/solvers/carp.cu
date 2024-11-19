@@ -13,9 +13,9 @@
 
 #include "common.hpp"
 
-#define LAMBDA 1.5
-#define ROWS_PER_THREAD 10
-#define LOCAL_RUNS_PER_THREAD 10
+#define L 50
+#define ROWS_PER_THREAD 25
+#define LOCAL_RUNS_PER_THREAD 30
 
 //IMPORTANT: ONLY WORKS ON SQUARE MATRICES ATM AND IF ROWS_PER_THREAD DIVIDES TOTAL ROWS
 
@@ -25,7 +25,7 @@ __global__ void step(const int *A_outerIndex, const int *A_innerIndex,
                             const double *sq_norms, double *x, double *X, const unsigned rows_per_thread, const unsigned nnz, const unsigned max_nnz_in_row) {
   const unsigned tid = blockIdx.x * blockDim.x + threadIdx.x;
   //printf("Before allocating\n");
-  const unsigned total_threads = (unsigned)(rows/ROWS_PER_THREAD);
+  //const unsigned total_threads = (unsigned)(rows/ROWS_PER_THREAD);
   extern __shared__ int data[];
   int *A_outer = data; //(rows+1+nnz)*sizeof(int) + (2*nnz + 2*rows)*sizeof(double)
   int *A_inner = (int*)&A_outer[rows+1];
@@ -37,7 +37,7 @@ __global__ void step(const int *A_outerIndex, const int *A_innerIndex,
 
   if (tid*rows_per_thread < rows){
     double *X_local = (double*)malloc(rows*sizeof(double));
-    printf("TID: %d, ROW PER THREAD: %d, ROWS: %d\n", tid, rows_per_thread, rows);
+    //printf("TID: %d, ROW PER THREAD: %d, ROWS: %d\n", tid, rows_per_thread, rows);
     //copy over A to shared memory
     for (unsigned k = 0; k <= rows_per_thread; k++){
       A_outer[tid*rows_per_thread + k] = A_outerIndex[tid*rows_per_thread + k];
@@ -54,7 +54,7 @@ __global__ void step(const int *A_outerIndex, const int *A_innerIndex,
     for (unsigned k = 0; k < rows_per_thread; k++){
       for (unsigned i = A_outer[tid*rows_per_thread + k]; i < A_outer[tid*rows_per_thread + k + 1]; i++){
         X_local[A_inner[i]] = x[A_inner[i]];
-        printf("X at %d: %f\n", A_inner[i], x[A_inner[i]]);
+        //printf("X at %d: %f\n", A_inner[i], x[A_inner[i]]);
       }
     }
     //copy over b
@@ -84,7 +84,7 @@ __global__ void step(const int *A_outerIndex, const int *A_innerIndex,
         for (unsigned i = A_outer[tid*rows_per_thread + k]; i < A_outer[tid*rows_per_thread + k + 1]; i++) {
             const double update = update_coeff * A_values_shared[i];
             X_local[A_inner[i]] += update;
-            printf("Update: %f\n", update);
+            //printf("Update: %f\n", update);
         }
       }
     }
@@ -93,10 +93,10 @@ __global__ void step(const int *A_outerIndex, const int *A_innerIndex,
     for (unsigned k = 0; k < rows_per_thread; k++){
       for (unsigned i = A_outer[tid*rows_per_thread + k]; i < A_outer[tid*rows_per_thread + k + 1]; i++) {
           X[tid*rows + A_inner[i]] = X_local[A_inner[i]];
-          printf("global pos: %d, local pos: %d, value: %f\n", A_inner[i], (i - A_outer[tid*rows_per_thread+k]), X[tid*rows + A_inner[i]]);
+          //printf("global pos: %d, local pos: %d, value: %f\n", A_inner[i], (i - A_outer[tid*rows_per_thread+k]), X[tid*rows + A_inner[i]]);
       }
     }
-    printf("Done here\n");
+    //printf("Done here\n");
     free(X_local);
   }
 }
@@ -107,7 +107,7 @@ __global__ void update(const int *A_outerIndex, const int *A_innerIndex,
                             const double *sq_norms, double *x, double *X, int *affected, const unsigned rows_per_thread, const unsigned total_threads) {
   const unsigned tid = blockIdx.x * blockDim.x + threadIdx.x;
   if (tid*rows_per_thread < cols){
-    printf("Starting update\n");
+    //printf("Starting update\n");
     for (unsigned k = 0; k < rows_per_thread; k++){
       //sum up updates for assigned entry
       double sum = 0;
@@ -117,14 +117,14 @@ __global__ void update(const int *A_outerIndex, const int *A_innerIndex,
           if (affecting_thread < 0) break;
           counter++;
           const double value = X[affecting_thread*rows + tid*rows_per_thread + k];
-          printf("Update read: %f,  from thread: %d \n", value, affecting_thread);
+          //printf("Update read: %f,  from thread: %d \n", value, affecting_thread);
           sum += value;
       }
-      printf("updates counted: %d\n", counter);
+      //printf("updates counted: %d\n", counter);
       //if (count > 0.5) printf("total update: %f\n", sum/count);
-      printf("position: %d, x before: %f, update: %f ", tid*rows_per_thread + k, x[tid*rows_per_thread + k], sum/(double)counter);
-      if (counter > 0) x[tid*rows_per_thread + k] = sum/(double)counter;
-      printf("position: %d, x now: %f\n ", tid*rows_per_thread + k, x[tid*rows_per_thread + k]);
+      //printf("position: %d, x before: %f, update: %f ", tid*rows_per_thread + k, x[tid*rows_per_thread + k], sum/(double)counter);
+      x[tid*rows_per_thread + k] = sum/(double)counter;
+      //printf("position: %d, x now: %f\n ", tid*rows_per_thread + k, x[tid*rows_per_thread + k]);
     }
   }
 }
@@ -137,8 +137,8 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
     const unsigned max_iterations, const double precision, const unsigned max_nnz_in_row) {
 
 
-  std::cout << "starting whoop whoop" << std::endl;
-  const unsigned L = 1000;  // we check for convergence every L steps
+  //std::cout << "starting whoop whoop" << std::endl;
+  //const unsigned L = 1000;  // we check for convergence every L steps
   bool converged = false;
   assert(rows == cols);
 
@@ -169,7 +169,7 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
   cudaMemcpy(d_A_inner, h_A_inner, nnz * sizeof(int), cudaMemcpyHostToDevice);
   cudaMemcpy(d_A_values, h_A_values, nnz * sizeof(double),
              cudaMemcpyHostToDevice);
-  std::cout << "Before affecting" << std::endl;
+  //std::cout << "Before affecting" << std::endl;
   //calculate indices which affect other rows, and move to device
   std::vector<std::set<unsigned>> affects(rows); //coding: affects[j]: the x at position j is affected by thread in set
     for (unsigned k = 0; k < rows; k++){
@@ -179,7 +179,7 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
         affects.at(row).insert(thread);
       }
     }
-  std::cout << "Affecting middle" << std::endl;
+  //std::cout << "Affecting middle" << std::endl;
   int* h_affected = new int[(total_threads+1)*rows];
   //std::cout << "Before memsetting" << std::endl;
   //std::cout << "SIZE: " << rows*total_threads << std::endl;
@@ -194,14 +194,14 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
       counter++;
     }
   }
-  std::cout << "After affecting " << total_threads << std::endl;
-  for (int k = 0; k < rows; k++){
+  //std::cout << "After affecting " << total_threads << std::endl;
+  /*for (int k = 0; k < rows; k++){
     std::cout << std::endl;
     for (int counter = 0; counter < total_threads+1; counter++){
       std::cout << h_affected[k*(total_threads+1) + counter] << " ";
     }
-  }
-  std::cout <<std::endl;
+  }*/
+  //std::cout <<std::endl;
   //std::cout << "Rows: " << rows << " Threads: " << total_threads << " Size: " <<rows*total_threads*sizeof(int) <<std::endl;
   int *d_affected;
   cudaMalloc((void **)&d_affected, rows*(total_threads+1)*sizeof(int));
@@ -230,12 +230,12 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
   // solve LSE
   double base_residual = 0;
   const unsigned shared_size = (rows+nnz+2)*sizeof(int) + (2*nnz + 2*rows + 3)*sizeof(double);
-  std::cout << "Size: " << shared_size << std::endl;
+  //std::cout << "Size: " << shared_size << std::endl;
   assert(shared_size < 64000);
-  for (int iter = 0; iter < 10; iter++){
+  for (int iter = 0; iter < max_iterations; iter++){
 
     //calculate residual every L iterations
-    if (iter % 1 == 0){
+    if (iter % L == 0){
       cudaMemcpy(h_x, d_x, cols * sizeof(double), cudaMemcpyDeviceToHost);
       double residual = 0.0;
 
@@ -251,7 +251,7 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
 
       printf("Residual: %f\n", residual/base_residual);
 
-      if (residual < precision) {
+      if (residual/base_residual < precision) {
         converged = true;
         break;
       }
@@ -261,12 +261,12 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
     step<<<blocks, threads_per_block, shared_size>>>(
         d_A_outer, d_A_inner, d_A_values, d_b, rows, cols, d_sq_norms, d_x, d_X, ROWS_PER_THREAD,nnz,  max_nnz_in_row);
         auto res = cudaDeviceSynchronize();
-        std::cout << res << std::endl;
+        //std::cout << res << std::endl;
         assert(res == 0);
     update<<<blocks, threads_per_block>>>(
         d_A_outer, d_A_inner, d_A_values, d_b, rows, cols, d_sq_norms, d_x, d_X, d_affected, ROWS_PER_THREAD, total_threads);
         res = cudaDeviceSynchronize();
-        std::cout << res << std::endl;
+        //std::cout << res << std::endl;
         assert(res == 0);
   }
 
