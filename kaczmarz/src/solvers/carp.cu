@@ -15,7 +15,7 @@
 
 #define LAMBDA 1.5
 #define ROWS_PER_THREAD 10
-#define LOCAL_RUNS_PER_THREAD 1
+#define LOCAL_RUNS_PER_THREAD 10
 
 //IMPORTANT: ONLY WORKS ON SQUARE MATRICES ATM AND IF ROWS_PER_THREAD DIVIDES TOTAL ROWS
 
@@ -30,12 +30,13 @@ __global__ void step(const int *A_outerIndex, const int *A_innerIndex,
   int *A_outer = data;
   int *A_inner = (int*)&A_outer[rows+1];
   double* A_values_shared = (double*)&A_inner[nnz+1];
-  double *X_local = (double*)&A_values_shared[nnz+1];
-  double *b_local = (double*)&X_local[total_threads*max_nnz_in_row+1];
+  //double *X_local = (double*)&A_values_shared[nnz+1];
+  double *b_local = (double*)&A_values_shared[nnz+1];
   double *sq_norms_local = (double*)&b_local[rows+1];
   //printf("After allocating\n");
 
   if (tid*rows_per_thread < rows){
+    double *X_local = (double*)malloc(rows*sizeof(rows));
     printf("TID: %d, ROW PER THREAD: %d, ROWS: %d\n", tid, rows_per_thread, rows);
     //copy over A to shared memory
     for (unsigned k = 0; k <= rows_per_thread; k++){
@@ -52,7 +53,7 @@ __global__ void step(const int *A_outerIndex, const int *A_innerIndex,
     //printf("Thread: %d, A_inner\n", tid);
     for (unsigned k = 0; k < rows_per_thread; k++){
       for (unsigned i = A_outer[tid*rows_per_thread + k]; i < A_outer[tid*rows_per_thread + k + 1]; i++){
-        X_local[(tid*rows_per_thread+k)*max_nnz_in_row + (i - A_outer[tid*rows_per_thread + k])] = x[A_inner[i]];
+        X_local[A_inner[i]] = x[A_inner[i]];
         printf("X at %d: %f\n", A_inner[i], x[A_inner[i]]);
       }
     }
@@ -74,7 +75,7 @@ __global__ void step(const int *A_outerIndex, const int *A_innerIndex,
         double dot_product = 0.;
         for (unsigned i = A_outer[tid*rows_per_thread + k]; i < A_outer[tid*rows_per_thread + k + 1]; i++) {
             //printf("local: %f, global: %f, i: %d, A_inner: %d\n", X_local[tid*max_nnz_in_row + (i - A_outer[tid*rows_per_thread+k])], X[(tid*rows_per_thread+k)*rows + A_inner[i]], i, A_inner[i]);
-            const double x_value = X_local[(tid*rows_per_thread+k)*max_nnz_in_row + (i - A_outer[tid*rows_per_thread + k])];
+            const double x_value = X_local[A_inner[i]];
             dot_product += A_values_shared[i] * x_value;
         }
         //calculate update
@@ -82,7 +83,7 @@ __global__ void step(const int *A_outerIndex, const int *A_innerIndex,
         // save update for x in local memory
         for (unsigned i = A_outer[tid*rows_per_thread + k]; i < A_outer[tid*rows_per_thread + k + 1]; i++) {
             const double update = update_coeff * A_values_shared[i];
-            X_local[(tid*rows_per_thread+k)*max_nnz_in_row + (i - A_outer[tid*rows_per_thread+k])] += 1.5*update;
+            X_local[A_inner[i]] += update;
             printf("Update: %f\n", update);
         }
       }
@@ -91,10 +92,11 @@ __global__ void step(const int *A_outerIndex, const int *A_innerIndex,
     //set all values back in global matrix for averaging step
     for (unsigned k = 0; k < rows_per_thread; k++){
       for (unsigned i = A_outer[tid*rows_per_thread + k]; i < A_outer[tid*rows_per_thread + k + 1]; i++) {
-          X[tid*rows + A_inner[i]] = X_local[(tid+k)*max_nnz_in_row + (i - A_outer[tid*rows_per_thread+k])];
+          X[tid*rows + A_inner[i]] = X_local[A_inner[i]];
           printf("global pos: %d, local pos: %d, value: %f\n", A_inner[i], (i - A_outer[tid*rows_per_thread+k]), X[tid*rows + A_inner[i]]);
       }
     }
+    free(X_local);
   }
 }
 
@@ -134,7 +136,7 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
     const unsigned max_iterations, const double precision, const unsigned max_nnz_in_row) {
 
 
-
+  std::cout << "starting whoop whoop" << std::endl;
   const unsigned L = 1000;  // we check for convergence every L steps
   bool converged = false;
   assert(rows == cols);
