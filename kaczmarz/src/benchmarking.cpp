@@ -14,11 +14,11 @@
 
 
 #define MAX_IT 1000000
-#define BANDWIDTH 2
-#define MAX_DIM 32
+#define BANDWIDTH 4
+#define MAX_DIM 128
 #define PRECISION 1e-7
 #define NUM_THREADS 8
-#define MIN_DIM 4
+#define MIN_DIM 8
 #define NUM_IT 1
 #define RANDOM_SEED 43
 
