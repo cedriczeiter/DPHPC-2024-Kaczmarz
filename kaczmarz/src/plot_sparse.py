@@ -10,7 +10,7 @@ data_banded_cpu_sparse = pd.read_csv("results_banded_cpu_2_threads_sparse.csv")
 data_banded_gpu_sparse = pd.read_csv("results_banded_cuda_sparse.csv")
 
 # Create the plot with error bars and connected lines
-plt.errorbar(data_sparse_sparse["Dim"], data_sparse_sparse["AvgTime"], yerr=data_sparse_sparse["StdDev"], fmt='o-', capsize=5, label="Our Solver")
+plt.errorbar(data_sparse_sparse["Dim"], data_sparse_sparse["AvgTime"], yerr=data_sparse_sparse["StdDev"], fmt='o-', capsize=5, label="Basic Sparse Solver Sequential Solver")
 
 # Create the plot with error bars and connected lines
 plt.errorbar(data_Eigen_sparse["Dim"], data_Eigen_sparse["AvgTime"], yerr=data_Eigen_sparse["StdDev"], fmt='o-', capsize=5, label="Eigen Solver")
@@ -32,6 +32,8 @@ plt.errorbar(data_banded_gpu_sparse["Dim"], data_banded_gpu_sparse["AvgTime"], y
 plt.xlabel("Dim")
 plt.ylabel("Average Time (s)")
 plt.title("Benchmark of our Sparse Algorithms")
+
+plt.yscale('log')
 
 # Add grid and legend
 plt.grid(True)
