@@ -19,7 +19,7 @@
 #define PRECISION 1e-7
 #define NUM_THREADS 8
 #define MIN_DIM 8
-#define NUM_IT 1
+#define NUM_IT 2
 #define RANDOM_SEED 43
 
 /// @brief Computes the average and standard deviation of a vector of times.
