@@ -2,8 +2,10 @@
 #include <curand_kernel.h>
 #include <unistd.h>
 
+#include <cassert>
 #include <cmath>
 #include <cstdlib>
+#include <cstring>
 #include <iostream>
 #include <random>
 #include <cstring>
@@ -89,7 +91,6 @@ __global__ void update(const int *A_outerIndex, const int *A_innerIndex,
   }
 }
 
-
 KaczmarzSolverStatus invoke_carp_solver_gpu(
     const int *h_A_outer, const int *h_A_inner, const double *h_A_values,
     const double *h_b, double *h_x, double *h_sq_norms, const unsigned rows,
@@ -113,7 +114,6 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
   double *d_x;
   cudaMalloc((void **)&d_x, cols * sizeof(double));
   cudaMemcpy(d_x, h_x, cols * sizeof(double), cudaMemcpyHostToDevice);
-
 
   // move A to device
   int *d_A_outer;
