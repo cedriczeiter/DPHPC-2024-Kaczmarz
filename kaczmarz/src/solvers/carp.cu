@@ -32,15 +32,12 @@ __global__ void step(const int *A_outer, const int *A_inner,
 
   if (tid * rows_per_thread < rows)  // only if thread has assigned rows
   {
-    // allocate local memory for x
-    double *X_local = (double *)malloc(rows * sizeof(double));
-    assert(X_local != 0);
 
     // copy x to local memory
     for (unsigned k = 0; k < rows_per_thread; k++) {
       for (unsigned i = A_outer[tid * rows_per_thread + k];
            i < A_outer[tid * rows_per_thread + k + 1]; i++) {
-        X_local[A_inner[i]] = x[A_inner[i]];
+        X[tid*rows+A_inner[i]] = x[A_inner[i]];
       }
     }
 
@@ -52,7 +49,7 @@ __global__ void step(const int *A_outer, const int *A_inner,
         double dot_product = 0.;
         for (unsigned i = A_outer[tid * rows_per_thread + k];
              i < A_outer[tid * rows_per_thread + k + 1]; i++) {
-          const double x_value = X_local[A_inner[i]];
+          const double x_value = X[tid*rows+A_inner[i]];
           dot_product += A_values_shared[i] * x_value;
         }
         // calculate update
@@ -62,19 +59,10 @@ __global__ void step(const int *A_outer, const int *A_inner,
         // save update for x in local memory
         for (unsigned i = A_outer[tid * rows_per_thread + k];
              i < A_outer[tid * rows_per_thread + k + 1]; i++) {
-          X_local[A_inner[i]] += update_coeff * A_values_shared[i];
+          X[tid*rows + A_inner[i]] += update_coeff * A_values_shared[i];
         }
       }
     }
-
-    // set all values back in global matrix for averaging step
-    for (unsigned k = 0; k < rows_per_thread; k++) {
-      for (unsigned i = A_outer[tid * rows_per_thread + k];
-           i < A_outer[tid * rows_per_thread + k + 1]; i++) {
-        X[tid * rows + A_inner[i]] = X_local[A_inner[i]];
-      }
-    }
-    free(X_local);
   }
 }
 
