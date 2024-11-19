@@ -27,7 +27,7 @@ __global__ void step(const int *A_outerIndex, const int *A_innerIndex,
   //printf("Before allocating\n");
   const unsigned total_threads = (unsigned)(rows/ROWS_PER_THREAD);
   extern __shared__ int data[];
-  int *A_outer = data;
+  int *A_outer = data; //(rows+1+nnz)*sizeof(int) + (2*nnz + 2*rows)*sizeof(double)
   int *A_inner = (int*)&A_outer[rows+1];
   double* A_values_shared = (double*)&A_inner[nnz+1];
   //double *X_local = (double*)&A_values_shared[nnz+1];
@@ -36,7 +36,7 @@ __global__ void step(const int *A_outerIndex, const int *A_innerIndex,
   //printf("After allocating\n");
 
   if (tid*rows_per_thread < rows){
-    double *X_local = (double*)malloc(rows*sizeof(rows));
+    double *X_local = (double*)malloc(rows*sizeof(double));
     printf("TID: %d, ROW PER THREAD: %d, ROWS: %d\n", tid, rows_per_thread, rows);
     //copy over A to shared memory
     for (unsigned k = 0; k <= rows_per_thread; k++){
@@ -96,6 +96,7 @@ __global__ void step(const int *A_outerIndex, const int *A_innerIndex,
           printf("global pos: %d, local pos: %d, value: %f\n", A_inner[i], (i - A_outer[tid*rows_per_thread+k]), X[tid*rows + A_inner[i]]);
       }
     }
+    printf("Done here\n");
     free(X_local);
   }
 }
@@ -228,8 +229,9 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
 
   // solve LSE
   double base_residual = 0;
-  const unsigned shared_size = (rows+1 + nnz+1)*sizeof(int) + (nnz+1 + total_threads*max_nnz_in_row+1)*sizeof(double) + 2*(rows+1)*sizeof(double);
+  const unsigned shared_size = (rows+nnz+2)*sizeof(int) + (2*nnz + 2*rows + 3)*sizeof(double);
   std::cout << "Size: " << shared_size << std::endl;
+  assert(shared_size < 64000);
   for (int iter = 0; iter < 10; iter++){
 
     //calculate residual every L iterations
@@ -259,10 +261,12 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
     step<<<blocks, threads_per_block, shared_size>>>(
         d_A_outer, d_A_inner, d_A_values, d_b, rows, cols, d_sq_norms, d_x, d_X, ROWS_PER_THREAD,nnz,  max_nnz_in_row);
         auto res = cudaDeviceSynchronize();
+        std::cout << res << std::endl;
         assert(res == 0);
     update<<<blocks, threads_per_block>>>(
         d_A_outer, d_A_inner, d_A_values, d_b, rows, cols, d_sq_norms, d_x, d_X, d_affected, ROWS_PER_THREAD, total_threads);
         res = cudaDeviceSynchronize();
+        std::cout << res << std::endl;
         assert(res == 0);
   }
 
