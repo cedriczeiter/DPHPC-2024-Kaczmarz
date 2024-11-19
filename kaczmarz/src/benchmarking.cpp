@@ -15,7 +15,7 @@
 
 #define MAX_IT 1000000
 #define BANDWIDTH 2
-#define MAX_DIM 64
+#define MAX_DIM 32
 #define PRECISION 1e-7
 #define NUM_THREADS 8
 #define MIN_DIM 4
