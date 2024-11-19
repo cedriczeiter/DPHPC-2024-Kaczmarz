@@ -26,37 +26,31 @@ __global__ void step(const int *A_outer, const int *A_inner,
 
                      const double *sq_norms_local, double *x, double *X,
                      const unsigned rows_per_thread, const unsigned nnz,
-                     const unsigned max_nnz_in_row)
-{
+                     const unsigned max_nnz_in_row) {
   const unsigned tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-  if (tid * rows_per_thread < rows) // only if thread has assigned rows
+  if (tid * rows_per_thread < rows)  // only if thread has assigned rows
   {
     // allocate local memory for x
     double *X_local = (double *)malloc(rows * sizeof(double));
     assert(X_local != 0);
 
-    // copy x to local memory 
-    for (unsigned k = 0; k < rows_per_thread; k++)
-    {
+    // copy x to local memory
+    for (unsigned k = 0; k < rows_per_thread; k++) {
       for (unsigned i = A_outer[tid * rows_per_thread + k];
-           i < A_outer[tid * rows_per_thread + k + 1]; i++) 
-      {
-        X_local[A_inner[i]] = x[A_inner[i]]; 
+           i < A_outer[tid * rows_per_thread + k + 1]; i++) {
+        X_local[A_inner[i]] = x[A_inner[i]];
       }
     }
 
     // perform one update step for assigned row
     for (unsigned local_iter = 0; local_iter < LOCAL_RUNS_PER_THREAD;
-         local_iter++)
-    {
-      for (unsigned k = 0; k < rows_per_thread; k++)
-      {
+         local_iter++) {
+      for (unsigned k = 0; k < rows_per_thread; k++) {
         // compute dot product row * x
         double dot_product = 0.;
         for (unsigned i = A_outer[tid * rows_per_thread + k];
-             i < A_outer[tid * rows_per_thread + k + 1]; i++)
-        {
+             i < A_outer[tid * rows_per_thread + k + 1]; i++) {
           const double x_value = X_local[A_inner[i]];
           dot_product += A_values_shared[i] * x_value;
         }
@@ -66,19 +60,16 @@ __global__ void step(const int *A_outer, const int *A_inner,
              sq_norms_local[tid * rows_per_thread + k]);
         // save update for x in local memory
         for (unsigned i = A_outer[tid * rows_per_thread + k];
-             i < A_outer[tid * rows_per_thread + k + 1]; i++)
-        {
+             i < A_outer[tid * rows_per_thread + k + 1]; i++) {
           X_local[A_inner[i]] += update_coeff * A_values_shared[i];
         }
       }
     }
 
     // set all values back in global matrix for averaging step
-    for (unsigned k = 0; k < rows_per_thread; k++)
-    {
+    for (unsigned k = 0; k < rows_per_thread; k++) {
       for (unsigned i = A_outer[tid * rows_per_thread + k];
-           i < A_outer[tid * rows_per_thread + k + 1]; i++)
-      {
+           i < A_outer[tid * rows_per_thread + k + 1]; i++) {
         X[tid * rows + A_inner[i]] = X_local[A_inner[i]];
       }
     }
@@ -92,23 +83,18 @@ __global__ void update(const int *A_outerIndex, const int *A_innerIndex,
                        const unsigned rows, const unsigned cols,
                        const double *sq_norms, double *x, double *X,
                        int *affected, const unsigned rows_per_thread,
-                       const unsigned total_threads)
-{
+                       const unsigned total_threads) {
   const unsigned tid = blockIdx.x * blockDim.x + threadIdx.x;
-  if (tid * rows_per_thread < cols)
-  {
-    for (unsigned k = 0; k < rows_per_thread; k++)
-    {
+  if (tid * rows_per_thread < cols) {
+    for (unsigned k = 0; k < rows_per_thread; k++) {
       // sum up updates for assigned entry
       double sum = 0;
       int counter = 0;
-      while (true)
-      {
+      while (true) {
         int affecting_thread =
             affected[(tid * rows_per_thread + k) * (total_threads + 1) +
                      counter];
-        if (affecting_thread < 0)
-          break;
+        if (affecting_thread < 0) break;
         counter++;
         const double value =
             X[affecting_thread * rows + tid * rows_per_thread + k];
@@ -123,9 +109,7 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
     const int *h_A_outer, const int *h_A_inner, const double *h_A_values,
     const double *h_b, double *h_x, double *h_sq_norms, const unsigned rows,
     const unsigned cols, const unsigned nnz, const unsigned max_iterations,
-    const double precision, const unsigned max_nnz_in_row)
-{
-
+    const double precision, const unsigned max_nnz_in_row) {
   // check if matrix is square
   assert(rows == cols);
 
@@ -159,26 +143,25 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
 
   // we need to know which values in x are affected by which thread; thats what
   // the below code is for
-  std::vector<std::set<unsigned>> affects(rows); // coding: affects[j]: the x at position j is affected by thread in set
-  for (unsigned k = 0; k < rows; k++)
-  {
-    for (unsigned i = h_A_outer[k]; i < h_A_outer[k + 1]; i++)
-    {
+  std::vector<std::set<unsigned>> affects(
+      rows);  // coding: affects[j]: the x at position j is affected by thread
+              // in set
+  for (unsigned k = 0; k < rows; k++) {
+    for (unsigned i = h_A_outer[k]; i < h_A_outer[k + 1]; i++) {
       const unsigned thread = (unsigned)(h_A_inner[i] / ROWS_PER_THREAD);
       affects.at(k).insert(thread);
     }
   }
   const int affects_size = affects.size();
 
-  // move affects to device memory, set to -1 if no thread affects the value (default value)
+  // move affects to device memory, set to -1 if no thread affects the value
+  // (default value)
   int *h_affected = new int[(total_threads + 1) * rows];
-  std::memset(h_affected, -1, rows * (total_threads + 1) * sizeof(int)); 
+  std::memset(h_affected, -1, rows * (total_threads + 1) * sizeof(int));
   // Translate it to a 1D array
-  for (int k = 0; k < affects_size; k++)
-  {
+  for (int k = 0; k < affects_size; k++) {
     unsigned counter = 0;
-    for (const auto &thread : affects[k])
-    {
+    for (const auto &thread : affects[k]) {
       h_affected[k * (total_threads + 1) + counter] = thread;
       counter++;
     }
@@ -207,20 +190,16 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
 
   // solve LSE
   double base_residual = 0;
-  for (int iter = 0; iter < max_iterations; iter++)
-  {
+  for (int iter = 0; iter < max_iterations; iter++) {
     // calculate residual every L_RESIDUAL iterations
-    if (iter % L_RESIDUAL == 0)
-    {
+    if (iter % L_RESIDUAL == 0) {
       cudaMemcpy(h_x, d_x, cols * sizeof(double), cudaMemcpyDeviceToHost);
       double residual = 0.0;
 
       // Calulate residual
-      for (unsigned i = 0; i < rows; i++)
-      {
+      for (unsigned i = 0; i < rows; i++) {
         double dot_product = 0.0;
-        for (unsigned j = h_A_outer[i]; j < h_A_outer[i + 1]; j++)
-        {
+        for (unsigned j = h_A_outer[i]; j < h_A_outer[i + 1]; j++) {
           dot_product += h_A_values[j] * h_x[h_A_inner[j]];
         }
         residual += (dot_product - h_b[i]) * (dot_product - h_b[i]);
@@ -228,18 +207,18 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
       residual = sqrt(residual);
 
       // First residual is the base residual
-      if (iter == 0){
+      if (iter == 0) {
         base_residual = residual;
       }
-    
-      //debugging output
-      printf("Iteration: %d out of %d, Residual/Base_residual: %f\n", iter, max_iterations, residual/base_residual);
+
+      // debugging output
+      printf("Iteration: %d out of %d, Residual/Base_residual: %f\n", iter,
+             max_iterations, residual / base_residual);
 
       // check for convergence
-      if (residual / base_residual < precision)
-      {
+      if (residual / base_residual < precision) {
         converged = true;
-        break; // stop all the iterations
+        break;  // stop all the iterations
       }
     }
 
@@ -250,7 +229,7 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
                                         rows, cols, d_sq_norms, d_x, d_X,
                                         ROWS_PER_THREAD, nnz, max_nnz_in_row);
 
-    // synchronize threads and check for errors                                    
+    // synchronize threads and check for errors
     auto res = cudaDeviceSynchronize();
     assert(res == 0);
 
@@ -274,10 +253,9 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
   cudaFree(d_b);
 
   // check for convergence
-  if (converged){
+  if (converged) {
     return KaczmarzSolverStatus::Converged;
-  }
-  else{
+  } else {
     return KaczmarzSolverStatus::OutOfIterations;
   }
 }

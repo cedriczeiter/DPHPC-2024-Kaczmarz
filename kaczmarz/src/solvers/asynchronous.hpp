@@ -8,10 +8,12 @@
 #include "linear_systems/types.hpp"
 
 /**
- * @brief Solves a sparse linear system using the asynchronous Kaczmarz method on a GPU.
+ * @brief Solves a sparse linear system using the asynchronous Kaczmarz method
+ * on a GPU.
  *
  * @param lse The sparse linear system to be solved.
- * @param x The initial guess for the solution vector, which will be updated with the solution.
+ * @param x The initial guess for the solution vector, which will be updated
+ * with the solution.
  * @param max_iterations The maximum number of iterations to perform.
  * @param precision The desired precision for the solution.
  * @param num_threads The number of threads to use for the computation.
@@ -23,10 +25,12 @@ KaczmarzSolverStatus asynchronous_gpu(const SparseLinearSystem &lse, Vector &x,
                                       const unsigned num_threads);
 
 /**
- * @brief Solves a sparse linear system using the asynchronous Kaczmarz method on a CPU.
+ * @brief Solves a sparse linear system using the asynchronous Kaczmarz method
+ * on a CPU.
  *
  * @param lse The sparse linear system to be solved.
- * @param x The initial guess for the solution vector, which will be updated with the solution.
+ * @param x The initial guess for the solution vector, which will be updated
+ * with the solution.
  * @param max_iterations The maximum number of iterations to perform.
  * @param precision The desired precision for the solution.
  * @param num_threads The number of threads to use for the computation.
@@ -37,4 +41,4 @@ KaczmarzSolverStatus asynchronous_cpu(const SparseLinearSystem &lse, Vector &x,
                                       const double precision,
                                       const unsigned num_threads);
 
-#endif // ASYNC_HPP
+#endif  // ASYNC_HPP
