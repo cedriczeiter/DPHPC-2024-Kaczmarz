@@ -10,6 +10,7 @@
 
 #include "carp_cuda.hpp"
 #include "common.hpp"
+#include "basic.hpp"
 
 KaczmarzSolverStatus carp_gpu(const SparseLinearSystem& lse, Vector& x,
                                       const unsigned max_iterations,
@@ -42,7 +43,9 @@ KaczmarzSolverStatus carp_gpu(const SparseLinearSystem& lse, Vector& x,
   }
   //std::cout << "MAX NNZ: " << max_nnz_in_row << std::endl;
 
-  return invoke_carp_solver_gpu(A_outer, A_inner, A_values, b, x.data(),
+
+  //call carp solver for beginning
+  invoke_carp_solver_gpu(A_outer, A_inner, A_values, b, x.data(),
                                         h_sq_norms.data(), rows, cols, nnz,
                                         max_iterations, precision, max_nnz_in_row);
 }

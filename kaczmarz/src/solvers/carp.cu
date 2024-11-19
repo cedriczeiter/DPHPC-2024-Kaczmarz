@@ -13,9 +13,9 @@
 
 #include "common.hpp"
 
-#define L 50
-#define ROWS_PER_THREAD 25
-#define LOCAL_RUNS_PER_THREAD 30
+#define L 500
+#define ROWS_PER_THREAD 10
+#define LOCAL_RUNS_PER_THREAD 5
 
 //IMPORTANT: ONLY WORKS ON SQUARE MATRICES ATM AND IF ROWS_PER_THREAD DIVIDES TOTAL ROWS
 
@@ -42,6 +42,7 @@ __global__ void step(const int *A_outer, const int *A_inner,
 
   if (tid*rows_per_thread < rows){
     double *X_local = (double*)malloc(rows*sizeof(double));
+    assert(X_local != 0);
     //printf("TID: %d, ROW PER THREAD: %d, ROWS: %d\n", tid, rows_per_thread, rows);
     //copy over A to shared memory
     /*for (unsigned k = 0; k <= rows_per_thread; k++){
@@ -58,6 +59,7 @@ __global__ void step(const int *A_outer, const int *A_inner,
     //printf("Thread: %d, A_inner\n", tid);
     */for (unsigned k = 0; k < rows_per_thread; k++){
       for (unsigned i = A_outer[tid*rows_per_thread + k]; i < A_outer[tid*rows_per_thread + k + 1]; i++){
+        //printf("X at %d: %f\n", A_inner[i], x[A_inner[i]]);
         X_local[A_inner[i]] = x[A_inner[i]];
         //printf("X at %d: %f\n", A_inner[i], x[A_inner[i]]);
       }
@@ -227,7 +229,7 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
   cudaMemset((void**)d_X, 0, total_threads*cols*sizeof(double));
 
   //calculate nr of blocks and threads
-  const int threads_per_block = 512;
+  const int threads_per_block = 64;
   const int blocks = (total_threads + threads_per_block - 1)/threads_per_block;
 
   //std::cout << "Blocks: " << blocks << " . Threads per block: " << threads_per_block << std::endl;
