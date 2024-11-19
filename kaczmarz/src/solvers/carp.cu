@@ -52,7 +52,7 @@ __global__ void step(const int *A_outerIndex, const int *A_innerIndex,
     //printf("Thread: %d, A_inner\n", tid);
     for (unsigned k = 0; k < rows_per_thread; k++){
       for (unsigned i = A_outer[tid*rows_per_thread + k]; i < A_outer[tid*rows_per_thread + k + 1]; i++){
-        X_local[tid*max_nnz_in_row + (i - A_outer[tid*rows_per_thread + k])] = x[A_inner[i]];
+        X_local[(tid*rows_per_thread+k)*max_nnz_in_row + (i - A_outer[tid*rows_per_thread + k])] = x[A_inner[i]];
         printf("X at %d: %f\n", A_inner[i], x[A_inner[i]]);
       }
     }
@@ -74,7 +74,7 @@ __global__ void step(const int *A_outerIndex, const int *A_innerIndex,
         double dot_product = 0.;
         for (unsigned i = A_outer[tid*rows_per_thread + k]; i < A_outer[tid*rows_per_thread + k + 1]; i++) {
             //printf("local: %f, global: %f, i: %d, A_inner: %d\n", X_local[tid*max_nnz_in_row + (i - A_outer[tid*rows_per_thread+k])], X[(tid*rows_per_thread+k)*rows + A_inner[i]], i, A_inner[i]);
-            const double x_value = X_local[tid*max_nnz_in_row + (i - A_outer[tid*rows_per_thread + k])];
+            const double x_value = X_local[(tid*rows_per_thread+k)*max_nnz_in_row + (i - A_outer[tid*rows_per_thread + k])];
             dot_product += A_values_shared[i] * x_value;
         }
         //calculate update
@@ -82,7 +82,7 @@ __global__ void step(const int *A_outerIndex, const int *A_innerIndex,
         // save update for x in local memory
         for (unsigned i = A_outer[tid*rows_per_thread + k]; i < A_outer[tid*rows_per_thread + k + 1]; i++) {
             const double update = update_coeff * A_values_shared[i];
-            X_local[tid*max_nnz_in_row + (i - A_outer[tid*rows_per_thread+k])] += 1.5*update;
+            X_local[(tid*rows_per_thread+k)*max_nnz_in_row + (i - A_outer[tid*rows_per_thread+k])] += 1.5*update;
             printf("Update: %f\n", update);
         }
       }
@@ -91,8 +91,8 @@ __global__ void step(const int *A_outerIndex, const int *A_innerIndex,
     //set all values back in global matrix for averaging step
     for (unsigned k = 0; k < rows_per_thread; k++){
       for (unsigned i = A_outer[tid*rows_per_thread + k]; i < A_outer[tid*rows_per_thread + k + 1]; i++) {
-          X[tid*rows + A_inner[i]] = X_local[tid*max_nnz_in_row + (i - A_outer[tid*rows_per_thread+k])];
-          printf("global pos: %d, local pos: %d\n", A_inner[i], (i - A_outer[tid*rows_per_thread+k]));
+          X[tid*rows + A_inner[i]] = X_local[(tid+k)*max_nnz_in_row + (i - A_outer[tid*rows_per_thread+k])];
+          printf("global pos: %d, local pos: %d, value: %f\n", A_inner[i], (i - A_outer[tid*rows_per_thread+k]), X[tid*rows + A_inner[i]]);
       }
     }
   }
@@ -110,14 +110,14 @@ __global__ void update(const int *A_outerIndex, const int *A_innerIndex,
       double sum = 0;
       int counter = 0;
       while (true){
-          int affecting_thread = affected[(tid*rows_per_thread + k)*total_threads + counter];
+          int affecting_thread = affected[(tid*rows_per_thread + k)*(total_threads+1) + counter];
           if (affecting_thread < 0) break;
           counter++;
           const double value = X[affecting_thread*rows + tid*rows_per_thread + k];
-          printf("Update read: %f\n", value);
+          printf("Update read: %f,  from thread: %d \n", value, affecting_thread);
           sum += value;
       }
-
+      printf("updates counted: %d\n", counter);
       //if (count > 0.5) printf("total update: %f\n", sum/count);
       printf("position: %d, x before: %f, update: %f ", tid*rows_per_thread + k, x[tid*rows_per_thread + k], sum/(double)counter);
       if (counter > 0) x[tid*rows_per_thread + k] = sum/(double)counter;
@@ -168,7 +168,7 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
              cudaMemcpyHostToDevice);
   std::cout << "Before affecting" << std::endl;
   //calculate indices which affect other rows, and move to device
-  std::vector<std::set<unsigned>> affects(rows); //coding: affects[j: the x at position j is affected by thread in set
+  std::vector<std::set<unsigned>> affects(rows); //coding: affects[j]: the x at position j is affected by thread in set
     for (unsigned k = 0; k < rows; k++){
       for (unsigned i = h_A_outer[k]; i < h_A_outer[k+1]; i++){
         unsigned row = k;
@@ -177,26 +177,33 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
       }
     }
   std::cout << "Affecting middle" << std::endl;
-  int* h_affected = new int[rows * total_threads];
+  int* h_affected = new int[(total_threads+1)*rows];
   //std::cout << "Before memsetting" << std::endl;
   //std::cout << "SIZE: " << rows*total_threads << std::endl;
-  std::memset(h_affected, -1, rows*total_threads*sizeof(int));
+  std::memset(h_affected, -1, rows*(total_threads+1)*sizeof(int));
   for (int k = 0; k < affects.size(); k++){
     unsigned counter = 0;
     for (auto it = affects.at(k).begin(); it != affects.at(k).end(); ++it){
       //std::cout << "K: " << k << " I: " << i << " Outer size: " << affects.size() << " Inner size: " << affects.at(k).size() << std::endl;
       //only add if not in already TODO
-      h_affected[k*total_threads + counter] = *it;
+      h_affected[k*(total_threads+1) + counter] = *it; //h_affected[k*total_threads + counter] = val, with val > -1; means: x at position k is affected by thread val
       //std::cout << "Index: " << k*total_threads + counter << std::endl;
       counter++;
     }
   }
   std::cout << "After affecting " << total_threads << std::endl;
+  for (int k = 0; k < rows; k++){
+    std::cout << std::endl;
+    for (int counter = 0; counter < total_threads+1; counter++){
+      std::cout << h_affected[k*(total_threads+1) + counter] << " ";
+    }
+  }
+  std::cout <<std::endl;
   //std::cout << "Rows: " << rows << " Threads: " << total_threads << " Size: " <<rows*total_threads*sizeof(int) <<std::endl;
   int *d_affected;
-  cudaMalloc((void **)&d_affected, rows*total_threads*sizeof(int));
+  cudaMalloc((void **)&d_affected, rows*(total_threads+1)*sizeof(int));
   //std::cout << "after malloc\n";
-  cudaMemcpy(d_affected, h_affected, rows*total_threads*sizeof(int), cudaMemcpyHostToDevice);
+  cudaMemcpy(d_affected, h_affected, rows*(total_threads+1)*sizeof(int), cudaMemcpyHostToDevice);
   //std::cout << "After copying affected" << std::endl;
 
   // move b to device
@@ -221,7 +228,7 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
   double base_residual = 0;
   const unsigned shared_size = (rows+1 + nnz+1)*sizeof(int) + (nnz+1 + total_threads*max_nnz_in_row+1)*sizeof(double) + 2*(rows+1)*sizeof(double);
   std::cout << "Size: " << shared_size << std::endl;
-  for (int iter = 0; iter < 2; iter++){
+  for (int iter = 0; iter < 10; iter++){
 
     //calculate residual every L iterations
     if (iter % 1 == 0){
