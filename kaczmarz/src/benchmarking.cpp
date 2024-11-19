@@ -13,10 +13,12 @@
 
 #define MAX_IT 100000
 #define BANDWIDTH 4
-#define MAX_DIM 32
+#define MAX_DIM 64
 #define PRECISION 1e-10
-#define NUM_THREADS 2
+#define NUM_THREADS 4
 #define MIN_DIM 8
+#define NUM_IT 1
+#define RANDOM_SEED 43
 
 /// @brief Computes the average and standard deviation of a vector of times.
 /// @param times A vector of times recorded for benchmarking in seconds.
@@ -279,8 +281,8 @@ double benchmark_EigenSolver_dense(const int dim, const int numIterations,
 }
 
 int main() {
-  const int numIterations = 3;  // Number of iterations to reduce noise
-  std::mt19937 rng(43);
+  const int numIterations = NUM_IT;  // Number of iterations to reduce noise
+  std::mt19937 rng(RANDOM_SEED);
 
   //////////////////////////////////////////
   /// Normal Solver Dense///
@@ -324,39 +326,39 @@ int main() {
   /// Cuda Asynchronous Solver Sparse///
   //////////////////////////////////////////
 
-  // // Open the file for output
-  // std::ofstream outFileNS1("results_asynchronous_cuda_sparse.csv");
-  // outFileNS1 << "Dim,AvgTime,StdDev\n";  // Write the header for the CSV file
+  // Open the file for output
+  std::ofstream outFileNS1("results_asynchronous_cuda_sparse.csv");
+  outFileNS1 << "Dim,AvgTime,StdDev\n";  // Write the header for the CSV file
 
-  // // Loop over problem sizes, benchmark, and write to file
-  // for (int dim = MIN_DIM; dim <= MAX_DIM; dim *= 2) {
-  //   double stdDev;
-  //   double avgTime = benchmark_asynchronouscuda_solver_sparse(
-  //       dim, numIterations, stdDev, rng);
+  // Loop over problem sizes, benchmark, and write to file
+  for (int dim = MIN_DIM; dim <= MAX_DIM; dim *= 2) {
+    double stdDev;
+    double avgTime = benchmark_asynchronouscuda_solver_sparse(
+        dim, numIterations, stdDev, rng);
 
-  //   // Write results to the file
-  //   outFileNS1 << dim << "," << avgTime << "," << stdDev << "\n";
-  // }
-  // outFileNS1.close();  // Close the file after writing
+    // Write results to the file
+    outFileNS1 << dim << "," << avgTime << "," << stdDev << "\n";
+  }
+  outFileNS1.close();  // Close the file after writing
 
   //////////////////////////////////////////
   /// CPU Asynchronous Solver Sparse///
   //////////////////////////////////////////
 
-  // // Open the file for output
-  // std::ofstream outFileNS2("results_asynchronous_cpu_sparse.csv");
-  // outFileNS2 << "Dim,AvgTime,StdDev\n";  // Write the header for the CSV file
+  // Open the file for output
+  std::ofstream outFileNS2("results_asynchronous_cpu_sparse.csv");
+  outFileNS2 << "Dim,AvgTime,StdDev\n";  // Write the header for the CSV file
 
-  // // Loop over problem sizes, benchmark, and write to file
-  // for (int dim = MIN_DIM; dim <= MAX_DIM; dim *= 2) {
-  //   double stdDev;
-  //   double avgTime = benchmark_asynchronouscpu_solver_sparse(dim, numIterations,
-  //                                                            stdDev, rng);
+  // Loop over problem sizes, benchmark, and write to file
+  for (int dim = MIN_DIM; dim <= MAX_DIM; dim *= 2) {
+    double stdDev;
+    double avgTime = benchmark_asynchronouscpu_solver_sparse(dim, numIterations,
+                                                             stdDev, rng);
 
-  //   // Write results to the file
-  //   outFileNS2 << dim << "," << avgTime << "," << stdDev << "\n";
-  // }
-  // outFileNS2.close();  // Close the file after writing
+    // Write results to the file
+    outFileNS2 << dim << "," << avgTime << "," << stdDev << "\n";
+  }
+  outFileNS2.close();  // Close the file after writing
 
   //////////////////////////////////////////
   /// Normal Solver Sparse///
