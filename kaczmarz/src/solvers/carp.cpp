@@ -45,8 +45,9 @@ KaczmarzSolverStatus carp_gpu(const SparseLinearSystem& lse, Vector& x,
 
   // get maximum nr of nnz in row
   int max_nnz_in_row = 0;
+  int nnz_in_row = 0; // preallocate
   for (unsigned i = 0; i < rows; i++) {
-    const int nnz_in_row = A_outer[i + 1] - A_outer[i];
+    nnz_in_row = A_outer[i + 1] - A_outer[i];
     max_nnz_in_row = std::max(max_nnz_in_row, nnz_in_row);
   }
 
