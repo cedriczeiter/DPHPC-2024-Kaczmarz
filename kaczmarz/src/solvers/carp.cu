@@ -20,24 +20,21 @@
 // IMPORTANT: ONLY WORKS ON SQUARE MATRICES ATM AND IF ROWS_PER_THREAD DIVIDES
 // TOTAL ROWS
 
-// define kernel for one iteration step
 __global__ void step(const int *A_outer, const int *A_inner,
                      const double *A_values_shared, const double *b_local,
                      const unsigned rows, const unsigned cols,
-
                      const double *sq_norms_local, double *x, double *X,
                      const unsigned rows_per_thread, const unsigned nnz,
-                     const unsigned max_nnz_in_row) {
+                     const unsigned max_nnz_in_row, const double relaxation) {
   const unsigned tid = blockIdx.x * blockDim.x + threadIdx.x;
 
   if (tid * rows_per_thread < rows)  // only if thread has assigned rows
   {
-
     // copy x to local memory
     for (unsigned k = 0; k < rows_per_thread; k++) {
       for (unsigned i = A_outer[tid * rows_per_thread + k];
            i < A_outer[tid * rows_per_thread + k + 1]; i++) {
-        X[tid*rows+A_inner[i]] = x[A_inner[i]];
+        X[tid * rows + A_inner[i]] = x[A_inner[i]];
       }
     }
 
@@ -49,22 +46,24 @@ __global__ void step(const int *A_outer, const int *A_inner,
         double dot_product = 0.;
         for (unsigned i = A_outer[tid * rows_per_thread + k];
              i < A_outer[tid * rows_per_thread + k + 1]; i++) {
-          const double x_value = X[tid*rows+A_inner[i]];
+          const double x_value = X[tid * rows + A_inner[i]];
           dot_product += A_values_shared[i] * x_value;
         }
         // calculate update
         const double update_coeff =
+            relaxation *
             ((b_local[tid * rows_per_thread + k] - dot_product) /
              sq_norms_local[tid * rows_per_thread + k]);
         // save update for x in local memory
         for (unsigned i = A_outer[tid * rows_per_thread + k];
              i < A_outer[tid * rows_per_thread + k + 1]; i++) {
-          X[tid*rows + A_inner[i]] += update_coeff * A_values_shared[i];
+          X[tid * rows + A_inner[i]] += update_coeff * A_values_shared[i];
         }
       }
     }
   }
 }
+
 
 // Update x with the average of the updates
 __global__ void update(const int *A_outerIndex, const int *A_innerIndex,
@@ -211,11 +210,13 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
     }
 
     // the real work begins here
+const double relaxation = 1.0;
 
     // perform iteration steps and updates
-    step<<<blocks, THREADS_PER_BLOCK>>>(d_A_outer, d_A_inner, d_A_values, d_b,
-                                        rows, cols, d_sq_norms, d_x, d_X,
-                                        ROWS_PER_THREAD, nnz, max_nnz_in_row);
+step<<<blocks, THREADS_PER_BLOCK>>>(d_A_outer, d_A_inner, d_A_values, d_b,
+                                    rows, cols, d_sq_norms, d_x, d_X,
+                                    ROWS_PER_THREAD, nnz, max_nnz_in_row,
+                                    relaxation);
 
     // synchronize threads and check for errors
     auto res = cudaDeviceSynchronize();
