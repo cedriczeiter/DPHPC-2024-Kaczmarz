@@ -13,7 +13,7 @@
 #include "common.hpp"
 #include "carp_utils.hpp"
 
-#define L_RESIDUAL 500
+#define L_RESIDUAL 100
 #define ROWS_PER_THREAD 10
 #define LOCAL_RUNS_PER_THREAD 1
 #define THREADS_PER_BLOCK 32
@@ -25,7 +25,7 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
     const int *h_A_outer, const int *h_A_inner, const double *h_A_values,
     const double *h_b, double *h_x, double *h_sq_norms, const unsigned rows,
     const unsigned cols, const unsigned nnz, const unsigned max_iterations,
-    const double precision, const unsigned max_nnz_in_row) {
+    const double precision, const unsigned max_nnz_in_row, const double b_norm) {
   // check if matrix is square
   assert(rows == cols);
   const unsigned dim = rows;
@@ -100,10 +100,13 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
   double *d_r;
   double *d_q;
   double *d_intermediate;
+  double *d_zero;
   cudaMalloc((void**)&d_p, dim*sizeof(double));
   cudaMalloc((void**)&d_r, dim*sizeof(double));
   cudaMalloc((void**)&d_q, dim*sizeof(double));
   cudaMalloc((void**)&d_intermediate, dim*sizeof(double));
+  cudaMalloc((void**)&d_zero, dim*sizeof(double));
+  cudaMemset((void **)d_zero, 0, dim*sizeof(double));
 
   // move X to device
   double *d_X;
@@ -116,12 +119,21 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
 
   // solve LSE
   double base_residual = 0;
+
+  //init stuff
+  const double relaxation = 1.0;
+  dcswp(d_A_outer, d_A_inner,
+                     d_A_values, d_b,
+                    dim,
+                    d_sq_norms, d_x, d_X,
+                     relaxation, d_affected, total_threads, d_r, blocks);
+  copy_gpu(d_r, d_p, dim);
+
   for (int iter = 0; iter < max_iterations; iter++) {
     // calculate residual every L_RESIDUAL iterations
     if (iter % L_RESIDUAL == 0) {
       cudaMemcpy(h_x, d_x, cols * sizeof(double), cudaMemcpyDeviceToHost);
       double residual = 0.0;
-
       // Calulate residual
       for (unsigned i = 0; i < rows; i++) {
         double dot_product = 0.0;
@@ -138,8 +150,8 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
       }
 
       // debugging output
-      printf("Iteration: %d out of %d, Residual/Base_residual: %f\n", iter,
-             max_iterations, residual / base_residual);
+      printf("Iteration: %d out of %d, Residual/B_norm: %f\n", iter,
+             max_iterations, residual/b_norm);
 
       // check for convergence
       if (residual / base_residual < precision) {
@@ -149,12 +161,18 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
     }
 
     // the real work begins here
-    const double relaxation = 1.0;
     dcswp(d_A_outer, d_A_inner,
-                     d_A_values, d_b,
+                     d_A_values, d_zero,
                     dim,
-                    d_sq_norms, d_x, d_X,
-                     relaxation, d_affected, total_threads, d_x, blocks);
+                    d_sq_norms, d_p, d_X,
+                     relaxation, d_affected, total_threads, d_intermediate, blocks);
+    add_gpu(d_p, d_intermediate, d_q, -1., dim);
+    const double sq_norm_r_old = dot_product_gpu(d_r, d_r, d_intermediate, dim);
+    const double alpha = sq_norm_r_old/dot_product_gpu(d_p, d_q, d_intermediate, dim);
+    add_gpu(d_x, d_p, d_x, alpha, dim);
+    add_gpu(d_r, d_q, d_r, -alpha, dim);
+    const double beta = dot_product_gpu(d_r, d_r, d_intermediate, dim)/sq_norm_r_old;
+    add_gpu(d_r, d_p, d_p, beta, dim);
   }
 
   // free memory

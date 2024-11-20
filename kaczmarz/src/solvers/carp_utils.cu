@@ -13,9 +13,9 @@
 #include "common.hpp"
 #include "carp_cuda.hpp"
 
-#define L_RESIDUAL 500
+
 #define ROWS_PER_THREAD 10
-#define LOCAL_RUNS_PER_THREAD 1
+#define LOCAL_RUNS_PER_THREAD 10
 #define THREADS_PER_BLOCK 32
 
 __global__ void kswp(const int *A_outer, const int *A_inner,
@@ -120,33 +120,35 @@ __global__ void update(const int *A_outerIndex, const int *A_innerIndex,
   }
 }
 
-__global__ add(const double* a, const double* b, double* output, const unsigned factor, const unsigned dim){
+__global__ void add(const double* a, const double* b, double* output, const double factor, const unsigned dim){
     const unsigned tid = blockIdx.x * blockDim.x + threadIdx.x;
     if (tid < dim){
         output[tid] = a[tid] + factor*b[tid];
     }
 }
 
-__global__ copy(const double*from, double* to, const unsigned dim){
+__global__ void copy(const double*from, double* to, const unsigned dim){
     const unsigned tid = blockIdx.x * blockDim.x + threadIdx.x;
     if (tid < dim){
         to[tid] = from[tid];
     }
 }
 
-__global__ square_vector(const double *v, double *output, const unsigned dim){
+__global__ void square_vector(const double *a, const double *b, double* output, const unsigned dim){
     const unsigned tid = blockIdx.x * blockDim.x + threadIdx.x;
     if (tid < dim){
-        output[tid] = v[tid]*v[tid];
+        output[tid] = a[tid]*b[tid];
     }
 }
 
-void add_gpu(const double* d_a, const double* d_b, double* d_output, const unsigned factor, const unsigned dim){
+void add_gpu(const double* d_a, const double* d_b, double* d_output, const double factor, const unsigned dim){
     //calculate how many threads needed
     int threadsPerBlock = 256;
     // Calculate the number of blocks needed
     int blocks = (dim + threadsPerBlock - 1) / threadsPerBlock;
-    add<<blocks, threadsPerBlock>>(d_a, d_b, d_output, factor, dim);
+    add<<<blocks, threadsPerBlock>>>(d_a, d_b, d_output, factor, dim);
+    auto res = cudaDeviceSynchronize();
+    assert(res == 0);
 }
 
 void copy_gpu(const double* d_from, double* d_to, const unsigned dim){
@@ -154,23 +156,28 @@ void copy_gpu(const double* d_from, double* d_to, const unsigned dim){
     int threadsPerBlock = 256;
     // Calculate the number of blocks needed
     int blocks = (dim + threadsPerBlock - 1) / threadsPerBlock;
-    copy<<blocks, threadsPerBlock>>(d_from, d_to, dim);
+    copy<<<blocks, threadsPerBlock>>>(d_from, d_to, dim);
+    auto res = cudaDeviceSynchronize();
+    assert(res == 0);
 }
 
-double squared_norm(const double* d_v, double *d_intermediate, const unsigned dim){
+double dot_product_gpu(const double* d_a, const double* d_b, double *d_to, const unsigned dim){
     //calculate how many threads needed
     int threadsPerBlock = 256;
     // Calculate the number of blocks needed
     int blocks = (dim + threadsPerBlock - 1) / threadsPerBlock;
-    square_vector<<blocks, threadsPerBlock>>(d_from, d_to, dim);
+    square_vector<<<blocks, threadsPerBlock>>>(d_a, d_b, d_to, dim);
+    auto res = cudaDeviceSynchronize();
+    assert(res == 0);
 
-    double *h_intermediate[dim];
-    cudaMemcpy(h_intermediate, d_intermediate, dim * sizeof(double), cudaMemcpyDeviceToHost);
-    double norm = 0;
-    for (int i = 0; i < dim; i++){
-        norm += h_intermediate[i];
+    double h_intermediate[dim];
+    cudaMemcpy(h_intermediate, d_to, dim * sizeof(double), cudaMemcpyDeviceToHost);
+    double dot = 0;
+    for (unsigned i = 0; i < dim; i++){
+        double value = h_intermediate[i];
+        dot += value;
     }
-    return norm;
+    return dot;
 }
 
 

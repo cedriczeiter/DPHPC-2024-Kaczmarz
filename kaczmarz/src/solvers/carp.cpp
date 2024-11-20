@@ -29,6 +29,8 @@ KaczmarzSolverStatus carp_gpu(const SparseLinearSystem& lse, Vector& x,
   // get the right-hand side vector
   const double* b = lse.b().data();
 
+  const double b_norm = lse.b().norm();
+
   // get information about sparse matrix
   const unsigned rows = lse.row_count();
   const unsigned cols = lse.column_count();
@@ -58,5 +60,5 @@ KaczmarzSolverStatus carp_gpu(const SparseLinearSystem& lse, Vector& x,
   // call carp solver for beginning
   return invoke_carp_solver_gpu(A_outer, A_inner, A_values, b, x.data(),
                                 h_sq_norms.data(), rows, cols, nnz,
-                                max_iterations, precision, max_nnz_in_row);
+                                max_iterations, precision, max_nnz_in_row, b_norm);
 }
