@@ -1,0 +1,212 @@
+#include <cuda_runtime.h>
+#include <curand_kernel.h>
+#include <unistd.h>
+
+#include <cassert>
+#include <cmath>
+#include <cstdlib>
+#include <cstring>
+#include <iostream>
+#include <random>
+#include <set>
+
+#include "common.hpp"
+#include "carp_cuda.hpp"
+
+#define L_RESIDUAL 500
+#define ROWS_PER_THREAD 10
+#define LOCAL_RUNS_PER_THREAD 1
+#define THREADS_PER_BLOCK 32
+
+__global__ void kswp(const int *A_outer, const int *A_inner,
+                     const double *A_values_shared, const double *b_local,
+                     const unsigned dim,
+                     const double *sq_norms_local, const double *x, double *X,
+                     const unsigned rows_per_thread, const double relaxation, bool forward) {
+
+  const unsigned tid = blockIdx.x * blockDim.x + threadIdx.x;
+
+  const unsigned rows = dim;
+  const unsigned cols = dim;
+
+  if (tid * rows_per_thread < rows)  // only if thread has assigned rows
+  {
+    // copy x to local memory
+    for (unsigned k = 0; k < rows_per_thread; k++) {
+      for (unsigned i = A_outer[tid * rows_per_thread + k];
+           i < A_outer[tid * rows_per_thread + k + 1]; i++) {
+        X[tid * rows + A_inner[i]] = x[A_inner[i]];
+      }
+    }
+
+    // perform sweep
+    for (unsigned local_iter = 0; local_iter < LOCAL_RUNS_PER_THREAD;
+         local_iter++) {
+      //either forward...
+      if (forward){
+      for (unsigned k = 0; k < rows_per_thread; k++) {
+          // compute dot product row * x
+          double dot_product = 0.;
+          for (unsigned i = A_outer[tid * rows_per_thread + k];
+              i < A_outer[tid * rows_per_thread + k + 1]; i++) {
+            const double x_value = X[tid * rows + A_inner[i]];
+            dot_product += A_values_shared[i] * x_value;
+          }
+          // calculate update
+          const double update_coeff =
+              relaxation * ((b_local[tid * rows_per_thread + k] - dot_product) /
+                            sq_norms_local[tid * rows_per_thread + k]);
+          // save update for x in local memory
+          for (unsigned i = A_outer[tid * rows_per_thread + k];
+              i < A_outer[tid * rows_per_thread + k + 1]; i++) {
+            X[tid * rows + A_inner[i]] += update_coeff * A_values_shared[i];
+          }
+        }
+      }
+      //or backward
+      else{
+        for (int k = rows_per_thread-1; k >= 0; k--) {
+          // compute dot product row * x
+          double dot_product = 0.;
+          for (unsigned i = A_outer[tid * rows_per_thread + k];
+              i < A_outer[tid * rows_per_thread + k + 1]; i++) {
+            const double x_value = X[tid * rows + A_inner[i]];
+            dot_product += A_values_shared[i] * x_value;
+          }
+          // calculate update
+          const double update_coeff =
+              relaxation * ((b_local[tid * rows_per_thread + k] - dot_product) /
+                            sq_norms_local[tid * rows_per_thread + k]);
+          // save update for x in local memory
+          for (unsigned i = A_outer[tid * rows_per_thread + k];
+              i < A_outer[tid * rows_per_thread + k + 1]; i++) {
+            X[tid * rows + A_inner[i]] += update_coeff * A_values_shared[i];
+          }
+        }
+      }
+
+    }
+  }
+}
+
+// Update x with the average of the updates
+__global__ void update(const int *A_outerIndex, const int *A_innerIndex,
+                       const double *A_values, const double *b,
+                       const unsigned dim,
+                       const double *sq_norms, double *x, double *X,
+                       int *affected, const unsigned rows_per_thread,
+                       const unsigned total_threads) {
+  const unsigned tid = blockIdx.x * blockDim.x + threadIdx.x;
+  const unsigned rows = dim;
+  const unsigned cols = dim;
+
+  if (tid * rows_per_thread < cols) {
+    for (unsigned k = 0; k < rows_per_thread; k++) {
+      // sum up updates for assigned entry
+      double sum = 0;
+      int counter = 0;
+      while (true) {
+        int affecting_thread =
+            affected[(tid * rows_per_thread + k) * (total_threads + 1) +
+                     counter];
+        if (affecting_thread < 0) break;
+        counter++;
+        const double value =
+            X[affecting_thread * rows + tid * rows_per_thread + k];
+        sum += value;
+      }
+      x[tid * rows_per_thread + k] = sum / (double)counter;
+    }
+  }
+}
+
+__global__ add(const double* a, const double* b, double* output, const unsigned factor, const unsigned dim){
+    const unsigned tid = blockIdx.x * blockDim.x + threadIdx.x;
+    if (tid < dim){
+        output[tid] = a[tid] + factor*b[tid];
+    }
+}
+
+__global__ copy(const double*from, double* to, const unsigned dim){
+    const unsigned tid = blockIdx.x * blockDim.x + threadIdx.x;
+    if (tid < dim){
+        to[tid] = from[tid];
+    }
+}
+
+__global__ square_vector(const double *v, double *output, const unsigned dim){
+    const unsigned tid = blockIdx.x * blockDim.x + threadIdx.x;
+    if (tid < dim){
+        output[tid] = v[tid]*v[tid];
+    }
+}
+
+void add_gpu(const double* d_a, const double* d_b, double* d_output, const unsigned factor, const unsigned dim){
+    //calculate how many threads needed
+    int threadsPerBlock = 256;
+    // Calculate the number of blocks needed
+    int blocks = (dim + threadsPerBlock - 1) / threadsPerBlock;
+    add<<blocks, threadsPerBlock>>(d_a, d_b, d_output, factor, dim);
+}
+
+void copy_gpu(const double* d_from, double* d_to, const unsigned dim){
+    //calculate how many threads needed
+    int threadsPerBlock = 256;
+    // Calculate the number of blocks needed
+    int blocks = (dim + threadsPerBlock - 1) / threadsPerBlock;
+    copy<<blocks, threadsPerBlock>>(d_from, d_to, dim);
+}
+
+double squared_norm(const double* d_v, double *d_intermediate, const unsigned dim){
+    //calculate how many threads needed
+    int threadsPerBlock = 256;
+    // Calculate the number of blocks needed
+    int blocks = (dim + threadsPerBlock - 1) / threadsPerBlock;
+    square_vector<<blocks, threadsPerBlock>>(d_from, d_to, dim);
+
+    double *h_intermediate[dim];
+    cudaMemcpy(h_intermediate, d_intermediate, dim * sizeof(double), cudaMemcpyDeviceToHost);
+    double norm = 0;
+    for (int i = 0; i < dim; i++){
+        norm += h_intermediate[i];
+    }
+    return norm;
+}
+
+
+
+void dcswp(const int *d_A_outer, const int *d_A_inner,
+                     const double *d_A_values, const double *d_b,
+                     const unsigned dim,
+                     const double *d_sq_norms, const double *d_x, double *d_X,
+                     const double relaxation, int *d_affected, const unsigned total_threads, double* d_output, const unsigned blocks){
+// perform step forward
+    kswp<<<blocks, THREADS_PER_BLOCK>>>(
+        d_A_outer, d_A_inner, d_A_values, d_b, dim, d_sq_norms, d_x, d_X,
+        ROWS_PER_THREAD, relaxation, true);
+    // synchronize threads and check for errors
+    auto res = cudaDeviceSynchronize();
+    assert(res == 0);
+    // update x
+    update<<<blocks, THREADS_PER_BLOCK>>>(
+        d_A_outer, d_A_inner, d_A_values, d_b, dim, d_sq_norms, d_output, d_X,
+        d_affected, ROWS_PER_THREAD, total_threads);
+    // synchronize threads and check for errors
+    res = cudaDeviceSynchronize();
+    assert(res == 0);
+
+    // perform step backward
+    kswp<<<blocks, THREADS_PER_BLOCK>>>(
+        d_A_outer, d_A_inner, d_A_values, d_b, dim, d_sq_norms, d_output, d_X,
+        ROWS_PER_THREAD, relaxation, false);
+    // synchronize threads and check for errors
+    res = cudaDeviceSynchronize();
+    assert(res == 0);
+    // update x
+    update<<<blocks, THREADS_PER_BLOCK>>>(
+        d_A_outer, d_A_inner, d_A_values, d_b, dim, d_sq_norms, d_output, d_X,
+        d_affected, ROWS_PER_THREAD, total_threads);
+    // synchronize threads and check for errors
+    res = cudaDeviceSynchronize();
+    assert(res == 0);
+}
