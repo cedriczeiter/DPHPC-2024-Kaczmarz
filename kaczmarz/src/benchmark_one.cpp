@@ -55,11 +55,11 @@ int main() {
   std::cout << "Kaczmarz solver status: " << kaczmarz_status_string(status)
             << std::endl;
 
-    const auto banded_start = hrclock::now();
+  const auto banded_start = hrclock::now();
   /*const auto status =
       kaczmarz_banded_serial(lse, x_kaczmarz, max_iterations, precision);*/
-  const auto status_banded = kaczmarz_banded_cuda(lse, x_kaczmarz,
-                               max_iterations, precision);
+  const auto status_banded =
+      kaczmarz_banded_cuda(lse, x_kaczmarz, max_iterations, precision);
   const auto banded_end = hrclock::now();
 
   std::cout << "Banded solution computed in "

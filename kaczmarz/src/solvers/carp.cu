@@ -51,9 +51,8 @@ __global__ void step(const int *A_outer, const int *A_inner,
         }
         // calculate update
         const double update_coeff =
-            relaxation *
-            ((b_local[tid * rows_per_thread + k] - dot_product) /
-             sq_norms_local[tid * rows_per_thread + k]);
+            relaxation * ((b_local[tid * rows_per_thread + k] - dot_product) /
+                          sq_norms_local[tid * rows_per_thread + k]);
         // save update for x in local memory
         for (unsigned i = A_outer[tid * rows_per_thread + k];
              i < A_outer[tid * rows_per_thread + k + 1]; i++) {
@@ -63,7 +62,6 @@ __global__ void step(const int *A_outer, const int *A_inner,
     }
   }
 }
-
 
 // Update x with the average of the updates
 __global__ void update(const int *A_outerIndex, const int *A_innerIndex,
@@ -210,13 +208,12 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
     }
 
     // the real work begins here
-const double relaxation = 1.0;
+    const double relaxation = 1.0;
 
     // perform iteration steps and updates
-step<<<blocks, THREADS_PER_BLOCK>>>(d_A_outer, d_A_inner, d_A_values, d_b,
-                                    rows, cols, d_sq_norms, d_x, d_X,
-                                    ROWS_PER_THREAD, nnz, max_nnz_in_row,
-                                    relaxation);
+    step<<<blocks, THREADS_PER_BLOCK>>>(
+        d_A_outer, d_A_inner, d_A_values, d_b, rows, cols, d_sq_norms, d_x, d_X,
+        ROWS_PER_THREAD, nnz, max_nnz_in_row, relaxation);
 
     // synchronize threads and check for errors
     auto res = cudaDeviceSynchronize();
