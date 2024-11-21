@@ -150,7 +150,7 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
              max_iterations, residual/b_norm);
 
       // check for convergence
-      if (residual / base_residual < precision) {
+      if (residual / b_norm < precision) {
         converged = true;
         break;  // stop all the iterations
       }
@@ -180,7 +180,11 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
   cudaFree(d_A_inner);
   cudaFree(d_A_values);
   cudaFree(d_b);
-
+  cudaFree(d_p);
+  cudaFree(d_r);
+  cudaFree(d_q);
+  cudaFree(d_intermediate);
+  cudaFree(d_zero);
   // check for convergence
   if (converged) {
     return KaczmarzSolverStatus::Converged;

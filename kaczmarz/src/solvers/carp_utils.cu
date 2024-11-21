@@ -15,9 +15,6 @@
 #include "carp_utils.hpp"
 
 
-#define ROWS_PER_THREAD 10
-#define LOCAL_RUNS_PER_THREAD 10
-#define THREADS_PER_BLOCK 32
 
 __global__ void kswp(const int *A_outer, const int *A_inner,
                      const double *A_values_shared, const double *b_local,

@@ -14,8 +14,7 @@
 
 KaczmarzSolverStatus carp_gpu(const SparseLinearSystem& lse, Vector& x,
                               const unsigned max_iterations,
-                              const double precision,
-                              const unsigned num_threads) {
+                              const double precision) {
   // get the sparse matrix in CSR format
   const int* A_outer =
       lse.A().outerIndexPtr();  // outer index of the sparse matrix in CSR
