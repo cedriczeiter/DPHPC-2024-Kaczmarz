@@ -27,7 +27,7 @@ using hrclock = std::chrono::high_resolution_clock;
  */
 
 int main() {
-  constexpr unsigned dim = 10000;
+  constexpr unsigned dim = 100000;
   constexpr unsigned bandwidth = 2;
   //constexpr unsigned max_iterations = 100'000;
   //constexpr double precision = 1e-1;

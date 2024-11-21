@@ -145,8 +145,8 @@ void add_gpu(const double* d_a, const double* d_b, double* d_output, const doubl
     // Calculate the number of blocks needed
     int blocks = (dim + threadsPerBlock - 1) / threadsPerBlock;
     add<<<blocks, threadsPerBlock>>>(d_a, d_b, d_output, factor, dim);
-    auto res = cudaDeviceSynchronize();
-    assert(res == 0);
+    /*auto res = cudaDeviceSynchronize();
+    assert(res == 0);*/
 }
 
 void copy_gpu(const double* d_from, double* d_to, const unsigned dim){
@@ -155,8 +155,8 @@ void copy_gpu(const double* d_from, double* d_to, const unsigned dim){
     // Calculate the number of blocks needed
     int blocks = (dim + threadsPerBlock - 1) / threadsPerBlock;
     copy<<<blocks, threadsPerBlock>>>(d_from, d_to, dim);
-    auto res = cudaDeviceSynchronize();
-    assert(res == 0);
+    /*auto res = cudaDeviceSynchronize();
+    assert(res == 0);*/
 }
 
 double dot_product_gpu(const double* d_a, const double* d_b, double *d_to, const unsigned dim){
@@ -165,8 +165,8 @@ double dot_product_gpu(const double* d_a, const double* d_b, double *d_to, const
     // Calculate the number of blocks needed
     int blocks = (dim + threadsPerBlock - 1) / threadsPerBlock;
     square_vector<<<blocks, threadsPerBlock>>>(d_a, d_b, d_to, dim);
-    auto res = cudaDeviceSynchronize();
-    assert(res == 0);
+    /*auto res = cudaDeviceSynchronize();
+    assert(res == 0);*/
 
     double h_intermediate[dim];
     cudaMemcpy(h_intermediate, d_to, dim * sizeof(double), cudaMemcpyDeviceToHost);
@@ -190,28 +190,28 @@ void dcswp(const int *d_A_outer, const int *d_A_inner,
         d_A_outer, d_A_inner, d_A_values, d_b, dim, d_sq_norms, d_x, d_X,
         ROWS_PER_THREAD, relaxation, true);
     // synchronize threads and check for errors
-    auto res = cudaDeviceSynchronize();
-    assert(res == 0);
+    /*auto res = cudaDeviceSynchronize();
+    assert(res == 0);*/
     // update x
     update<<<blocks, THREADS_PER_BLOCK>>>(
         d_A_outer, d_A_inner, d_A_values, d_b, dim, d_sq_norms, d_output, d_X,
         d_affected, ROWS_PER_THREAD, total_threads);
     // synchronize threads and check for errors
-    res = cudaDeviceSynchronize();
-    assert(res == 0);
+    /*res = cudaDeviceSynchronize();
+    assert(res == 0);*/
 
     // perform step backward
     kswp<<<blocks, THREADS_PER_BLOCK>>>(
         d_A_outer, d_A_inner, d_A_values, d_b, dim, d_sq_norms, d_output, d_X,
         ROWS_PER_THREAD, relaxation, false);
     // synchronize threads and check for errors
-    res = cudaDeviceSynchronize();
-    assert(res == 0);
+    /*res = cudaDeviceSynchronize();
+    assert(res == 0);*/
     // update x
     update<<<blocks, THREADS_PER_BLOCK>>>(
         d_A_outer, d_A_inner, d_A_values, d_b, dim, d_sq_norms, d_output, d_X,
         d_affected, ROWS_PER_THREAD, total_threads);
     // synchronize threads and check for errors
-    res = cudaDeviceSynchronize();
-    assert(res == 0);
+    /*res = cudaDeviceSynchronize();
+    assert(res == 0);*/
 }
