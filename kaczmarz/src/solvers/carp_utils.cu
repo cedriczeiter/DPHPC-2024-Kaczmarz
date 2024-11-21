@@ -12,6 +12,7 @@
 
 #include "common.hpp"
 #include "carp_cuda.hpp"
+#include "carp_utils.hpp"
 
 
 #define ROWS_PER_THREAD 10

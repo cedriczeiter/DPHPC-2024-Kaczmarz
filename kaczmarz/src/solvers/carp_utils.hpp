@@ -1,6 +1,12 @@
 #ifndef CARP_UTILS_HPP
 #define CARP_UTILS_HPP
 
+#define L_RESIDUAL 1000
+#define ROWS_PER_THREAD 20
+#define LOCAL_RUNS_PER_THREAD 1
+#define THREADS_PER_BLOCK 256
+
+
 void dcswp(const int *d_A_outer, const int *d_A_inner,
                      const double *d_A_values, const double *d_b,
                      const unsigned dim,

@@ -13,10 +13,6 @@
 #include "common.hpp"
 #include "carp_utils.hpp"
 
-#define L_RESIDUAL 100
-#define ROWS_PER_THREAD 10
-#define LOCAL_RUNS_PER_THREAD 1
-#define THREADS_PER_BLOCK 32
 
 // IMPORTANT: ONLY WORKS ON SQUARE MATRICES ATM AND IF ROWS_PER_THREAD DIVIDES
 // TOTAL ROWS
