@@ -27,8 +27,8 @@ using hrclock = std::chrono::high_resolution_clock;
  */
 
 int main() {
-  constexpr unsigned dim = 100000;
-  constexpr unsigned bandwidth = 2;
+  constexpr unsigned dim = 1000;
+  constexpr unsigned bandwidth = 10;
   //constexpr unsigned max_iterations = 100'000;
   //constexpr double precision = 1e-1;
 
@@ -54,9 +54,10 @@ int main() {
                    .count()
             << " milliseconds" << std::endl;*/
 
-  double precision = 0.5;
-  for (int i = 0; i < 5; i++){
+  double precision = 0.01;
+  for (int i = 0; i < 1; i++){
     const unsigned max_iterations = std::numeric_limits<unsigned int>::max() - 1;
+    std::cout << "Max Iterations: " << max_iterations << std::endl;
     Vector x_kaczmarz = Vector::Zero(dim);
 
     const auto kaczmarz_start = hrclock::now();

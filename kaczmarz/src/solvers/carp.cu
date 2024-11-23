@@ -22,6 +22,7 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
     const double *h_b, double *h_x, double *h_sq_norms, const unsigned rows,
     const unsigned cols, const unsigned nnz, const unsigned max_iterations,
     const double precision, const unsigned max_nnz_in_row, const double b_norm) {
+
   // check if matrix is square
   assert(rows == cols);
   const unsigned dim = rows;
@@ -146,7 +147,7 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
       }
 
       // debugging output
-      printf("Iteration: %d out of %d, Residual/B_norm: %f\n", iter,
+      printf("Iteration: %d out of %u, Residual/B_norm: %f\n", iter,
              max_iterations, residual/b_norm);
 
       // check for convergence
