@@ -57,7 +57,6 @@ int main() {
   double precision = 0.01;
   for (int i = 0; i < 1; i++){
     const unsigned max_iterations = std::numeric_limits<unsigned int>::max() - 1;
-    std::cout << "Max Iterations: " << max_iterations << std::endl;
     Vector x_kaczmarz = Vector::Zero(dim);
 
     const auto kaczmarz_start = hrclock::now();

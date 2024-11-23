@@ -20,7 +20,7 @@ __global__ void kswp(const int *A_outer, const int *A_inner,
                      const double *A_values_shared, const double *b_local,
                      const unsigned dim,
                      const double *sq_norms_local, const double *x, double *X,
-                     const unsigned rows_per_thread, const double relaxation, bool forward) {
+                     const unsigned rows_per_thread, const double relaxation, double* output) {
 
   const unsigned tid = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -33,56 +33,55 @@ __global__ void kswp(const int *A_outer, const int *A_inner,
     for (unsigned k = 0; k < rows_per_thread; k++) {
       for (unsigned i = A_outer[tid * rows_per_thread + k];
            i < A_outer[tid * rows_per_thread + k + 1]; i++) {
-        X[tid * rows + A_inner[i]] = x[A_inner[i]];
+        output[A_inner[i]] = x[A_inner[i]];
       }
     }
 
     // perform sweep
     for (unsigned local_iter = 0; local_iter < LOCAL_RUNS_PER_THREAD;
          local_iter++) {
-      //either forward...
-      if (forward){
-      for (unsigned k = 0; k < rows_per_thread; k++) {
-          // compute dot product row * x
-          double dot_product = 0.;
-          for (unsigned i = A_outer[tid * rows_per_thread + k];
-              i < A_outer[tid * rows_per_thread + k + 1]; i++) {
-            const double x_value = X[tid * rows + A_inner[i]];
-            dot_product += A_values_shared[i] * x_value;
-          }
-          // calculate update
-          const double update_coeff =
-              relaxation * ((b_local[tid * rows_per_thread + k] - dot_product) /
-                            sq_norms_local[tid * rows_per_thread + k]);
-          // save update for x in local memory
-          for (unsigned i = A_outer[tid * rows_per_thread + k];
-              i < A_outer[tid * rows_per_thread + k + 1]; i++) {
-            X[tid * rows + A_inner[i]] += update_coeff * A_values_shared[i];
-          }
-        }
-      }
-      //or backward
-      else{
-        for (int k = rows_per_thread-1; k >= 0; k--) {
-          // compute dot product row * x
-          double dot_product = 0.;
-          for (unsigned i = A_outer[tid * rows_per_thread + k];
-              i < A_outer[tid * rows_per_thread + k + 1]; i++) {
-            const double x_value = X[tid * rows + A_inner[i]];
-            dot_product += A_values_shared[i] * x_value;
-          }
-          // calculate update
-          const double update_coeff =
-              relaxation * ((b_local[tid * rows_per_thread + k] - dot_product) /
-                            sq_norms_local[tid * rows_per_thread + k]);
-          // save update for x in local memory
-          for (unsigned i = A_outer[tid * rows_per_thread + k];
-              i < A_outer[tid * rows_per_thread + k + 1]; i++) {
-            X[tid * rows + A_inner[i]] += update_coeff * A_values_shared[i];
-          }
-        }
-      }
 
+
+      //first forward forward...
+      for (unsigned k = 0; k < rows_per_thread; k++) {
+        const unsigned row = tid * rows_per_thread + k;
+          // compute dot product row * x
+          double dot_product = 0.;
+          for (unsigned i = A_outer[row];
+              i < A_outer[row + 1]; i++) {
+            const double x_value = output[A_inner[i]];
+            dot_product += A_values_shared[i] * x_value;
+          }
+          // calculate update
+          const double update_coeff =
+              relaxation * ((b_local[row] - dot_product) /
+                            sq_norms_local[row]);
+          // save update for x in local memory
+          for (unsigned i = A_outer[row];
+              i < A_outer[row + 1]; i++) {
+            atomicAdd(&output[A_inner[i]], (1./5.)*update_coeff * A_values_shared[i]);
+          }
+        }
+      /*//then backward
+        for (int k = rows_per_thread-1; k >= 0; k--) {
+          const unsigned row = tid * rows_per_thread + k;
+          // compute dot product row * x
+          double dot_product = 0.;
+          for (unsigned i = A_outer[row];
+              i < A_outer[row + 1]; i++) {
+            const double x_value = output[A_inner[i]];
+            dot_product += A_values_shared[i] * x_value;
+          }
+          // calculate update
+          const double update_coeff =
+              relaxation * ((b_local[row] - dot_product) /
+                            sq_norms_local[row]);
+          // save update for x in local memory
+          for (unsigned i = A_outer[row];
+              i < A_outer[row + 1]; i++) {
+           atomicAdd(&output[A_inner[i]], update_coeff * A_values_shared[i]);
+          }
+        }*/
     }
   }
 }
@@ -188,12 +187,12 @@ void dcswp(const int *d_A_outer, const int *d_A_inner,
 // perform step forward
     kswp<<<blocks, THREADS_PER_BLOCK>>>(
         d_A_outer, d_A_inner, d_A_values, d_b, dim, d_sq_norms, d_x, d_X,
-        ROWS_PER_THREAD, relaxation, true);
+        ROWS_PER_THREAD, relaxation, d_output);
     // synchronize threads and check for errors
     /*auto res = cudaDeviceSynchronize();
     assert(res == 0);*/
     // update x
-    update<<<blocks, THREADS_PER_BLOCK>>>(
+    /*update<<<blocks, THREADS_PER_BLOCK>>>(
         d_A_outer, d_A_inner, d_A_values, d_b, dim, d_sq_norms, d_output, d_X,
         d_affected, ROWS_PER_THREAD, total_threads);
     // synchronize threads and check for errors
@@ -201,16 +200,16 @@ void dcswp(const int *d_A_outer, const int *d_A_inner,
     assert(res == 0);*/
 
     // perform step backward
-    kswp<<<blocks, THREADS_PER_BLOCK>>>(
+    /*kswp<<<blocks, THREADS_PER_BLOCK>>>(
         d_A_outer, d_A_inner, d_A_values, d_b, dim, d_sq_norms, d_output, d_X,
-        ROWS_PER_THREAD, relaxation, false);
+        ROWS_PER_THREAD, relaxation, false);*/
     // synchronize threads and check for errors
     /*res = cudaDeviceSynchronize();
     assert(res == 0);*/
     // update x
-    update<<<blocks, THREADS_PER_BLOCK>>>(
+    /*update<<<blocks, THREADS_PER_BLOCK>>>(
         d_A_outer, d_A_inner, d_A_values, d_b, dim, d_sq_norms, d_output, d_X,
-        d_affected, ROWS_PER_THREAD, total_threads);
+        d_affected, ROWS_PER_THREAD, total_threads);*/
     // synchronize threads and check for errors
     /*res = cudaDeviceSynchronize();
     assert(res == 0);*/
