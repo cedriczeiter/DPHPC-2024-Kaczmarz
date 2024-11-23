@@ -1,6 +1,9 @@
 #ifndef CARP_UTILS_HPP
 #define CARP_UTILS_HPP
 
+#include <cuda_runtime.h>
+#include <stdio.h>
+
 #define L_RESIDUAL 1000
 #define ROWS_PER_THREAD 1
 #define LOCAL_RUNS_PER_THREAD 1
@@ -16,5 +19,15 @@ void dcswp(const int *d_A_outer, const int *d_A_inner,
 void add_gpu(const double* d_a, const double* d_b, double* d_output, const double factor, const unsigned dim);
 void copy_gpu(const double* d_from, double* d_to, const unsigned dim);
 double dot_product_gpu(const double* d_a, const double* d_b, double *d_to, const unsigned dim);
+
+
+#define CUDA_SAFE_CALL(call) \
+    do { \
+        cudaError_t err = call; \
+        if (err != cudaSuccess) { \
+            fprintf(stderr, "CUDA error in file '%s' in line %i: %s.\n", __FILE__, __LINE__, cudaGetErrorString(err)); \
+            exit(-1); \
+        } \
+    } while (0)
 
 #endif  // CARP_UTILS_HPP

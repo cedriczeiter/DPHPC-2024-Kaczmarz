@@ -33,27 +33,27 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
 
   // allocate move squared norms on device
   double *d_sq_norms;
-  cudaMalloc((void **)&d_sq_norms, rows * sizeof(double));
-  cudaMemcpy(d_sq_norms, h_sq_norms, rows * sizeof(double),
-             cudaMemcpyHostToDevice);
+  CUDA_SAFE_CALL(cudaMalloc((void **)&d_sq_norms, rows * sizeof(double)));
+  CUDA_SAFE_CALL(cudaMemcpy(d_sq_norms, h_sq_norms, rows * sizeof(double),
+             cudaMemcpyHostToDevice));
 
   // move x to device
   double *d_x;
-  cudaMalloc((void **)&d_x, cols * sizeof(double));
-  cudaMemcpy(d_x, h_x, cols * sizeof(double), cudaMemcpyHostToDevice);
+  CUDA_SAFE_CALL(cudaMalloc((void **)&d_x, cols * sizeof(double)));
+  CUDA_SAFE_CALL(cudaMemcpy(d_x, h_x, cols * sizeof(double), cudaMemcpyHostToDevice));
 
   // move A to device
   int *d_A_outer;
   int *d_A_inner;
   double *d_A_values;
-  cudaMalloc((void **)&d_A_outer, (rows + 1) * sizeof(int));
-  cudaMalloc((void **)&d_A_inner, nnz * sizeof(int));
-  cudaMalloc((void **)&d_A_values, nnz * sizeof(double));
-  cudaMemcpy(d_A_outer, h_A_outer, (rows + 1) * sizeof(int),
-             cudaMemcpyHostToDevice);
-  cudaMemcpy(d_A_inner, h_A_inner, nnz * sizeof(int), cudaMemcpyHostToDevice);
-  cudaMemcpy(d_A_values, h_A_values, nnz * sizeof(double),
-             cudaMemcpyHostToDevice);
+  CUDA_SAFE_CALL(cudaMalloc((void **)&d_A_outer, (rows + 1) * sizeof(int)));
+  CUDA_SAFE_CALL(cudaMalloc((void **)&d_A_inner, nnz * sizeof(int)));
+  CUDA_SAFE_CALL(cudaMalloc((void **)&d_A_values, nnz * sizeof(double)));
+  CUDA_SAFE_CALL(cudaMemcpy(d_A_outer, h_A_outer, (rows + 1) * sizeof(int),
+             cudaMemcpyHostToDevice));
+  CUDA_SAFE_CALL(cudaMemcpy(d_A_inner, h_A_inner, nnz * sizeof(int), cudaMemcpyHostToDevice));
+  CUDA_SAFE_CALL(cudaMemcpy(d_A_values, h_A_values, nnz * sizeof(double),
+             cudaMemcpyHostToDevice));
 
   // we need to know which values in x are affected by which thread; thats what
   // the below code is for
@@ -79,14 +79,14 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
 
   // move affects to device
   int *d_affected;
-  cudaMalloc((void **)&d_affected, rows * sizeof(int));
-  cudaMemcpy(d_affected, h_affected, rows * sizeof(int),
-             cudaMemcpyHostToDevice);
+  CUDA_SAFE_CALL(cudaMalloc((void **)&d_affected, rows * sizeof(int)));
+  CUDA_SAFE_CALL(cudaMemcpy(d_affected, h_affected, rows * sizeof(int),
+             cudaMemcpyHostToDevice));
 
   // move b to device
   double *d_b;
-  cudaMalloc((void **)&d_b, cols * sizeof(double));
-  cudaMemcpy(d_b, h_b, cols * sizeof(double), cudaMemcpyHostToDevice);
+  CUDA_SAFE_CALL(cudaMalloc((void **)&d_b, cols * sizeof(double)));
+  CUDA_SAFE_CALL(cudaMemcpy(d_b, h_b, cols * sizeof(double), cudaMemcpyHostToDevice));
 
   //move p, r, q and intermediate storage to device
   double *d_p;
@@ -94,17 +94,17 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
   double *d_q;
   double *d_intermediate;
   double *d_zero;
-  cudaMalloc((void**)&d_p, dim*sizeof(double));
-  cudaMalloc((void**)&d_r, dim*sizeof(double));
-  cudaMalloc((void**)&d_q, dim*sizeof(double));
-  cudaMalloc((void**)&d_intermediate, dim*sizeof(double));
-  cudaMalloc((void**)&d_zero, dim*sizeof(double));
-  cudaMemset((void **)d_zero, 0, dim*sizeof(double));
+  CUDA_SAFE_CALL(cudaMalloc((void**)&d_p, dim*sizeof(double)));
+  CUDA_SAFE_CALL(cudaMalloc((void**)&d_r, dim*sizeof(double)));
+  CUDA_SAFE_CALL(cudaMalloc((void**)&d_q, dim*sizeof(double)));
+  CUDA_SAFE_CALL(cudaMalloc((void**)&d_intermediate, dim*sizeof(double)));
+  CUDA_SAFE_CALL(cudaMalloc((void**)&d_zero, dim*sizeof(double)));
+  CUDA_SAFE_CALL(cudaMemset((void **)d_zero, 0, dim*sizeof(double)));
 
   // move X to device
   double *d_X;
-  cudaMalloc((void **)&d_X, total_threads * cols * sizeof(double));
-  cudaMemset((void **)d_X, 0, total_threads * cols * sizeof(double));
+  CUDA_SAFE_CALL(cudaMalloc((void **)&d_X, total_threads * cols * sizeof(double)));
+  CUDA_SAFE_CALL(cudaMemset((void **)d_X, 0, total_threads * cols * sizeof(double)));
 
   // calculate nr of blocks and threads
   const int blocks =
