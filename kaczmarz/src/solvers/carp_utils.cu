@@ -29,13 +29,6 @@ __global__ void kswp(const int *A_outer, const int *A_inner,
 
   if (tid * rows_per_thread < rows)  // only if thread has assigned rows
   {
-    // copy x to local memory
-    for (unsigned k = 0; k < rows_per_thread; k++) {
-      for (unsigned i = A_outer[tid * rows_per_thread + k];
-           i < A_outer[tid * rows_per_thread + k + 1]; i++) {
-        output[A_inner[i]] = x[A_inner[i]];
-      }
-    }
 
     // perform sweep
     for (unsigned local_iter = 0; local_iter < LOCAL_RUNS_PER_THREAD;
@@ -149,8 +142,8 @@ void add_gpu(const double* d_a, const double* d_b, double* d_output, const doubl
     // Calculate the number of blocks needed
     int blocks = (dim + threadsPerBlock - 1) / threadsPerBlock;
     add<<<blocks, threadsPerBlock>>>(d_a, d_b, d_output, factor, dim);
-    /*auto res = cudaDeviceSynchronize();
-    assert(res == 0);*/
+    auto res = cudaDeviceSynchronize();
+    assert(res == 0);
 }
 
 void copy_gpu(const double* d_from, double* d_to, const unsigned dim){
@@ -159,8 +152,8 @@ void copy_gpu(const double* d_from, double* d_to, const unsigned dim){
     // Calculate the number of blocks needed
     int blocks = (dim + threadsPerBlock - 1) / threadsPerBlock;
     copy<<<blocks, threadsPerBlock>>>(d_from, d_to, dim);
-    /*auto res = cudaDeviceSynchronize();
-    assert(res == 0);*/
+    auto res = cudaDeviceSynchronize();
+    assert(res == 0);
 }
 
 double dot_product_gpu(const double* d_a, const double* d_b, double *d_to, const unsigned dim){
@@ -169,8 +162,8 @@ double dot_product_gpu(const double* d_a, const double* d_b, double *d_to, const
     // Calculate the number of blocks needed
     int blocks = (dim + threadsPerBlock - 1) / threadsPerBlock;
     square_vector<<<blocks, threadsPerBlock>>>(d_a, d_b, d_to, dim);
-    /*auto res = cudaDeviceSynchronize();
-    assert(res == 0);*/
+    auto res = cudaDeviceSynchronize();
+    assert(res == 0);
 
     double h_intermediate[dim];
     cudaMemcpy(h_intermediate, d_to, dim * sizeof(double), cudaMemcpyDeviceToHost);
@@ -189,13 +182,20 @@ void dcswp(const int *d_A_outer, const int *d_A_inner,
                      const unsigned dim,
                      const double *d_sq_norms, const double *d_x,
                      const double relaxation, const int *d_affected, const unsigned total_threads, double* d_output, const unsigned blocks){
+
+//copy x vector to output vector
+copy_gpu(d_x, d_output, dim);
 // perform step forward
     kswp<<<blocks, THREADS_PER_BLOCK>>>(
         d_A_outer, d_A_inner, d_A_values, d_b, dim, d_sq_norms, d_x,
         ROWS_PER_THREAD, relaxation, d_output, d_affected, true);
+        auto res = cudaDeviceSynchronize();
+    assert(res == 0);
 
         // perform step backward
     kswp<<<blocks, THREADS_PER_BLOCK>>>(
         d_A_outer, d_A_inner, d_A_values, d_b, dim, d_sq_norms, d_x,
         ROWS_PER_THREAD, relaxation, d_output, d_affected, false);
+        res = cudaDeviceSynchronize();
+    assert(res == 0);
 }

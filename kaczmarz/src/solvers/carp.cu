@@ -152,7 +152,7 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
     dcswp(d_A_outer, d_A_inner,
                      d_A_values, d_zero,
                     dim,
-                    d_sq_norms, d_p, d_X,
+                    d_sq_norms, d_p,
                      relaxation, d_affected, total_threads, d_intermediate, blocks);
     add_gpu(d_p, d_intermediate, d_q, -1., dim);
     const double sq_norm_r_old = dot_product_gpu(d_r, d_r, d_intermediate, dim);
@@ -165,7 +165,6 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
 
   // free memory
   cudaFree(d_x);
-  cudaFree(d_X);
   cudaFree(d_affected);
   cudaFree(d_sq_norms);
   cudaFree(d_A_outer);
