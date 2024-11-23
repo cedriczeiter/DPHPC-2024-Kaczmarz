@@ -27,20 +27,20 @@ using hrclock = std::chrono::high_resolution_clock;
  */
 
 int main() {
-  constexpr unsigned dim = 5000;
+  //constexpr unsigned dim = 5000;
   constexpr unsigned bandwidth = 2;
   //constexpr unsigned max_iterations = 100'000;
   //constexpr double precision = 1e-1;
 
-  std::mt19937 rng(13);
+  /*std::mt19937 rng(13);
   const auto sparse_lse =
-      BandedLinearSystem::generate_random_regular(rng, dim, bandwidth).to_sparse_system();
+      BandedLinearSystem::generate_random_regular(rng, dim, bandwidth).to_sparse_system();*/
 
-  /*std::ifstream lse_input_stream("../../generated_bvp_matrices/problem1_complexity6.txt");
+  std::ifstream lse_input_stream("../../generated_bvp_matrices/problem1_complexity6.txt");
   const SparseLinearSystem sparse_lse =
       SparseLinearSystem::read_from_stream(lse_input_stream);  
 
-  const unsigned dim = sparse_lse.row_count();*/
+  const unsigned dim = sparse_lse.row_count();
 
   std::cout << "Dimension: " << dim << std::endl;
 

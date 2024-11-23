@@ -161,6 +161,6 @@ void dcswp(const int *d_A_outer, const int *d_A_inner,
         ROWS_PER_THREAD, relaxation, d_output, d_affected, true);
         // perform step backward
     kswp<<<blocks, THREADS_PER_BLOCK>>>(
-        d_A_outer, d_A_inner, d_A_values, d_b, dim, d_sq_norms, d_x,
+        d_A_outer, d_A_inner, d_A_values, d_b, dim, d_sq_norms, d_output,
         ROWS_PER_THREAD, relaxation, d_output, d_affected, false);
 }
