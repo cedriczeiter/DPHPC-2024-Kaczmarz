@@ -5,7 +5,7 @@
 #include <stdio.h>
 
 #define L_RESIDUAL 1000
-#define ROWS_PER_THREAD 5
+#define ROWS_PER_THREAD 1
 #define LOCAL_RUNS_PER_THREAD 1
 #define THREADS_PER_BLOCK 256
 

@@ -27,8 +27,8 @@ using hrclock = std::chrono::high_resolution_clock;
  */
 
 int main() {
-  constexpr unsigned dim = 300000;
-  constexpr unsigned bandwidth = 10;
+  constexpr unsigned dim = 5000;
+  constexpr unsigned bandwidth = 2;
   //constexpr unsigned max_iterations = 100'000;
   //constexpr double precision = 1e-1;
 
@@ -40,9 +40,9 @@ int main() {
   const SparseLinearSystem sparse_lse =
       SparseLinearSystem::read_from_stream(lse_input_stream);  
 
-  const unsigned dim = sparse_lse.row_count();
+  const unsigned dim = sparse_lse.row_count();*/
 
-  std::cout << "Dimension: " << dim << std::endl;*/
+  std::cout << "Dimension: " << dim << std::endl;
 
   /*const auto eigen_start = hrclock::now();
   const Vector x_eigen = lse.to_sparse_system().eigen_solve();
