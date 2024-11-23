@@ -20,7 +20,7 @@ __global__ void kswp(const int *A_outer, const int *A_inner,
                      const double *A_values_shared, const double *b_local,
                      const unsigned dim,
                      const double *sq_norms_local, const double *x, double *X,
-                     const unsigned rows_per_thread, const double relaxation, double* output) {
+                     const unsigned rows_per_thread, const double relaxation, double* output,const int *affected, bool forward) {
 
   const unsigned tid = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -43,6 +43,7 @@ __global__ void kswp(const int *A_outer, const int *A_inner,
 
 
       //first forward forward...
+    if (forward){
       for (unsigned k = 0; k < rows_per_thread; k++) {
         const unsigned row = tid * rows_per_thread + k;
           // compute dot product row * x
@@ -59,10 +60,13 @@ __global__ void kswp(const int *A_outer, const int *A_inner,
           // save update for x in local memory
           for (unsigned i = A_outer[row];
               i < A_outer[row + 1]; i++) {
-            atomicAdd(&output[A_inner[i]], (1./5.)*update_coeff * A_values_shared[i]);
+                assert(affected[i] != 0);
+            atomicAdd(&output[A_inner[i]], (1./(double)affected[A_inner[i]]) * update_coeff * A_values_shared[i]);
           }
         }
-      /*//then backward
+    }
+    else{
+      //then backward
         for (int k = rows_per_thread-1; k >= 0; k--) {
           const unsigned row = tid * rows_per_thread + k;
           // compute dot product row * x
@@ -79,9 +83,10 @@ __global__ void kswp(const int *A_outer, const int *A_inner,
           // save update for x in local memory
           for (unsigned i = A_outer[row];
               i < A_outer[row + 1]; i++) {
-           atomicAdd(&output[A_inner[i]], update_coeff * A_values_shared[i]);
+           atomicAdd(&output[A_inner[i]], (1./(double)affected[A_inner[i]]) * update_coeff * A_values_shared[i]);
           }
-        }*/
+        }
+    }
     }
   }
 }
@@ -183,34 +188,14 @@ void dcswp(const int *d_A_outer, const int *d_A_inner,
                      const double *d_A_values, const double *d_b,
                      const unsigned dim,
                      const double *d_sq_norms, const double *d_x, double *d_X,
-                     const double relaxation, int *d_affected, const unsigned total_threads, double* d_output, const unsigned blocks){
+                     const double relaxation, const int *d_affected, const unsigned total_threads, double* d_output, const unsigned blocks){
 // perform step forward
     kswp<<<blocks, THREADS_PER_BLOCK>>>(
         d_A_outer, d_A_inner, d_A_values, d_b, dim, d_sq_norms, d_x, d_X,
-        ROWS_PER_THREAD, relaxation, d_output);
-    // synchronize threads and check for errors
-    /*auto res = cudaDeviceSynchronize();
-    assert(res == 0);*/
-    // update x
-    /*update<<<blocks, THREADS_PER_BLOCK>>>(
-        d_A_outer, d_A_inner, d_A_values, d_b, dim, d_sq_norms, d_output, d_X,
-        d_affected, ROWS_PER_THREAD, total_threads);
-    // synchronize threads and check for errors
-    /*res = cudaDeviceSynchronize();
-    assert(res == 0);*/
+        ROWS_PER_THREAD, relaxation, d_output, d_affected, true);
 
-    // perform step backward
-    /*kswp<<<blocks, THREADS_PER_BLOCK>>>(
-        d_A_outer, d_A_inner, d_A_values, d_b, dim, d_sq_norms, d_output, d_X,
-        ROWS_PER_THREAD, relaxation, false);*/
-    // synchronize threads and check for errors
-    /*res = cudaDeviceSynchronize();
-    assert(res == 0);*/
-    // update x
-    /*update<<<blocks, THREADS_PER_BLOCK>>>(
-        d_A_outer, d_A_inner, d_A_values, d_b, dim, d_sq_norms, d_output, d_X,
-        d_affected, ROWS_PER_THREAD, total_threads);*/
-    // synchronize threads and check for errors
-    /*res = cudaDeviceSynchronize();
-    assert(res == 0);*/
+        // perform step backward
+    kswp<<<blocks, THREADS_PER_BLOCK>>>(
+        d_A_outer, d_A_inner, d_A_values, d_b, dim, d_sq_norms, d_x, d_X,
+        ROWS_PER_THREAD, relaxation, d_output, d_affected, false);
 }

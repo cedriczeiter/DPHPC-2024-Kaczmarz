@@ -70,21 +70,17 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
 
   // move affects to device memory, set to -1 if no thread affects the value
   // (default value)
-  int *h_affected = new int[(total_threads + 1) * rows];
-  std::memset(h_affected, -1, rows * (total_threads + 1) * sizeof(int));
+  int *h_affected = new int[rows];
+  //std::memset(h_affected, -1, rows * (total_threads + 1) * sizeof(int));
   // Translate it to a 1D array
-  for (int k = 0; k < affects_size; k++) {
-    unsigned counter = 0;
-    for (const auto &thread : affects[k]) {
-      h_affected[k * (total_threads + 1) + counter] = thread;
-      counter++;
-    }
+  for (unsigned i = 0; i < rows; i++){
+    h_affected[i] = affects.at(i).size(); //h_affected[i] now gives the number of threads updating x at position i
   }
 
   // move affects to device
   int *d_affected;
-  cudaMalloc((void **)&d_affected, rows * (total_threads + 1) * sizeof(int));
-  cudaMemcpy(d_affected, h_affected, rows * (total_threads + 1) * sizeof(int),
+  cudaMalloc((void **)&d_affected, rows * sizeof(int));
+  cudaMemcpy(d_affected, h_affected, rows * sizeof(int),
              cudaMemcpyHostToDevice);
 
   // move b to device
