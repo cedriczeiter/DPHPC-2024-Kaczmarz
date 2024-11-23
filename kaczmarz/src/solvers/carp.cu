@@ -58,22 +58,17 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
   // we need to know which values in x are affected by which thread; thats what
   // the below code is for
   std::vector<std::set<unsigned>> affects(
-      rows);  // coding: affects[j]: the x at position j is affected by thread
-              // in set
+      rows);  // coding: affects[j]: the x at position j is affected by threads in set
     for (unsigned row = 0; row < rows; row++){
     for (unsigned i = h_A_outer[row]; i < h_A_outer[row + 1]; i++) {
       const unsigned thread = (unsigned)(row / ROWS_PER_THREAD);
       affects.at(h_A_inner[i]).insert(thread);
-      //std::cout << "Thread: " << thread << " affecting: " << h_A_inner[i] << std::endl;
     }
     }
   const int affects_size = affects.size();
 
-  // move affects to device memory, set to -1 if no thread affects the value
-  // (default value)
+  // move affects to array
   int *h_affected = new int[rows];
-  //std::memset(h_affected, -1, rows * (total_threads + 1) * sizeof(int));
-  // Translate it to a 1D array
   for (unsigned i = 0; i < rows; i++){
     h_affected[i] = affects.at(i).size(); //h_affected[i] now gives the number of threads updating x at position i
   }

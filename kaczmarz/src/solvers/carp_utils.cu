@@ -31,6 +31,7 @@ __global__ void kswp(const int *A_outer, const int *A_inner,
   {
 
     // perform sweep
+    //INFO: for the carp-cg algorithm, only one run per thread should be used
     for (unsigned local_iter = 0; local_iter < LOCAL_RUNS_PER_THREAD;
          local_iter++) {
 
@@ -50,11 +51,10 @@ __global__ void kswp(const int *A_outer, const int *A_inner,
           const double update_coeff =
               relaxation * ((b_local[row] - dot_product) /
                             sq_norms_local[row]);
-          // save update for x in local memory
+          // save update for output
           for (unsigned i = A_outer[row];
               i < A_outer[row + 1]; i++) {
                 assert(affected[i] != 0);
-                //if (A_inner[i] == 0) printf("%d, %d\n", A_inner[i], affected[A_inner[i]]);
             atomicAdd(&output[A_inner[i]], (1./(double)affected[A_inner[i]]) * update_coeff * A_values_shared[i]);
           }
         }
@@ -74,44 +74,13 @@ __global__ void kswp(const int *A_outer, const int *A_inner,
           const double update_coeff =
               relaxation * ((b_local[row] - dot_product) /
                             sq_norms_local[row]);
-          // save update for x in local memory
+          // save update for output
           for (unsigned i = A_outer[row];
               i < A_outer[row + 1]; i++) {
            atomicAdd(&output[A_inner[i]], (1./(double)affected[A_inner[i]]) * update_coeff * A_values_shared[i]);
           }
         }
     }
-    }
-  }
-}
-
-// Update x with the average of the updates
-__global__ void update(const int *A_outerIndex, const int *A_innerIndex,
-                       const double *A_values, const double *b,
-                       const unsigned dim,
-                       const double *sq_norms, double *x, double *X,
-                       int *affected, const unsigned rows_per_thread,
-                       const unsigned total_threads) {
-  const unsigned tid = blockIdx.x * blockDim.x + threadIdx.x;
-  const unsigned rows = dim;
-  const unsigned cols = dim;
-
-  if (tid * rows_per_thread < cols) {
-    for (unsigned k = 0; k < rows_per_thread; k++) {
-      // sum up updates for assigned entry
-      double sum = 0;
-      int counter = 0;
-      while (true) {
-        int affecting_thread =
-            affected[(tid * rows_per_thread + k) * (total_threads + 1) +
-                     counter];
-        if (affecting_thread < 0) break;
-        counter++;
-        const double value =
-            X[affecting_thread * rows + tid * rows_per_thread + k];
-        sum += value;
-      }
-      x[tid * rows_per_thread + k] = sum / (double)counter;
     }
   }
 }
@@ -184,19 +153,14 @@ void dcswp(const int *d_A_outer, const int *d_A_inner,
                      const double *d_sq_norms, const double *d_x,
                      const double relaxation, const int *d_affected, const unsigned total_threads, double* d_output, const unsigned blocks){
 
-//copy x vector to output vector
-copy_gpu(d_x, d_output, dim);
-// perform step forward
+  //copy x vector to output vector
+  copy_gpu(d_x, d_output, dim);
+  // perform step forward
     kswp<<<blocks, THREADS_PER_BLOCK>>>(
         d_A_outer, d_A_inner, d_A_values, d_b, dim, d_sq_norms, d_x,
         ROWS_PER_THREAD, relaxation, d_output, d_affected, true);
-        auto res = cudaDeviceSynchronize();
-    assert(res == 0);
-
         // perform step backward
     kswp<<<blocks, THREADS_PER_BLOCK>>>(
         d_A_outer, d_A_inner, d_A_values, d_b, dim, d_sq_norms, d_x,
         ROWS_PER_THREAD, relaxation, d_output, d_affected, false);
-        res = cudaDeviceSynchronize();
-    assert(res == 0);
 }
