@@ -54,6 +54,7 @@ __global__ void kswp(const int *A_outer, const int *A_inner,
           for (unsigned i = A_outer[row];
               i < A_outer[row + 1]; i++) {
                 assert(affected[i] != 0);
+                //if (row % 5 == 0) printf("%d, %d\n", A_inner[i], affected[A_inner[i]]);
             atomicAdd(&output[A_inner[i]], (1./(double)affected[A_inner[i]]) * update_coeff * A_values_shared[i]);
           }
         }

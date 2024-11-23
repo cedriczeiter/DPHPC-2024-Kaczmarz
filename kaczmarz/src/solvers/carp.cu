@@ -60,12 +60,13 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
   std::vector<std::set<unsigned>> affects(
       rows);  // coding: affects[j]: the x at position j is affected by thread
               // in set
-  for (unsigned k = 0; k < rows; k++) {
-    for (unsigned i = h_A_outer[k]; i < h_A_outer[k + 1]; i++) {
-      const unsigned thread = (unsigned)(h_A_inner[i] / ROWS_PER_THREAD);
-      affects.at(k).insert(thread);
+    for (unsigned row = 0; row < rows; row++){
+    for (unsigned i = h_A_outer[row]; i < h_A_outer[row + 1]; i++) {
+      const unsigned thread = (unsigned)(row / ROWS_PER_THREAD);
+      affects.at(h_A_inner[i]).insert(thread);
+      //std::cout << "Thread: " << thread << " affecting: " << h_A_inner[i] << std::endl;
     }
-  }
+    }
   const int affects_size = affects.size();
 
   // move affects to device memory, set to -1 if no thread affects the value

@@ -5,7 +5,7 @@
 #include <stdio.h>
 
 #define L_RESIDUAL 1000
-#define ROWS_PER_THREAD 1
+#define ROWS_PER_THREAD 5
 #define LOCAL_RUNS_PER_THREAD 1
 #define THREADS_PER_BLOCK 256
 
@@ -28,6 +28,17 @@ double dot_product_gpu(const double* d_a, const double* d_b, double *d_to, const
             fprintf(stderr, "CUDA error in file '%s' in line %i: %s.\n", __FILE__, __LINE__, cudaGetErrorString(err)); \
             exit(-1); \
         } \
+    } while (0)
+
+#define CUDA_SAFE_KERNEL_LAUNCH(kernel, ...) \
+    do { \
+        kernel<<<__VA_ARGS__>>>(); \
+        cudaError_t err = cudaGetLastError(); \
+        if (err != cudaSuccess) { \
+            fprintf(stderr, "CUDA kernel launch error in file '%s' in line %i: %s.\n", __FILE__, __LINE__, cudaGetErrorString(err)); \
+            exit(-1); \
+        } \
+        CUDA_SAFE_CALL(cudaDeviceSynchronize()); \
     } while (0)
 
 #endif  // CARP_UTILS_HPP
