@@ -87,7 +87,12 @@ __global__ void update(const int *A_outerIndex, const int *A_innerIndex,
             X[affecting_thread * rows + tid * ROWS_PER_THREAD + k];
         sum += value;
       }
+      // Avoid division by zero
+      if (counter > 0) {
       x[tid * ROWS_PER_THREAD + k] = sum / (double)counter;
+      } else {
+        x[tid * ROWS_PER_THREAD + k] = 0.0;  // Default to zero if no updates
+      }
     }
   }
 }
@@ -182,7 +187,7 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
       cudaMemcpy(h_x, d_x, cols * sizeof(double), cudaMemcpyDeviceToHost);
       double residual = 0.0;
 
-      // Calulate residual
+      // Calculate residual
       for (unsigned i = 0; i < rows; i++) {
         double dot_product = 0.0;
         for (unsigned j = h_A_outer[i]; j < h_A_outer[i + 1]; j++) {
