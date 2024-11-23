@@ -13,9 +13,10 @@
 #include "common.hpp"
 
 #define L_RESIDUAL 500
-#define ROWS_PER_THREAD 10
+#define ROWS_PER_THREAD 1
 #define LOCAL_RUNS_PER_THREAD 5
-#define THREADS_PER_BLOCK 32
+#define THREADS_PER_BLOCK 256
+#define RELAXATION 1.0
 
 // IMPORTANT: ONLY WORKS ON SQUARE MATRICES ATM AND IF ROWS_PER_THREAD DIVIDES
 // TOTAL ROWS
@@ -24,16 +25,16 @@ __global__ void step(const int *A_outer, const int *A_inner,
                      const double *A_values_shared, const double *b_local,
                      const unsigned rows, const unsigned cols,
                      const double *sq_norms_local, double *x, double *X,
-                     const unsigned rows_per_thread, const unsigned nnz,
-                     const unsigned max_nnz_in_row, const double relaxation) {
+                      const unsigned nnz,
+                     const unsigned max_nnz_in_row) {
   const unsigned tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-  if (tid * rows_per_thread < rows)  // only if thread has assigned rows
+  if (tid * ROWS_PER_THREAD < rows)  // only if thread has assigned rows
   {
     // copy x to local memory
-    for (unsigned k = 0; k < rows_per_thread; k++) {
-      for (unsigned i = A_outer[tid * rows_per_thread + k];
-           i < A_outer[tid * rows_per_thread + k + 1]; i++) {
+    for (unsigned k = 0; k < ROWS_PER_THREAD; k++) {
+      for (unsigned i = A_outer[tid * ROWS_PER_THREAD + k];
+           i < A_outer[tid * ROWS_PER_THREAD + k + 1]; i++) {
         X[tid * rows + A_inner[i]] = x[A_inner[i]];
       }
     }
@@ -41,21 +42,21 @@ __global__ void step(const int *A_outer, const int *A_inner,
     // perform one update step for assigned row
     for (unsigned local_iter = 0; local_iter < LOCAL_RUNS_PER_THREAD;
          local_iter++) {
-      for (unsigned k = 0; k < rows_per_thread; k++) {
+      for (unsigned k = 0; k < ROWS_PER_THREAD; k++) {
         // compute dot product row * x
         double dot_product = 0.;
-        for (unsigned i = A_outer[tid * rows_per_thread + k];
-             i < A_outer[tid * rows_per_thread + k + 1]; i++) {
+        for (unsigned i = A_outer[tid * ROWS_PER_THREAD + k];
+             i < A_outer[tid * ROWS_PER_THREAD + k + 1]; i++) {
           const double x_value = X[tid * rows + A_inner[i]];
           dot_product += A_values_shared[i] * x_value;
         }
         // calculate update
         const double update_coeff =
-            relaxation * ((b_local[tid * rows_per_thread + k] - dot_product) /
-                          sq_norms_local[tid * rows_per_thread + k]);
+            RELAXATION * ((b_local[tid * ROWS_PER_THREAD + k] - dot_product) /
+                          sq_norms_local[tid * ROWS_PER_THREAD + k]);
         // save update for x in local memory
-        for (unsigned i = A_outer[tid * rows_per_thread + k];
-             i < A_outer[tid * rows_per_thread + k + 1]; i++) {
+        for (unsigned i = A_outer[tid * ROWS_PER_THREAD + k];
+             i < A_outer[tid * ROWS_PER_THREAD + k + 1]; i++) {
           X[tid * rows + A_inner[i]] += update_coeff * A_values_shared[i];
         }
       }
@@ -68,25 +69,25 @@ __global__ void update(const int *A_outerIndex, const int *A_innerIndex,
                        const double *A_values, const double *b,
                        const unsigned rows, const unsigned cols,
                        const double *sq_norms, double *x, double *X,
-                       int *affected, const unsigned rows_per_thread,
+                       int *affected, 
                        const unsigned total_threads) {
   const unsigned tid = blockIdx.x * blockDim.x + threadIdx.x;
-  if (tid * rows_per_thread < cols) {
-    for (unsigned k = 0; k < rows_per_thread; k++) {
+  if (tid * ROWS_PER_THREAD < cols) {
+    for (unsigned k = 0; k < ROWS_PER_THREAD; k++) {
       // sum up updates for assigned entry
       double sum = 0;
       int counter = 0;
       while (true) {
         int affecting_thread =
-            affected[(tid * rows_per_thread + k) * (total_threads + 1) +
+            affected[(tid * ROWS_PER_THREAD + k) * (total_threads + 1) +
                      counter];
         if (affecting_thread < 0) break;
         counter++;
         const double value =
-            X[affecting_thread * rows + tid * rows_per_thread + k];
+            X[affecting_thread * rows + tid * ROWS_PER_THREAD + k];
         sum += value;
       }
-      x[tid * rows_per_thread + k] = sum / (double)counter;
+      x[tid * ROWS_PER_THREAD + k] = sum / (double)counter;
     }
   }
 }
@@ -207,13 +208,11 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
       }
     }
 
-    // the real work begins here
-    const double relaxation = 1.0;
 
     // perform iteration steps and updates
     step<<<blocks, THREADS_PER_BLOCK>>>(
         d_A_outer, d_A_inner, d_A_values, d_b, rows, cols, d_sq_norms, d_x, d_X,
-        ROWS_PER_THREAD, nnz, max_nnz_in_row, relaxation);
+         nnz, max_nnz_in_row);
 
     // synchronize threads and check for errors
     auto res = cudaDeviceSynchronize();
@@ -222,7 +221,7 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
     // update x
     update<<<blocks, THREADS_PER_BLOCK>>>(
         d_A_outer, d_A_inner, d_A_values, d_b, rows, cols, d_sq_norms, d_x, d_X,
-        d_affected, ROWS_PER_THREAD, total_threads);
+        d_affected,  total_threads);
     // synchronize threads and check for errors
     res = cudaDeviceSynchronize();
     assert(res == 0);
