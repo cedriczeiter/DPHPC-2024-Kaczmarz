@@ -19,7 +19,7 @@
 __global__ void kswp(const int *A_outer, const int *A_inner,
                      const double *A_values_shared, const double *b_local,
                      const unsigned dim,
-                     const double *sq_norms_local, const double *x, double *X,
+                     const double *sq_norms_local, const double *x,
                      const unsigned rows_per_thread, const double relaxation, double* output,const int *affected, bool forward) {
 
   const unsigned tid = blockIdx.x * blockDim.x + threadIdx.x;
@@ -187,15 +187,15 @@ double dot_product_gpu(const double* d_a, const double* d_b, double *d_to, const
 void dcswp(const int *d_A_outer, const int *d_A_inner,
                      const double *d_A_values, const double *d_b,
                      const unsigned dim,
-                     const double *d_sq_norms, const double *d_x, double *d_X,
+                     const double *d_sq_norms, const double *d_x,
                      const double relaxation, const int *d_affected, const unsigned total_threads, double* d_output, const unsigned blocks){
 // perform step forward
     kswp<<<blocks, THREADS_PER_BLOCK>>>(
-        d_A_outer, d_A_inner, d_A_values, d_b, dim, d_sq_norms, d_x, d_X,
+        d_A_outer, d_A_inner, d_A_values, d_b, dim, d_sq_norms, d_x,
         ROWS_PER_THREAD, relaxation, d_output, d_affected, true);
 
         // perform step backward
     kswp<<<blocks, THREADS_PER_BLOCK>>>(
-        d_A_outer, d_A_inner, d_A_values, d_b, dim, d_sq_norms, d_x, d_X,
+        d_A_outer, d_A_inner, d_A_values, d_b, dim, d_sq_norms, d_x,
         ROWS_PER_THREAD, relaxation, d_output, d_affected, false);
 }

@@ -101,11 +101,6 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
   CUDA_SAFE_CALL(cudaMalloc((void**)&d_zero, dim*sizeof(double)));
   CUDA_SAFE_CALL(cudaMemset((void **)d_zero, 0, dim*sizeof(double)));
 
-  // move X to device
-  double *d_X;
-  CUDA_SAFE_CALL(cudaMalloc((void **)&d_X, total_threads * cols * sizeof(double)));
-  CUDA_SAFE_CALL(cudaMemset((void **)d_X, 0, total_threads * cols * sizeof(double)));
-
   // calculate nr of blocks and threads
   const int blocks =
       (total_threads + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
@@ -118,7 +113,7 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
   dcswp(d_A_outer, d_A_inner,
                      d_A_values, d_b,
                     dim,
-                    d_sq_norms, d_x, d_X,
+                    d_sq_norms, d_x,
                      relaxation, d_affected, total_threads, d_r, blocks);
   copy_gpu(d_r, d_p, dim);
 
