@@ -116,28 +116,28 @@ public:
     }
 };
 
-void printSparseMatrix(const SparseMatrix<int>& matrix) {
+void printSparseMatrix(const SparseMatrix<double>& matrix) {
     int rows = matrix.rows();
     int cols = matrix.cols();
     for (int i = 0; i < rows; ++i) {
         for (int j = 0; j < cols; ++j) {
-            int value = matrix.coeff(i, j); // coeff() returns 0 if no entry exists
+            double value = matrix.coeff(i, j); // coeff() returns 0 if no entry exists
             std::cout << value << " ";
         }
         std::cout << "\n";
     }
 }
 
-SparseMatrix<int> reorderMatrix(const SparseMatrix<int>& matrix, const std::vector<int>& order) {
+SparseMatrix<double> reorderMatrix(const SparseMatrix<double>& matrix, const std::vector<int>& order) {
     int n = matrix.rows();
-    SparseMatrix<int> reorderedMatrix(n, n);
+    SparseMatrix<double> reorderedMatrix(n, n);
     std::vector<int> newIndex(n);
     for (int i = 0; i < n; ++i) {
         newIndex[order[i]] = i;
     }
 
     for (int k = 0; k < matrix.outerSize(); ++k) {
-        for (SparseMatrix<int>::InnerIterator it(matrix, k); it; ++it) {
+        for (SparseMatrix<double>::InnerIterator it(matrix, k); it; ++it) {
             int new_row = newIndex[it.row()];
             int new_col = newIndex[it.col()];
             reorderedMatrix.insert(new_row, new_col) = it.value();
@@ -148,50 +148,66 @@ SparseMatrix<int> reorderMatrix(const SparseMatrix<int>& matrix, const std::vect
     return reorderedMatrix;
 }
 
+VectorXd reorderRHS(const VectorXd& rhs, const std::vector<int>& order) {
+    int n = rhs.size();
+    VectorXd reorderedRHS(n);
+    
+    for (int i = 0; i < n; ++i) {
+        reorderedRHS[i] = rhs[order[i]];
+    }
+    
+    return reorderedRHS;
+}
+
 int main() {
     // Define a sparse matrix (example)
-    SparseMatrix<int> matrix(10, 10);
-    std::vector<Eigen::Triplet<int>> triplets;
-    triplets.push_back(Eigen::Triplet<int>(0, 1, 1));
-    triplets.push_back(Eigen::Triplet<int>(0, 6, 1));
-    triplets.push_back(Eigen::Triplet<int>(0, 8, 1));
-    triplets.push_back(Eigen::Triplet<int>(1, 0, 1));
-    triplets.push_back(Eigen::Triplet<int>(1, 4, 1));
-    triplets.push_back(Eigen::Triplet<int>(1, 6, 1));
-    triplets.push_back(Eigen::Triplet<int>(1, 9, 1));
-    triplets.push_back(Eigen::Triplet<int>(2, 4, 1));
-    triplets.push_back(Eigen::Triplet<int>(2, 6, 1));
-    triplets.push_back(Eigen::Triplet<int>(3, 4, 1));
-    triplets.push_back(Eigen::Triplet<int>(3, 5, 1));
-    triplets.push_back(Eigen::Triplet<int>(3, 8, 1));
-    triplets.push_back(Eigen::Triplet<int>(4, 1, 1));
-    triplets.push_back(Eigen::Triplet<int>(4, 2, 1));
-    triplets.push_back(Eigen::Triplet<int>(4, 3, 1));
-    triplets.push_back(Eigen::Triplet<int>(4, 5, 1));
-    triplets.push_back(Eigen::Triplet<int>(4, 9, 1));
-    triplets.push_back(Eigen::Triplet<int>(5, 3, 1));
-    triplets.push_back(Eigen::Triplet<int>(5, 4, 1));
-    triplets.push_back(Eigen::Triplet<int>(6, 0, 1));
-    triplets.push_back(Eigen::Triplet<int>(6, 1, 1));
-    triplets.push_back(Eigen::Triplet<int>(6, 2, 1));
-    triplets.push_back(Eigen::Triplet<int>(7, 8, 1));
-    triplets.push_back(Eigen::Triplet<int>(7, 9, 1));
-    triplets.push_back(Eigen::Triplet<int>(8, 0, 1));
-    triplets.push_back(Eigen::Triplet<int>(8, 3, 1));
-    triplets.push_back(Eigen::Triplet<int>(8, 7, 1));
-    triplets.push_back(Eigen::Triplet<int>(9, 1, 1));
-    triplets.push_back(Eigen::Triplet<int>(9, 4, 1));
-    triplets.push_back(Eigen::Triplet<int>(9, 7, 1));
+    SparseMatrix<double> matrix(10, 10);
+    std::vector<Eigen::Triplet<double>> triplets;
+    triplets.push_back(Eigen::Triplet<double>(0, 1, 1));
+    triplets.push_back(Eigen::Triplet<double>(0, 6, 1));
+    triplets.push_back(Eigen::Triplet<double>(0, 8, 1));
+    triplets.push_back(Eigen::Triplet<double>(1, 0, 1));
+    triplets.push_back(Eigen::Triplet<double>(1, 4, 1));
+    triplets.push_back(Eigen::Triplet<double>(1, 6, 1));
+    triplets.push_back(Eigen::Triplet<double>(1, 9, 1));
+    triplets.push_back(Eigen::Triplet<double>(2, 4, 1));
+    triplets.push_back(Eigen::Triplet<double>(2, 6, 1));
+    triplets.push_back(Eigen::Triplet<double>(3, 4, 1));
+    triplets.push_back(Eigen::Triplet<double>(3, 5, 1));
+    triplets.push_back(Eigen::Triplet<double>(3, 8, 1));
+    triplets.push_back(Eigen::Triplet<double>(4, 1, 1));
+    triplets.push_back(Eigen::Triplet<double>(4, 2, 1));
+    triplets.push_back(Eigen::Triplet<double>(4, 3, 1));
+    triplets.push_back(Eigen::Triplet<double>(4, 5, 1));
+    triplets.push_back(Eigen::Triplet<double>(4, 9, 1));
+    triplets.push_back(Eigen::Triplet<double>(5, 3, 1));
+    triplets.push_back(Eigen::Triplet<double>(5, 4, 1));
+    triplets.push_back(Eigen::Triplet<double>(6, 0, 1));
+    triplets.push_back(Eigen::Triplet<double>(6, 1, 1));
+    triplets.push_back(Eigen::Triplet<double>(6, 2, 1));
+    triplets.push_back(Eigen::Triplet<double>(7, 8, 1));
+    triplets.push_back(Eigen::Triplet<double>(7, 9, 1));
+    triplets.push_back(Eigen::Triplet<double>(8, 0, 1));
+    triplets.push_back(Eigen::Triplet<double>(8, 3, 1));
+    triplets.push_back(Eigen::Triplet<double>(8, 7, 1));
+    triplets.push_back(Eigen::Triplet<double>(9, 1, 1));
+    triplets.push_back(Eigen::Triplet<double>(9, 4, 1));
+    triplets.push_back(Eigen::Triplet<double>(9, 7, 0.5));
     matrix.setFromTriplets(triplets.begin(), triplets.end());
 
     std::cout << "Original Matrix:\n";
     printSparseMatrix(matrix);
 
+    // Create a sample RHS vector
+    VectorXd rhs(10);
+    rhs << 1, 2, 3, 4, 5, 6, 7, 8, 9, 10;
+    std::cout << "\nOriginal RHS Vector:\n" << rhs.transpose() << std::endl;
+
     // Convert sparse matrix to dense matrix format for RCM processing
     int n = matrix.rows();
     vector<vector<double>> denseMatrix(n, vector<double>(n, 0));
     for (int k = 0; k < matrix.outerSize(); ++k) {
-        for (SparseMatrix<int>::InnerIterator it(matrix, k); it; ++it) {
+        for (SparseMatrix<double>::InnerIterator it(matrix, k); it; ++it) {
             denseMatrix[it.row()][it.col()] = it.value();
         }
     }
@@ -201,11 +217,17 @@ int main() {
     vector<int> rcmOrder = mtxReorder.ReverseCuthillMckee();
 
     std::cout << "Reordered Matrix:\n";
-    SparseMatrix<int> reorderedMatrix = reorderMatrix(matrix, rcmOrder);
+    SparseMatrix<double> reorderedMatrix = reorderMatrix(matrix, rcmOrder);
     printSparseMatrix(reorderedMatrix);
+
+    // Reorder the RHS vector
+    VectorXd reorderedRHS = reorderRHS(rhs, rcmOrder);
+    std::cout << "Reordered RHS Vector:\n" << reorderedRHS.transpose() << std::endl;
 
     return 0;
 }
+
+
 
 
 // RCM Code taken from:
