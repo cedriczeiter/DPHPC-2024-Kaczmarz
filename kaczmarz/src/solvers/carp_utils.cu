@@ -15,7 +15,7 @@
 #include "carp_utils.hpp"
 
 
-
+// The function kswp is the main kernel function of the CARP solver that performs calculations on the GPU
 __global__ void kswp(const int *A_outer, const int *A_inner,
                      const double *A_values_shared, const double *b_local,
                      const unsigned dim,
@@ -24,9 +24,7 @@ __global__ void kswp(const int *A_outer, const int *A_inner,
 
   const unsigned tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-  const unsigned rows = dim;
-
-  if (tid * rows_per_thread < rows)  // only if thread has assigned rows
+  if (tid * rows_per_thread < dim)  // only if thread has assigned rows (dim)
   {
 
     // perform sweep
@@ -106,31 +104,26 @@ __global__ void square_vector(const double *a, const double *b, double* output, 
 }
 
 void add_gpu(const double* d_a, const double* d_b, double* d_output, const double factor, const unsigned dim){
-    //calculate how many threads needed
-    int threadsPerBlock = 256;
     // Calculate the number of blocks needed
-    int blocks = (dim + threadsPerBlock - 1) / threadsPerBlock;
-    add<<<blocks, threadsPerBlock>>>(d_a, d_b, d_output, factor, dim);
+    int blocks = (dim + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
+    add<<<blocks, THREADS_PER_BLOCK>>>(d_a, d_b, d_output, factor, dim);
     auto res = cudaDeviceSynchronize();
     assert(res == 0);
 }
 
 void copy_gpu(const double* d_from, double* d_to, const unsigned dim){
-    //calculate how many threads needed
-    int threadsPerBlock = 256;
     // Calculate the number of blocks needed
-    int blocks = (dim + threadsPerBlock - 1) / threadsPerBlock;
-    copy<<<blocks, threadsPerBlock>>>(d_from, d_to, dim);
+    int blocks = (dim + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
+    copy<<<blocks, THREADS_PER_BLOCK>>>(d_from, d_to, dim);
     auto res = cudaDeviceSynchronize();
     assert(res == 0);
 }
 
 double dot_product_gpu(const double* d_a, const double* d_b, double *d_to, const unsigned dim){
-    //calculate how many threads needed
-    int threadsPerBlock = 256;
+
     // Calculate the number of blocks needed
-    int blocks = (dim + threadsPerBlock - 1) / threadsPerBlock;
-    square_vector<<<blocks, threadsPerBlock>>>(d_a, d_b, d_to, dim);
+    int blocks = (dim + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
+    square_vector<<<blocks, THREADS_PER_BLOCK>>>(d_a, d_b, d_to, dim);
     auto res = cudaDeviceSynchronize();
     assert(res == 0);
 
