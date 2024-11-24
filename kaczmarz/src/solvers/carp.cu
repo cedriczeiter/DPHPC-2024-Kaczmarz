@@ -60,10 +60,10 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
   std::vector<std::set<unsigned>> affects(
       rows);  // coding: affects[j]: the x at position j is affected by threads in set
     for (unsigned row = 0; row < rows; row++){
-    for (unsigned i = h_A_outer[row]; i < h_A_outer[row + 1]; i++) {
-      const unsigned thread = (unsigned)(row / ROWS_PER_THREAD);
-      affects.at(h_A_inner[i]).insert(thread);
-    }
+      for (unsigned i = h_A_outer[row]; i < h_A_outer[row + 1]; i++) {
+        const unsigned thread = (unsigned)(row / ROWS_PER_THREAD);
+        affects.at(h_A_inner[i]).insert(thread);
+      }
     }
   const int affects_size = affects.size();
 
@@ -146,7 +146,7 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
       }
     }
 
-    // the real work begins here
+    // the actual calculation begin here
     dcswp(d_A_outer, d_A_inner,
                      d_A_values, d_zero,
                     dim,

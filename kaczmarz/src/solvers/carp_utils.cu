@@ -144,8 +144,7 @@ double dot_product_gpu(const double* d_a, const double* d_b, double *d_to, const
     return dot;
 }
 
-
-
+// Function to perform the sweep forward and backward (main function of the CARP solver)
 void dcswp(const int *d_A_outer, const int *d_A_inner,
                      const double *d_A_values, const double *d_b,
                      const unsigned dim,
@@ -155,13 +154,14 @@ void dcswp(const int *d_A_outer, const int *d_A_inner,
   //copy x vector to output vector
   copy_gpu(d_x, d_intermediate, dim);
   // perform step forward
-    kswp<<<blocks, THREADS_PER_BLOCK>>>(
+  kswp<<<blocks, THREADS_PER_BLOCK>>>(
         d_A_outer, d_A_inner, d_A_values, d_b, dim, d_sq_norms, d_x,
         ROWS_PER_THREAD, relaxation, d_intermediate, d_affected, true);
-        // perform step backward
+   
   //copy intermediate vector over to output vector
   copy_gpu(d_intermediate, d_output, dim);
-    kswp<<<blocks, THREADS_PER_BLOCK>>>(
+  // perform step backward
+  kswp<<<blocks, THREADS_PER_BLOCK>>>(
         d_A_outer, d_A_inner, d_A_values, d_b, dim, d_sq_norms, d_intermediate,
         ROWS_PER_THREAD, relaxation, d_output, d_affected, false);
 }
