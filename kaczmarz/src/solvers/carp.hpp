@@ -13,7 +13,6 @@
  * @param x The vector to store the solution.
  * @param max_iterations The maximum number of iterations to perform.
  * @param precision The precision required for the solution.
- * @param num_threads The number of threads to use for the computation.
  * @return The status of the solver after completion.
  */
 KaczmarzSolverStatus carp_gpu(const SparseLinearSystem& lse, Vector& x,
