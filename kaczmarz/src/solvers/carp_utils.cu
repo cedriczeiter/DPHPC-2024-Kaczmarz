@@ -25,7 +25,6 @@ __global__ void kswp(const int *A_outer, const int *A_inner,
   const unsigned tid = blockIdx.x * blockDim.x + threadIdx.x;
 
   const unsigned rows = dim;
-  const unsigned cols = dim;
 
   if (tid * rows_per_thread < rows)  // only if thread has assigned rows
   {
@@ -44,7 +43,7 @@ __global__ void kswp(const int *A_outer, const int *A_inner,
           double dot_product = 0.;
           for (unsigned i = A_outer[row];
               i < A_outer[row + 1]; i++) {
-            const double x_value = output[A_inner[i]];
+            const double x_value = x[A_inner[i]];
             dot_product += A_values_shared[i] * x_value;
           }
           // calculate update
@@ -67,7 +66,7 @@ __global__ void kswp(const int *A_outer, const int *A_inner,
           double dot_product = 0.;
           for (unsigned i = A_outer[row];
               i < A_outer[row + 1]; i++) {
-            const double x_value = output[A_inner[i]];
+            const double x_value = x[A_inner[i]];
             dot_product += A_values_shared[i] * x_value;
           }
           // calculate update
@@ -151,16 +150,18 @@ void dcswp(const int *d_A_outer, const int *d_A_inner,
                      const double *d_A_values, const double *d_b,
                      const unsigned dim,
                      const double *d_sq_norms, const double *d_x,
-                     const double relaxation, const int *d_affected, const unsigned total_threads, double* d_output, const unsigned blocks){
+                     const double relaxation, const int *d_affected, const unsigned total_threads, double* d_output, double* d_intermediate, const unsigned blocks){
 
   //copy x vector to output vector
-  copy_gpu(d_x, d_output, dim);
+  copy_gpu(d_x, d_intermediate, dim);
   // perform step forward
     kswp<<<blocks, THREADS_PER_BLOCK>>>(
         d_A_outer, d_A_inner, d_A_values, d_b, dim, d_sq_norms, d_x,
-        ROWS_PER_THREAD, relaxation, d_output, d_affected, true);
+        ROWS_PER_THREAD, relaxation, d_intermediate, d_affected, true);
         // perform step backward
+  //copy intermediate vector over to output vector
+  copy_gpu(d_intermediate, d_output, dim);
     kswp<<<blocks, THREADS_PER_BLOCK>>>(
-        d_A_outer, d_A_inner, d_A_values, d_b, dim, d_sq_norms, d_output,
+        d_A_outer, d_A_inner, d_A_values, d_b, dim, d_sq_norms, d_intermediate,
         ROWS_PER_THREAD, relaxation, d_output, d_affected, false);
 }

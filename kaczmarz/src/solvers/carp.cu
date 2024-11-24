@@ -89,11 +89,13 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
   double *d_r;
   double *d_q;
   double *d_intermediate;
+  double* d_intermediate_two;
   double *d_zero;
   CUDA_SAFE_CALL(cudaMalloc((void**)&d_p, dim*sizeof(double)));
   CUDA_SAFE_CALL(cudaMalloc((void**)&d_r, dim*sizeof(double)));
   CUDA_SAFE_CALL(cudaMalloc((void**)&d_q, dim*sizeof(double)));
   CUDA_SAFE_CALL(cudaMalloc((void**)&d_intermediate, dim*sizeof(double)));
+  CUDA_SAFE_CALL(cudaMalloc((void**)&d_intermediate_two, dim*sizeof(double)));
   CUDA_SAFE_CALL(cudaMalloc((void**)&d_zero, dim*sizeof(double)));
   CUDA_SAFE_CALL(cudaMemset((void **)d_zero, 0, dim*sizeof(double)));
 
@@ -110,7 +112,7 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
                      d_A_values, d_b,
                     dim,
                     d_sq_norms, d_x,
-                     relaxation, d_affected, total_threads, d_r, blocks);
+                     relaxation, d_affected, total_threads, d_r, d_intermediate, blocks);
   copy_gpu(d_r, d_p, dim);
 
   for (int iter = 0; iter < max_iterations; iter++) {
@@ -149,7 +151,7 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
                      d_A_values, d_zero,
                     dim,
                     d_sq_norms, d_p,
-                     relaxation, d_affected, total_threads, d_intermediate, blocks);
+                     relaxation, d_affected, total_threads, d_intermediate, d_intermediate_two, blocks);
     add_gpu(d_p, d_intermediate, d_q, -1., dim);
     const double sq_norm_r_old = dot_product_gpu(d_r, d_r, d_intermediate, dim);
     const double alpha = sq_norm_r_old/dot_product_gpu(d_p, d_q, d_intermediate, dim);
@@ -171,6 +173,7 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
   cudaFree(d_r);
   cudaFree(d_q);
   cudaFree(d_intermediate);
+  cudaFree(d_intermediate_two);
   cudaFree(d_zero);
   // check for convergence
   if (converged) {
