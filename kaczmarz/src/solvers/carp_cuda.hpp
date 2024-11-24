@@ -25,6 +25,7 @@
  * @param precision Desired precision for the solution.
  * @param max_nnz_in_row Maximum number of non-zero elements in any row of the
  * matrix.
+ * @param b_norm Norm of the right-hand side vector.
  * @return Status of the solver after execution.
  */
 
