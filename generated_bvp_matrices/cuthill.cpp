@@ -4,6 +4,9 @@
 #include <queue>
 #include <algorithm>
 #include <iostream>
+#include <fstream>
+#include <sstream>
+#include <string>
 
 using namespace Eigen;
 using namespace std;
@@ -23,206 +26,110 @@ bool compareDegree(int i, int j)
     return ::globalDegree[i] < ::globalDegree[j];
 }
 
-class ReorderingSSM {
-private:
-    vector<vector<double>> _matrix;
+std::vector<int> reverse_cuthill_mckee(const Eigen::SparseMatrix<double> &A) {
+    int n = A.rows();
+    std::vector<int> perm(n, -1);
+    std::vector<int> degree(n, 0);
+    std::vector<bool> visited(n, false);
 
-public:
-    // Constructor and Destructor
-    ReorderingSSM(vector<vector<double>> m)
-    {
-        _matrix = m;
-    }
-
-    ReorderingSSM() {}
-    ~ReorderingSSM() {}
-
-    // Method to generate degree of all the nodes
-    vector<double> degreeGenerator()
-    {
-        vector<double> degrees;
-        for (int i = 0; i < _matrix.size(); i++) {
-            double count = 0;
-            for (int j = 0; j < _matrix[0].size(); j++) {
-                count += _matrix[i][j];
-            }
-            degrees.push_back(count);
+    for (int k = 0; k < A.outerSize(); ++k) {
+        for (Eigen::SparseMatrix<double>::InnerIterator it(A, k); it; ++it) {
+            degree[it.row()]++;
         }
-        return degrees;
     }
 
-    // Cuthill-McKee algorithm implementation
-    vector<int> CuthillMckee()
-    {
-        vector<double> degrees = degreeGenerator();
-        ::globalDegree = degrees;
+    std::queue<int> Q;
+    int start = std::min_element(degree.begin(), degree.end()) - degree.begin();
+    Q.push(start);
+    visited[start] = true;
+    int index = 0;
 
-        queue<int> Q;
-        vector<int> R;
-        vector<pair<int, double>> notVisited;
+    while (!Q.empty()) {
+        int v = Q.front();
+        Q.pop();
+        perm[index++] = v;
 
-        for (int i = 0; i < degrees.size(); i++)
-            notVisited.push_back(make_pair(i, degrees[i]));
-
-        // BFS even for disconnected components
-        while (notVisited.size()) {
-            int minNodeIndex = 0;
-            for (int i = 0; i < notVisited.size(); i++)
-                if (notVisited[i].second < notVisited[minNodeIndex].second)
-                    minNodeIndex = i;
-
-            Q.push(notVisited[minNodeIndex].first);
-            notVisited.erase(notVisited.begin() + findIndex(notVisited, notVisited[Q.front()].first));
-
-            // Simple BFS
-            while (!Q.empty()) {
-                vector<int> toSort;
-                for (int i = 0; i < _matrix[0].size(); i++) {
-                    if (i != Q.front() && _matrix[Q.front()][i] == 1 && findIndex(notVisited, i) != -1) {
-                        toSort.push_back(i);
-                        notVisited.erase(notVisited.begin() + findIndex(notVisited, i));
-                    }
-                }
-
-                sort(toSort.begin(), toSort.end(), compareDegree);
-                for (int i = 0; i < toSort.size(); i++)
-                    Q.push(toSort[i]);
-
-                R.push_back(Q.front());
-                Q.pop();
+        std::vector<int> neighbors;
+        for (Eigen::SparseMatrix<double>::InnerIterator it(A, v); it; ++it) {
+            if (!visited[it.col()]) {
+                neighbors.push_back(it.col());
+                visited[it.col()] = true;
             }
         }
 
-        return R;
-    }
+        std::sort(neighbors.begin(), neighbors.end(), [&degree](int a, int b) {
+            return degree[a] < degree[b];
+        });
 
-    // Reverse Cuthill-McKee algorithm implementation
-    vector<int> ReverseCuthillMckee()
-    {
-        vector<int> cuthill = CuthillMckee();
-
-        int n = cuthill.size();
-        if (n % 2 == 0)
-            n -= 1;
-
-        n = n / 2;
-        for (int i = 0; i <= n; i++) {
-            int j = cuthill[cuthill.size() - 1 - i];
-            cuthill[cuthill.size() - 1 - i] = cuthill[i];
-            cuthill[i] = j;
+        for (int neighbor : neighbors) {
+            Q.push(neighbor);
         }
-
-        return cuthill;
     }
-};
 
-void printSparseMatrix(const SparseMatrix<double>& matrix) {
-    int rows = matrix.rows();
-    int cols = matrix.cols();
-    for (int i = 0; i < rows; ++i) {
-        for (int j = 0; j < cols; ++j) {
-            double value = matrix.coeff(i, j); // coeff() returns 0 if no entry exists
-            std::cout << value << " ";
-        }
-        std::cout << "\n";
-    }
+    std::reverse(perm.begin(), perm.end());
+    return perm;
 }
 
-SparseMatrix<double> reorderMatrix(const SparseMatrix<double>& matrix, const std::vector<int>& order) {
-    int n = matrix.rows();
-    SparseMatrix<double> reorderedMatrix(n, n);
-    std::vector<int> newIndex(n);
-    for (int i = 0; i < n; ++i) {
-        newIndex[order[i]] = i;
-    }
+void reorder_system_rcm(const Eigen::SparseMatrix<double> &A, const Eigen::VectorXd &b, Eigen::SparseMatrix<double> &A_reordered, Eigen::VectorXd &b_reordered) {
+    std::vector<int> perm = reverse_cuthill_mckee(A);
+    Eigen::VectorXi perm_eigen = Eigen::Map<Eigen::VectorXi>(perm.data(), perm.size());
+    Eigen::PermutationMatrix<Eigen::Dynamic, Eigen::Dynamic> perm_matrix(perm_eigen);
+    A_reordered = perm_matrix.transpose() * A * perm_matrix;
+    b_reordered = perm_matrix.transpose() * b;
+}
 
+void printSparseMatrix(const Eigen::SparseMatrix<double> &matrix) {
     for (int k = 0; k < matrix.outerSize(); ++k) {
-        for (SparseMatrix<double>::InnerIterator it(matrix, k); it; ++it) {
-            int new_row = newIndex[it.row()];
-            int new_col = newIndex[it.col()];
-            reorderedMatrix.insert(new_row, new_col) = it.value();
+        for (Eigen::SparseMatrix<double>::InnerIterator it(matrix, k); it; ++it) {
+            cout << "(" << it.row() << ", " << it.col() << ") = " << it.value() << endl;
         }
     }
-
-    reorderedMatrix.makeCompressed();
-    return reorderedMatrix;
-}
-
-VectorXd reorderRHS(const VectorXd& rhs, const std::vector<int>& order) {
-    int n = rhs.size();
-    VectorXd reorderedRHS(n);
-    
-    for (int i = 0; i < n; ++i) {
-        reorderedRHS[i] = rhs[order[i]];
-    }
-    
-    return reorderedRHS;
 }
 
 int main() {
-    // Define a sparse matrix (example)
-    SparseMatrix<double> matrix(10, 10);
-    std::vector<Eigen::Triplet<double>> triplets;
-    triplets.push_back(Eigen::Triplet<double>(0, 1, 1));
-    triplets.push_back(Eigen::Triplet<double>(0, 6, 1));
-    triplets.push_back(Eigen::Triplet<double>(0, 8, 1));
-    triplets.push_back(Eigen::Triplet<double>(1, 0, 1));
-    triplets.push_back(Eigen::Triplet<double>(1, 4, 1));
-    triplets.push_back(Eigen::Triplet<double>(1, 6, 1));
-    triplets.push_back(Eigen::Triplet<double>(1, 9, 1));
-    triplets.push_back(Eigen::Triplet<double>(2, 4, 1));
-    triplets.push_back(Eigen::Triplet<double>(2, 6, 1));
-    triplets.push_back(Eigen::Triplet<double>(3, 4, 1));
-    triplets.push_back(Eigen::Triplet<double>(3, 5, 1));
-    triplets.push_back(Eigen::Triplet<double>(3, 8, 1));
-    triplets.push_back(Eigen::Triplet<double>(4, 1, 1));
-    triplets.push_back(Eigen::Triplet<double>(4, 2, 1));
-    triplets.push_back(Eigen::Triplet<double>(4, 3, 1));
-    triplets.push_back(Eigen::Triplet<double>(4, 5, 1));
-    triplets.push_back(Eigen::Triplet<double>(4, 9, 1));
-    triplets.push_back(Eigen::Triplet<double>(5, 3, 1));
-    triplets.push_back(Eigen::Triplet<double>(5, 4, 1));
-    triplets.push_back(Eigen::Triplet<double>(6, 0, 1));
-    triplets.push_back(Eigen::Triplet<double>(6, 1, 1));
-    triplets.push_back(Eigen::Triplet<double>(6, 2, 1));
-    triplets.push_back(Eigen::Triplet<double>(7, 8, 1));
-    triplets.push_back(Eigen::Triplet<double>(7, 9, 1));
-    triplets.push_back(Eigen::Triplet<double>(8, 0, 1));
-    triplets.push_back(Eigen::Triplet<double>(8, 3, 1));
-    triplets.push_back(Eigen::Triplet<double>(8, 7, 1));
-    triplets.push_back(Eigen::Triplet<double>(9, 1, 1));
-    triplets.push_back(Eigen::Triplet<double>(9, 4, 1));
-    triplets.push_back(Eigen::Triplet<double>(9, 7, 0.5));
-    matrix.setFromTriplets(triplets.begin(), triplets.end());
-
-    std::cout << "Original Matrix:\n";
-    printSparseMatrix(matrix);
-
-    // Create a sample RHS vector
-    VectorXd rhs(10);
-    rhs << 1, 2, 3, 4, 5, 6, 7, 8, 9, 10;
-    std::cout << "\nOriginal RHS Vector:\n" << rhs.transpose() << std::endl;
-
-    // Convert sparse matrix to dense matrix format for RCM processing
-    int n = matrix.rows();
-    vector<vector<double>> denseMatrix(n, vector<double>(n, 0));
-    for (int k = 0; k < matrix.outerSize(); ++k) {
-        for (SparseMatrix<double>::InnerIterator it(matrix, k); it; ++it) {
-            denseMatrix[it.row()][it.col()] = it.value();
-        }
+    std::ifstream in_stream("problem1_complexity1.txt");
+    if (!in_stream.is_open()) {
+        std::cerr << "Error opening file" << std::endl;
+        return 1;
     }
 
-    // Use the second RCM implementation
-    ReorderingSSM mtxReorder(denseMatrix);
-    vector<int> rcmOrder = mtxReorder.ReverseCuthillMckee();
+    unsigned nnz, rows, cols;
+    in_stream >> nnz >> rows >> cols;
 
-    std::cout << "Reordered Matrix:\n";
-    SparseMatrix<double> reorderedMatrix = reorderMatrix(matrix, rcmOrder);
-    printSparseMatrix(reorderedMatrix);
+    assert(nnz <= rows * cols);
 
-    // Reorder the RHS vector
-    VectorXd reorderedRHS = reorderRHS(rhs, rcmOrder);
-    std::cout << "Reordered RHS Vector:\n" << reorderedRHS.transpose() << std::endl;
+    std::vector<Eigen::Triplet<double>> triplets_A;
+    triplets_A.reserve(nnz);
+
+    // every next three entries correspond to values for a triplet
+    for (unsigned i = 0; i < nnz; i++) {
+        unsigned row, col;
+        double value;
+        in_stream >> row >> col >> value;
+        triplets_A.emplace_back(row, col, value);
+    }
+
+    Eigen::SparseMatrix<double> matrix(rows, cols);
+    matrix.setFromTriplets(triplets_A.begin(), triplets_A.end());
+
+    // construct rhs vector
+    Eigen::VectorXd rhs = Eigen::VectorXd::Zero(rows);
+    for (unsigned i = 0; i < rows; i++) {
+        in_stream >> rhs[i];
+    }
+
+    // Close the input file
+    in_stream.close();
+
+    // Reorder the system using Reverse Cuthill-McKee
+    Eigen::SparseMatrix<double> A_reordered;
+    Eigen::VectorXd b_reordered;
+    reorder_system_rcm(matrix, rhs, A_reordered, b_reordered);
+
+    std::cout << "\nReordered Matrix:\n";
+    printSparseMatrix(A_reordered);
+
+    std::cout << "\nReordered RHS Vector:\n" << b_reordered.transpose() << std::endl;
 
     return 0;
 }
