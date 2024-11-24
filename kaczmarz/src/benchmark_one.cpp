@@ -1,19 +1,15 @@
+#include <Eigen/IterativeLinearSolvers>
 #include <chrono>
+#include <climits>
+#include <fstream>
 #include <iostream>
 #include <random>
-#include <fstream>
-#include <climits>
-
 
 #include "linear_systems/sparse.hpp"
+#include "linear_systems/types.hpp"
 #include "solvers/asynchronous.hpp"
 #include "solvers/banded.hpp"
 #include "solvers/carp.hpp"
-
-#include "linear_systems/types.hpp"
-
-#include <Eigen/IterativeLinearSolvers>
-
 
 using hrclock = std::chrono::high_resolution_clock;
 
@@ -27,18 +23,20 @@ using hrclock = std::chrono::high_resolution_clock;
  */
 
 int main() {
-  //constexpr unsigned dim = 5000;
+  // constexpr unsigned dim = 5000;
   constexpr unsigned bandwidth = 2;
-  //constexpr unsigned max_iterations = 100'000;
-  //constexpr double precision = 1e-1;
+  // constexpr unsigned max_iterations = 100'000;
+  // constexpr double precision = 1e-1;
 
   /*std::mt19937 rng(13);
   const auto sparse_lse =
-      BandedLinearSystem::generate_random_regular(rng, dim, bandwidth).to_sparse_system();*/
+      BandedLinearSystem::generate_random_regular(rng, dim,
+  bandwidth).to_sparse_system();*/
 
-  std::ifstream lse_input_stream("../../generated_bvp_matrices/problem1_complexity6.txt");
+  std::ifstream lse_input_stream(
+      "../../generated_bvp_matrices/problem1_complexity6.txt");
   const SparseLinearSystem sparse_lse =
-      SparseLinearSystem::read_from_stream(lse_input_stream);  
+      SparseLinearSystem::read_from_stream(lse_input_stream);
 
   const unsigned dim = sparse_lse.row_count();
 
@@ -55,49 +53,57 @@ int main() {
             << " milliseconds" << std::endl;*/
 
   double precision = 0.5;
-  for (int i = 0; i < 20; i++){
-    const unsigned max_iterations = std::numeric_limits<unsigned int>::max() - 1;
+  for (int i = 0; i < 20; i++) {
+    const unsigned max_iterations =
+        std::numeric_limits<unsigned int>::max() - 1;
     Vector x_kaczmarz = Vector::Zero(dim);
 
     const auto kaczmarz_start = hrclock::now();
-    const auto status = carp_gpu(sparse_lse, x_kaczmarz,
-                                max_iterations, precision);
+    const auto status =
+        carp_gpu(sparse_lse, x_kaczmarz, max_iterations, precision);
     const auto kaczmarz_end = hrclock::now();
 
     std::cout << "Kaczmarz solution computed in "
               << std::chrono::duration_cast<std::chrono::milliseconds>(
-                    kaczmarz_end - kaczmarz_start)
-                    .count()
+                     kaczmarz_end - kaczmarz_start)
+                     .count()
               << " milliseconds" << std::endl;
 
     Vector x_iter = Vector::Zero(dim);
     const auto iter_start = hrclock::now();
     const auto A = sparse_lse.A();
     const auto b = sparse_lse.b();
-    Eigen::LeastSquaresConjugateGradient<SparseMatrix, Eigen::IdentityPreconditioner> lscg(A);
-    //lscg.preconditioner() = Eigen::IdentityPreconditioner;
+    Eigen::LeastSquaresConjugateGradient<SparseMatrix,
+                                         Eigen::IdentityPreconditioner>
+        lscg(A);
+    // lscg.preconditioner() = Eigen::IdentityPreconditioner;
     lscg.setTolerance(precision);
     lscg.setMaxIterations(max_iterations);
     x_iter = lscg.solve(b);
     const auto iter_end = hrclock::now();
 
-  std::cout << "Iterative solution computed in "
+    std::cout << "Iterative solution computed in "
               << std::chrono::duration_cast<std::chrono::milliseconds>(
-                    iter_end - iter_start)
-                    .count()
+                     iter_end - iter_start)
+                     .count()
               << " milliseconds" << std::endl;
 
-    std::cout << "Precision: " << precision << "\nTime CARP / Time Eigen: " << (double)std::chrono::duration_cast<std::chrono::milliseconds>(
-                    kaczmarz_end - kaczmarz_start)
-                    .count() / (double)std::chrono::duration_cast<std::chrono::milliseconds>(
-                    iter_end - iter_start)
-                    .count() << "\n\n" << std::endl;
+    std::cout << "Precision: " << precision << "\nTime CARP / Time Eigen: "
+              << (double)std::chrono::duration_cast<std::chrono::milliseconds>(
+                     kaczmarz_end - kaczmarz_start)
+                         .count() /
+                     (double)
+                         std::chrono::duration_cast<std::chrono::milliseconds>(
+                             iter_end - iter_start)
+                             .count()
+              << "\n\n"
+              << std::endl;
     precision = precision * 0.5;
   }
   /*std::cout << "Kaczmarz solver status: " << kaczmarz_status_string(status)
             << std::endl;*/
 
-  //const auto banded_start = hrclock::now();
+  // const auto banded_start = hrclock::now();
   /*const auto status =
       kaczmarz_banded_serial(lse, x_kaczmarz, max_iterations, precision);*/
   /*const auto status_banded =

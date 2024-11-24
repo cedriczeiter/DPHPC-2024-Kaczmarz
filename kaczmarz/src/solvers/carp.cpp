@@ -33,7 +33,7 @@ KaczmarzSolverStatus carp_gpu(const SparseLinearSystem& lse, Vector& x,
   // get information about sparse matrix
   const unsigned rows = lse.row_count();
   const unsigned cols = lse.column_count();
-  assert(cols == rows); // check for square matrix, always if Galerkin
+  assert(cols == rows);  // check for square matrix, always if Galerkin
   const unsigned dim = cols;
   const unsigned nnz = lse.A().nonZeros();
 
@@ -55,13 +55,13 @@ KaczmarzSolverStatus carp_gpu(const SparseLinearSystem& lse, Vector& x,
   int nnz_in_row = 0;  // preallocate
   for (unsigned i = 0; i < dim; i++) {
     nnz_in_row = A_outer[i + 1] - A_outer[i];
-    if(nnz_in_row > max_nnz_in_row) {
+    if (nnz_in_row > max_nnz_in_row) {
       max_nnz_in_row = nnz_in_row;
     }
   }
 
   // call carp solver for beginning
   return invoke_carp_solver_gpu(A_outer, A_inner, A_values, b, x.data(),
-                                h_sq_norms.data(), dim, nnz,
-                                max_iterations, precision, max_nnz_in_row, b_norm);
+                                h_sq_norms.data(), dim, nnz, max_iterations,
+                                precision, max_nnz_in_row, b_norm);
 }
