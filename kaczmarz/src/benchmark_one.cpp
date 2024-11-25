@@ -24,7 +24,7 @@ using hrclock = std::chrono::high_resolution_clock;
 
 int main() {
   // constexpr unsigned dim = 5000;
-  constexpr unsigned bandwidth = 2;
+  //constexpr unsigned bandwidth = 2;
   // constexpr unsigned max_iterations = 100'000;
   // constexpr double precision = 1e-1;
 
@@ -34,13 +34,16 @@ int main() {
   bandwidth).to_sparse_system();*/
 
   std::ifstream lse_input_stream(
-      "../../generated_bvp_matrices/problem1_complexity6.txt");
+      "../../generated_bvp_matrices/problem1_complexity7.txt");
   const SparseLinearSystem sparse_lse =
       SparseLinearSystem::read_from_stream(lse_input_stream);
 
   const unsigned dim = sparse_lse.row_count();
 
   std::cout << "Dimension: " << dim << std::endl;
+
+  std::ofstream outFile("carp-cg.csv");
+  outFile << "Precision,Carp,Eigen\n";  // Write the header for the CSV file
 
   /*const auto eigen_start = hrclock::now();
   const Vector x_eigen = lse.to_sparse_system().eigen_solve();
@@ -63,10 +66,10 @@ int main() {
         carp_gpu(sparse_lse, x_kaczmarz, max_iterations, precision);
     const auto kaczmarz_end = hrclock::now();
 
+    const auto kaczmarz_time = std::chrono::duration_cast<std::chrono::milliseconds>(kaczmarz_end - kaczmarz_start).count();
+
     std::cout << "Kaczmarz solution computed in "
-              << std::chrono::duration_cast<std::chrono::milliseconds>(
-                     kaczmarz_end - kaczmarz_start)
-                     .count()
+              << kaczmarz_time
               << " milliseconds" << std::endl;
 
     Vector x_iter = Vector::Zero(dim);
@@ -81,23 +84,19 @@ int main() {
     lscg.setMaxIterations(max_iterations);
     x_iter = lscg.solve(b);
     const auto iter_end = hrclock::now();
+    const auto iter_time = std::chrono::duration_cast<std::chrono::milliseconds>(iter_end - iter_start).count();
 
     std::cout << "Iterative solution computed in "
-              << std::chrono::duration_cast<std::chrono::milliseconds>(
-                     iter_end - iter_start)
-                     .count()
+              << iter_time
               << " milliseconds" << std::endl;
 
     std::cout << "Precision: " << precision << "\nTime CARP / Time Eigen: "
-              << (double)std::chrono::duration_cast<std::chrono::milliseconds>(
-                     kaczmarz_end - kaczmarz_start)
-                         .count() /
-                     (double)
-                         std::chrono::duration_cast<std::chrono::milliseconds>(
-                             iter_end - iter_start)
-                             .count()
+              << (double)kaczmarz_time /(double)iter_time
               << "\n\n"
               << std::endl;
+
+    //write to csv
+    outFile << precision << "," << kaczmarz_time << "," << iter_time << std::endl;
     precision = precision * 0.5;
   }
   /*std::cout << "Kaczmarz solver status: " << kaczmarz_status_string(status)
