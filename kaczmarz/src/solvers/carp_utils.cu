@@ -49,7 +49,7 @@ __global__ void kswp(const int *A_outer, const int *A_inner,
                 relaxation *
                 ((b_local[row] - dot_product) / sq_norms_local[row]);
             // save update for output
-            for (unsigned i = A_outer[row]; i < A_outer[row + 1]; i++) {
+            for (unsigned i = a_outer_row; i < a_outer_row_next; i++) {
               assert(affected[A_inner[i]] != 0);
               atomicAdd(&output[A_inner[i]],
                         (1. / (double)affected[A_inner[i]]) * update_coeff *
@@ -74,7 +74,7 @@ __global__ void kswp(const int *A_outer, const int *A_inner,
                 relaxation *
                 ((b_local[row] - dot_product) / sq_norms_local[row]);
             // save update for output
-            for (unsigned i = A_outer[row]; i < A_outer[row + 1]; i++) {
+            for (unsigned i = a_outer_row; i < a_outer_row_next; i++) {
               atomicAdd(&output[A_inner[i]],
                         (1. / (double)affected[A_inner[i]]) * update_coeff *
                             A_values_shared[i]);
