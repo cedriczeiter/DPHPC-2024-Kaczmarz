@@ -70,20 +70,22 @@ std::vector<int> reverse_cuthill_mckee(const Eigen::SparseMatrix<double> &A) {
     return perm;
 }
 
-void reorder_system_rcm(const Eigen::SparseMatrix<double> &A, const Eigen::VectorXd &b, Eigen::SparseMatrix<double> &A_reordered, Eigen::VectorXd &b_reordered) {
-    std::vector<int> perm = reverse_cuthill_mckee(A);
+struct SparseLinearSystem {
+    Eigen::SparseMatrix<double> A;
+    Eigen::VectorXd b;
+};
+
+SparseLinearSystem reorder_system_rcm(const SparseLinearSystem &system) {
+    std::vector<int> perm = reverse_cuthill_mckee(system.A);
     Eigen::VectorXi perm_eigen = Eigen::Map<Eigen::VectorXi>(perm.data(), perm.size());
     Eigen::PermutationMatrix<Eigen::Dynamic, Eigen::Dynamic> perm_matrix(perm_eigen);
-    A_reordered = perm_matrix.transpose() * A * perm_matrix;
-    b_reordered = perm_matrix.transpose() * b;
-}
+    Eigen::SparseMatrix<double> A_reordered = perm_matrix.transpose() * system.A * perm_matrix;
+    Eigen::VectorXd b_reordered = perm_matrix.transpose() * system.b;
 
-void printSparseMatrix(const Eigen::SparseMatrix<double> &matrix) {
-    for (int k = 0; k < matrix.outerSize(); ++k) {
-        for (Eigen::SparseMatrix<double>::InnerIterator it(matrix, k); it; ++it) {
-            cout << "(" << it.row() << ", " << it.col() << ") = " << it.value() << endl;
-        }
-    }
+    SparseLinearSystem reordered_system;
+    reordered_system.A = A_reordered;
+    reordered_system.b = b_reordered;
+    return reordered_system;
 }
 
 int main() {
@@ -106,6 +108,10 @@ int main() {
         unsigned row, col;
         double value;
         in_stream >> row >> col >> value;
+        if (row >= rows || col >= cols) {
+            std::cerr << "Error: row or column index out of bounds" << std::endl;
+            return 1;
+        }
         triplets_A.emplace_back(row, col, value);
     }
 
@@ -115,27 +121,28 @@ int main() {
     // construct rhs vector
     Eigen::VectorXd rhs = Eigen::VectorXd::Zero(rows);
     for (unsigned i = 0; i < rows; i++) {
-        in_stream >> rhs[i];
+        if (!(in_stream >> rhs[i])) {
+            std::cerr << "Error: not enough elements in the input file for the RHS vector" << std::endl;
+            return 1;
+        }
     }
 
-    // Close the input file
-    in_stream.close();
+    // Create SparseLinearSystem
+    SparseLinearSystem system;
+    system.A = matrix;
+    system.b = rhs;
 
     // Reorder the system using Reverse Cuthill-McKee
-    Eigen::SparseMatrix<double> A_reordered;
-    Eigen::VectorXd b_reordered;
-    reorder_system_rcm(matrix, rhs, A_reordered, b_reordered);
+    SparseLinearSystem reordered_system = reorder_system_rcm(system);
 
     std::cout << "\nReordered Matrix:\n";
-    printSparseMatrix(A_reordered);
+    for (int k = 0; k < reordered_system.A.outerSize(); ++k) {
+        for (Eigen::SparseMatrix<double>::InnerIterator it(reordered_system.A, k); it; ++it) {
+            std::cout << "(" << it.row() << ", " << it.col() << ") = " << it.value() << std::endl;
+        }
+    }
 
-    std::cout << "\nReordered RHS Vector:\n" << b_reordered.transpose() << std::endl;
+    std::cout << "\nReordered RHS Vector:\n" << reordered_system.b.transpose() << std::endl;
 
     return 0;
 }
-
-
-
-
-// RCM Code taken from:
-// https://www.geeksforgeeks.org/reverse-cuthill-mckee-algorithm/
