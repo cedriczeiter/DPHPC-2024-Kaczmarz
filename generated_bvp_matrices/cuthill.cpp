@@ -44,64 +44,91 @@ int compute_bandwidth(const Eigen::SparseMatrix<double> &A) {
     return bandwidth;
 }
 
+
 std::vector<int> reverse_cuthill_mckee(const Eigen::SparseMatrix<double> &A) {
-  int n = A.rows();
-  std::vector<int> perm(n, -1);         // Output permutation
-  std::vector<int> degree(n, 0);        // Degree of each node
-  std::vector<bool> visited(n, false);  // Visited nodes
+    int n = A.rows();
+    std::vector<int> perm(n, -1);         // Output permutation (will store node indices)
+    std::vector<int> degree(n, 0);        // Degree of each node
+    std::vector<bool> visited(n, false);  // Visited nodes
 
-  // Compute degree of each node
-  for (int k = 0; k < A.outerSize(); ++k) {
-    for (Eigen::SparseMatrix<double>::InnerIterator it(A, k); it; ++it) {
-      if (it.row() != it.col()) {  // Ignore self-loops
-        degree[it.row()]++;
-        degree[it.col()]++;
-      }
+    // Step 1: Compute degree of each node
+    for (int k = 0; k < A.outerSize(); ++k) {
+        for (Eigen::SparseMatrix<double>::InnerIterator it(A, k); it; ++it) {
+            if (it.row() != it.col()) {  // Ignore self-loops
+                degree[it.row()]++;
+                degree[it.col()]++;
+            }
+        }
     }
-  }
 
-  // Result permutation index
-  int index = 0;
+    int index = 0;  // Result permutation index
 
-  // Perform BFS for all connected components
-  for (int i = 0; i < n; ++i) {
-    if (!visited[i]) {
-      // Start BFS from the node with the minimum degree in this component
-      std::queue<int> Q;
-      Q.push(i);
-      visited[i] = true;
-
-      while (!Q.empty()) {
-        int v = Q.front();
-        Q.pop();
-        perm[index++] = v;
-
-        // Collect unvisited neighbors
-        std::vector<int> neighbors;
-        for (Eigen::SparseMatrix<double>::InnerIterator it(A, v); it; ++it) {
-          int neighbor = it.col();
-          if (!visited[neighbor]) {
-            neighbors.push_back(neighbor);
-            visited[neighbor] = true;
-          }
+    // Step 2: Perform BFS for all nodes to ensure all components are covered
+    while (index < n) {
+        // Find an unvisited node with the smallest degree to start a new BFS
+        int start_node = -1;
+        int min_degree = n + 1; // Start with a large degree
+        for (int j = 0; j < n; ++j) {
+            if (!visited[j] && degree[j] < min_degree) {
+                min_degree = degree[j];
+                start_node = j;
+            }
         }
 
-        // Sort neighbors by degree
-        std::sort(neighbors.begin(), neighbors.end(),
-                  [&degree](int a, int b) { return degree[a] < degree[b]; });
+        if (start_node == -1) break; // All nodes have been visited
 
-        // Add sorted neighbors to the queue
-        for (int neighbor : neighbors) {
-          Q.push(neighbor);
+        // Step 3: Start BFS from `start_node`
+        std::queue<int> Q;
+        Q.push(start_node);
+        visited[start_node] = true;
+
+        while (!Q.empty()) {
+            int v = Q.front();
+            Q.pop();
+            perm[index++] = v;  // Assign current node to perm
+
+            // Collect unvisited neighbors
+            std::vector<int> neighbors;
+            for (Eigen::SparseMatrix<double>::InnerIterator it(A, v); it; ++it) {
+                int neighbor = it.col();
+                if (!visited[neighbor]) {
+                    neighbors.push_back(neighbor);
+                    visited[neighbor] = true;
+                }
+            }
+
+            // Sort neighbors by degree (ascending order)
+            std::sort(neighbors.begin(), neighbors.end(),
+                      [&degree](int a, int b) { return degree[a] < degree[b]; });
+
+            // Add sorted neighbors to the queue
+            for (int neighbor : neighbors) {
+                Q.push(neighbor);
+            }
         }
-      }
     }
-  }
 
-  // Reverse the permutation for RCM order
-  std::reverse(perm.begin(), perm.end());
-  return perm;
+    // Reverse the permutation for RCM order
+    std::reverse(perm.begin(), perm.end());
+
+    // Debugging: Print permutation vector to check correctness
+    std::cout << "Permutation vector (perm): ";
+    for (int p : perm) {
+        std::cout << p << " ";
+    }
+    std::cout << std::endl;
+
+    // Check if the perm vector is fully populated
+    for (int p : perm) {
+        if (p == -1) {
+            std::cerr << "Error: Permutation vector contains unvisited nodes (-1 values)." << std::endl;
+            break;
+        }
+    }
+
+    return perm;
 }
+
 
 struct SparseLinearSystem {
   Eigen::SparseMatrix<double> A;
@@ -109,25 +136,29 @@ struct SparseLinearSystem {
 };
 
 SparseLinearSystem reorder_system_rcm(const SparseLinearSystem &system) {
-  std::vector<int> perm = reverse_cuthill_mckee(system.A);
-  Eigen::VectorXi perm_eigen =
-      Eigen::Map<Eigen::VectorXi>(perm.data(), perm.size());
-  Eigen::PermutationMatrix<Eigen::Dynamic, Eigen::Dynamic> perm_matrix(
-      perm_eigen);
+    std::vector<int> perm = reverse_cuthill_mckee(system.A);
 
-  // Permute the system
-  Eigen::SparseMatrix<double> A_temp =
-      perm_matrix.transpose() * system.A * perm_matrix;
-  Eigen::VectorXd b_reordered = perm_matrix.transpose() * system.b;
+    // Check if the perm vector has the correct size
+    if (perm.size() != system.A.rows()) {
+        std::cerr << "Error: Permutation vector size does not match matrix row count!" << std::endl;
+        return system; // Return the original system in case of an error
+    }
 
-  SparseLinearSystem reordered_system;
-  reordered_system.A = A_temp;
-  reordered_system.b = b_reordered;
-  return reordered_system;
+    Eigen::VectorXi perm_eigen = Eigen::Map<Eigen::VectorXi>(perm.data(), perm.size());
+    Eigen::PermutationMatrix<Eigen::Dynamic, Eigen::Dynamic> perm_matrix(perm_eigen);
+
+    // Permute the system
+    Eigen::SparseMatrix<double> A_temp = perm_matrix.transpose() * system.A * perm_matrix;
+    Eigen::VectorXd b_reordered = perm_matrix.transpose() * system.b;
+
+    SparseLinearSystem reordered_system;
+    reordered_system.A = A_temp;
+    reordered_system.b = b_reordered;
+    return reordered_system;
 }
 
 int main() {
-  std::ifstream in_stream("problem1_complexity6.txt");
+  std::ifstream in_stream("problem1_complexity1.txt");
   if (!in_stream.is_open()) {
     std::cerr << "Error: Could not open input file." << std::endl;
     return 1;
