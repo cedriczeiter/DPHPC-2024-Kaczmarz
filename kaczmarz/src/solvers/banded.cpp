@@ -314,8 +314,9 @@ KaczmarzSolverStatus kaczmarz_banded_cuda(const BandedLinearSystem& lse,
   std::vector<double> b_padded(dim_padded, 0.0);
   std::copy(lse.b().begin(), lse.b().end(), b_padded.begin());
 
-  invoke_kaczmarz_banded_update(bandwidth, thread_count, A_data_padded,
-                                x_padded, sq_norms_padded, b_padded);
+  invoke_kaczmarz_banded_update(bandwidth, dim_padded, thread_count,
+                                A_data_padded, x_padded, sq_norms_padded,
+                                b_padded);
 
   std::copy_n(x_padded.begin() + bandwidth, dim, x.begin());
 

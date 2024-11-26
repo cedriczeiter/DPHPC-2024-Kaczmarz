@@ -3,7 +3,7 @@
 
 #include <vector>
 
-void invoke_kaczmarz_banded_update(const unsigned bandwidth,
+void invoke_kaczmarz_banded_update(const unsigned bandwidth, const unsigned dim,
                                    const unsigned thread_count,
                                    const std::vector<double>& A_data_padded,
                                    std::vector<double>& x_padded,
