@@ -14,7 +14,7 @@ Vector SparseLinearSystem::eigen_solve() const {
 }
 
 Vector SparseLinearSystem::eigen_BiCGSTAB() const {
-  Eigen::BiCGSTAB<SparseMatrix, Eigen::COLAMDOrdering<int>> solver;
+  Eigen::BiCGSTAB<SparseMatrix,  Eigen::IncompleteLUT<double>> solver;
   solver.compute(this->_A);
   return solver.solve(this->_b);
 }
