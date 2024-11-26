@@ -18,6 +18,21 @@ using namespace std;
 #include <queue>
 #include <vector>
 
+int compute_bandwidth(const Eigen::SparseMatrix<double> &A) {
+    int bandwidth = 0;
+
+    // Traverse each row (or column) of the sparse matrix
+    for (int i = 0; i < A.outerSize(); ++i) {
+        for (Eigen::SparseMatrix<double>::InnerIterator it(A, i); it; ++it) {
+            int row = it.row(); // Row index of the current nonzero entry
+            int col = it.col(); // Column index of the current nonzero entry
+            bandwidth = std::max(bandwidth, std::abs(row - col));
+        }
+    }
+
+    return bandwidth;
+}
+
 std::vector<int> reverse_cuthill_mckee(const Eigen::SparseMatrix<double> &A) {
   int n = A.rows();
   std::vector<int> perm(n, -1);         // Output permutation
@@ -149,17 +164,9 @@ int main() {
   // Reorder using Reverse Cuthill-McKee
   SparseLinearSystem reordered_system = reorder_system_rcm(system);
 
-  std::cout << "\nReordered Matrix:\n";
-  for (int k = 0; k < reordered_system.A.outerSize(); ++k) {
-    for (Eigen::SparseMatrix<double>::InnerIterator it(reordered_system.A, k);
-         it; ++it) {
-      std::cout << "(" << it.row() << ", " << it.col() << ") = " << it.value()
-                << std::endl;
-    }
-  }
+    std::cout << "Bandwidth:    " << compute_bandwidth(reordered_system.A) << std::endl;
+    std::cout << "Original Size:    " <<reordered_system.A.size() << std::endl;
 
-  std::cout << "\nReordered RHS Vector:\n"
-            << reordered_system.b.transpose() << std::endl;
 
   return 0;
 }
