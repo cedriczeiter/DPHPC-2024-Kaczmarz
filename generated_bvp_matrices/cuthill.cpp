@@ -79,7 +79,21 @@ SparseLinearSystem reorder_system_rcm(const SparseLinearSystem &system) {
     std::vector<int> perm = reverse_cuthill_mckee(system.A);
     Eigen::VectorXi perm_eigen = Eigen::Map<Eigen::VectorXi>(perm.data(), perm.size());
     Eigen::PermutationMatrix<Eigen::Dynamic, Eigen::Dynamic> perm_matrix(perm_eigen);
-    Eigen::SparseMatrix<double> A_reordered = perm_matrix.transpose() * system.A * perm_matrix;
+
+    std::cout << "Permutation matrix size: " << perm_matrix.rows() << "x" << perm_matrix.cols() << std::endl;
+    std::cout << "Original matrix size: " << system.A.rows() << "x" << system.A.cols() << std::endl;
+
+    std::cout << "Permutation vector: ";
+    for (int i = 0; i < perm.size(); ++i) {
+        std::cout << perm[i] << " ";
+    }
+    std::cout << std::endl;
+
+    // Apply permutation matrix
+    Eigen::SparseMatrix<double> A_temp = perm_matrix.transpose() * system.A;
+    std::cout << "Intermediate matrix size: " << A_temp.rows() << "x" << A_temp.cols() << std::endl;
+
+    Eigen::SparseMatrix<double> A_reordered = A_temp * perm_matrix;
     Eigen::VectorXd b_reordered = perm_matrix.transpose() * system.b;
 
     SparseLinearSystem reordered_system;
