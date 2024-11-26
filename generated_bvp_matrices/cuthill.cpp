@@ -12,11 +12,22 @@
 using namespace Eigen;
 using namespace std;
 
-#include <Eigen/Sparse>
-#include <algorithm>
-#include <numeric>
-#include <queue>
-#include <vector>
+void write_sparsity_pattern(const Eigen::SparseMatrix<double>& matrix, const std::string& filename) {
+    std::ofstream out_stream(filename);
+    if (!out_stream.is_open()) {
+        std::cerr << "Error: Could not open output file: " << filename << std::endl;
+        return;
+    }
+
+    // Write each non-zero element's row and column index to the file
+    for (int k = 0; k < matrix.outerSize(); ++k) {
+        for (Eigen::SparseMatrix<double>::InnerIterator it(matrix, k); it; ++it) {
+            out_stream << it.row() << " " << it.col() << "\n";
+        }
+    }
+
+    out_stream.close();
+}
 
 int compute_bandwidth(const Eigen::SparseMatrix<double> &A) {
     int bandwidth = 0;
@@ -116,7 +127,7 @@ SparseLinearSystem reorder_system_rcm(const SparseLinearSystem &system) {
 }
 
 int main() {
-  std::ifstream in_stream("problem1_complexity2.txt");
+  std::ifstream in_stream("problem1_complexity6.txt");
   if (!in_stream.is_open()) {
     std::cerr << "Error: Could not open input file." << std::endl;
     return 1;
@@ -158,14 +169,20 @@ int main() {
     }
   }
 
+      in_stream.close();
+
   // Create SparseLinearSystem
   SparseLinearSystem system{matrix, rhs};
+    write_sparsity_pattern(system.A, "sparsity_before.txt");
 
   // Reorder using Reverse Cuthill-McKee
   SparseLinearSystem reordered_system = reorder_system_rcm(system);
+  
+    write_sparsity_pattern(reordered_system.A, "sparsity_after.txt");
 
     std::cout << "Bandwidth:    " << compute_bandwidth(reordered_system.A) << std::endl;
-    std::cout << "Original Size:    " <<reordered_system.A.size() << std::endl;
+    std::cout << "Original Size:    " <<rows << std::endl;
+    std::cout << "Percentage:    " << (1 - (double)compute_bandwidth(reordered_system.A)/rows) * 100 << std::endl;
 
 
   return 0;
