@@ -273,6 +273,33 @@ double benchmark_EigenSolver_sparse(const std::string& file_path, const int numI
   return avgTime;
 }
 
+/// @brief Benchmarks Eigen's iterative BiCGSTAB solver on a sparse linear system.
+double benchmark_Eigeniterative_sparse(const std::string& file_path, const int numIterations,
+                                    double& stdDev) {
+  std::vector<double> times;
+      // Read the precomputed matrix from the file
+  std::ifstream lse_input_stream(file_path);
+  if (!lse_input_stream) {
+    throw std::runtime_error("Failed to open matrix file: " + file_path);
+  }
+  const SparseLinearSystem lse =
+      SparseLinearSystem::read_from_stream(lse_input_stream);
+  for (int i = 0; i < numIterations; ++i) {
+
+    const auto start = std::chrono::high_resolution_clock::now();
+
+    Vector x_kaczmarz_sparse = lse.eigen_BiCGSTAB();
+
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed = end - start;
+    times.push_back(elapsed.count());
+  }
+
+  double avgTime = 0;
+  compute_statistics(times, avgTime, stdDev);
+  return avgTime;
+}
+
 int main() {
   const int numIterations = NUM_IT;  // Number of iterations to reduce noise
 
@@ -433,6 +460,33 @@ for (int complexity = 1; complexity <= 6; ++complexity) {
   }
 }
   outFileES.close();  // Close the file after writing
+
+    //////////////////////////////////////////
+  /// Eigen Iterative Solver Sparse///
+  //////////////////////////////////////////
+
+  // Open the file for output
+  std::ofstream outFileEI("results_eigeniterative_sparse_pde.csv");
+  outFileEI << "File,AvgTime,StdDev\n";  // Write the header for the CSV file
+
+  // Loop over problem sizes, benchmark, and write to file
+for (int complexity = 1; complexity <= 6; ++complexity) {
+    std::string file_path = "../../generated_bvp_matrices/problem1_complexity" +
+                          std::to_string(complexity) + ".txt";
+    double stdDev;
+     try {
+    double avgTime =
+        benchmark_Eigeniterative_sparse(file_path, 
+        numIterations, stdDev);
+
+    // Write results to the file
+    outFileEI << file_path << "," << avgTime << "," << stdDev << "\n";
+    } catch (const std::exception& e) {
+    std::cerr << "Error processing file " << file_path << ": " << e.what()
+              << std::endl;
+  }
+}
+  outFileEI.close();  // Close the file after writing
 
   return 0;
 }

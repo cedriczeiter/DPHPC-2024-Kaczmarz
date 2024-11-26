@@ -65,6 +65,12 @@ class SparseLinearSystem {
   Vector eigen_solve() const;
 
   /**
+   * @brief Solves the sparse linear system using Eigen's iterative method BiCGSTAB 
+   * @return Solution vector of the linear system of type Eigen::VectorXd.
+   */
+  Vector eigen_BiCGSTAB() const;
+
+  /**
    * @brief Generates a random banded sparse linear system with full-rank.
    * @param rng Random number generator.
    * @param dim Dimension of the square matrix to generate.

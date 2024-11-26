@@ -1,5 +1,7 @@
 #include "sparse.hpp"
 
+#include <Eigen/Sparse>
+#include <Eigen/IterativeLinearSolvers>
 #include <Eigen/SparseQR>
 #include <iostream>
 #include <random>
@@ -9,6 +11,12 @@ Vector SparseLinearSystem::eigen_solve() const {
   Eigen::SparseQR<SparseMatrix, Eigen::COLAMDOrdering<int>> qr;
   qr.compute(this->_A);
   return qr.solve(this->_b);
+}
+
+Vector SparseLinearSystem::eigen_BiCGSTAB() const {
+  Eigen::BiCGSTAB<SparseMatrix, Eigen::COLAMDOrdering<int>> solver;
+  solver.compute(this->_A);
+  return solver.solve(this->_b);
 }
 
 /**
