@@ -23,10 +23,10 @@ using hrclock = std::chrono::high_resolution_clock;
  */
 
 int main() {
-  //constexpr unsigned dim = 10;
-  //constexpr unsigned bandwidth = 1;
-  // constexpr unsigned max_iterations = 100'000;
-  //constexpr double precision = 1e-1;
+  // constexpr unsigned dim = 10;
+  // constexpr unsigned bandwidth = 1;
+  //  constexpr unsigned max_iterations = 100'000;
+  // constexpr double precision = 1e-1;
 
   /*std::mt19937 rng(13);
   const auto sparse_lse =
@@ -66,10 +66,12 @@ int main() {
         carp_gpu(sparse_lse, x_kaczmarz, max_iterations, precision);
     const auto kaczmarz_end = hrclock::now();
 
-    const auto kaczmarz_time = std::chrono::duration_cast<std::chrono::milliseconds>(kaczmarz_end - kaczmarz_start).count();
+    const auto kaczmarz_time =
+        std::chrono::duration_cast<std::chrono::milliseconds>(kaczmarz_end -
+                                                              kaczmarz_start)
+            .count();
 
-    std::cout << "Kaczmarz solution computed in "
-              << kaczmarz_time
+    std::cout << "Kaczmarz solution computed in " << kaczmarz_time
               << " milliseconds" << std::endl;
 
     Vector x_iter = Vector::Zero(dim);
@@ -84,19 +86,21 @@ int main() {
     lscg.setMaxIterations(max_iterations);
     x_iter = lscg.solve(b);
     const auto iter_end = hrclock::now();
-    const auto iter_time = std::chrono::duration_cast<std::chrono::milliseconds>(iter_end - iter_start).count();
+    const auto iter_time =
+        std::chrono::duration_cast<std::chrono::milliseconds>(iter_end -
+                                                              iter_start)
+            .count();
 
-    std::cout << "Iterative solution computed in "
-              << iter_time
+    std::cout << "Iterative solution computed in " << iter_time
               << " milliseconds" << std::endl;
 
     std::cout << "Precision: " << precision << "\nTime CARP / Time Eigen: "
-              << (double)kaczmarz_time /(double)iter_time
-              << "\n\n"
+              << (double)kaczmarz_time / (double)iter_time << "\n\n"
               << std::endl;
 
-    //write to csv
-    outFile << precision << "," << kaczmarz_time << "," << iter_time << std::endl;
+    // write to csv
+    outFile << precision << "," << kaczmarz_time << "," << iter_time
+            << std::endl;
     precision = precision * 0.1;
   }
   /*std::cout << "Kaczmarz solver status: " << kaczmarz_status_string(status)

@@ -7,8 +7,8 @@
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
-#include <random>
 #include <limits>
+#include <random>
 #include <set>
 
 #include "carp_utils.hpp"
@@ -99,18 +99,20 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
   // solve LSE:
   // init stuff
   const double relaxation = 1.0;
-  double residual = 1.; //init value, will be overwritten as soon as we check for convergence
+  double residual = 1.;  // init value, will be overwritten as soon as we check
+                         // for convergence
   dcswp(d_A_outer, d_A_inner, d_A_values, d_b, dim, d_sq_norms, d_x, relaxation,
         d_affected, total_threads, d_r, d_intermediate, blocks, max_nnz_in_row);
   copy_gpu(d_r, d_p, dim);
 
-
   for (int iter = 0; iter < max_iterations; iter++) {
     // calculate residual every L_RESIDUAL iterations
     if (iter % L_RESIDUAL == 0) {
-      residual = get_residual(h_x, h_b, d_x, h_A_outer, h_A_inner, h_A_values, dim);
+      residual =
+          get_residual(h_x, h_b, d_x, h_A_outer, h_A_inner, h_A_values, dim);
       // debugging output
-      std::cout << "Iteration: " << iter << " out of " << max_iterations << " , Residual/B_norm: " << residual/b_norm << std::endl;
+      std::cout << "Iteration: " << iter << " out of " << max_iterations
+                << " , Residual/B_norm: " << residual / b_norm << std::endl;
       // check for convergence
       if (residual / b_norm < precision) {
         converged = true;
@@ -125,13 +127,19 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
     add_gpu(d_p, d_intermediate, d_q, -1., dim);
     const double sq_norm_r_old = dot_product_gpu(d_r, d_r, d_intermediate, dim);
     const double dot_r_p = dot_product_gpu(d_p, d_q, d_intermediate, dim);
-    if (dot_r_p < 1e-26){ //if dot_r_p too small, algorithm is in flat region and cannot move further. Either we converged, or we need to continue with a different algorithm
-      residual = get_residual(h_x, h_b, d_x, h_A_outer, h_A_inner, h_A_values, dim);
+    if (dot_r_p < 1e-26) {  // if dot_r_p too small, algorithm is in flat region
+                            // and cannot move further. Either we converged, or
+                            // we need to continue with a different algorithm
+      residual =
+          get_residual(h_x, h_b, d_x, h_A_outer, h_A_inner, h_A_values, dim);
       break;
     }
     const double alpha = sq_norm_r_old / dot_r_p;
-    if (std::isinf(alpha) || std::isnan(alpha)){ //another safeguard to see if converged, nothing more to the algorithm can do
-      residual = get_residual(h_x, h_b, d_x, h_A_outer, h_A_inner, h_A_values, dim);
+    if (std::isinf(alpha) ||
+        std::isnan(alpha)) {  // another safeguard to see if converged, nothing
+                              // more to the algorithm can do
+      residual =
+          get_residual(h_x, h_b, d_x, h_A_outer, h_A_inner, h_A_values, dim);
       break;
     }
     add_gpu(d_x, d_p, d_x, alpha, dim);

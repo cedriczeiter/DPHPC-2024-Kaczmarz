@@ -16,13 +16,16 @@ void dcswp(const int* d_A_outer, const int* d_A_inner, const double* d_A_values,
            const double* d_b, const unsigned dim, const double* d_sq_norms,
            const double* d_x, const double relaxation, const int* d_affected,
            const unsigned total_threads, double* d_output,
-           double* d_intermediate, const unsigned blocks, const unsigned max_nnz_in_row);
+           double* d_intermediate, const unsigned blocks,
+           const unsigned max_nnz_in_row);
 
 void copy_gpu(const double* d_from, double* d_to, const unsigned dim);
 double dot_product_gpu(const double* d_a, const double* d_b, double* d_to,
                        const unsigned dim);
 
-double get_residual(double *h_x, const double *h_b, const double *d_x, const int *h__A_outer, const int *h_A_inner, const double *h_A_values, const unsigned dim);
+double get_residual(double* h_x, const double* h_b, const double* d_x,
+                    const int* h__A_outer, const int* h_A_inner,
+                    const double* h_A_values, const unsigned dim);
 
 #define CUDA_SAFE_CALL(call)                                                 \
   do {                                                                       \
