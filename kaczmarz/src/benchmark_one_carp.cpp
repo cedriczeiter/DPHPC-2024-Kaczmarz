@@ -41,7 +41,7 @@ int main() {
   const unsigned dim = sparse_lse.row_count();
   const unsigned max_iterations = std::numeric_limits<unsigned int>::max() - 1;
 
-  std::cout << "Dimension: \n \n" << dim << std::endl;
+  std::cout << "Dimension: \n" << dim << std::endl;
 
   // Open file to write results to
   std::ofstream outFile("carp-cg.csv");
@@ -122,7 +122,7 @@ int main() {
     //////////////////////////////////////////
 
     std::cout << "Precision: " << precision << "\nTime CARP / Time Eigen: "
-              << (double)kaczmarz_time / (double)iter_time << "\n\n"
+              << (double)kaczmarz_time / (double)iter_time << "\n"
               << std::endl;
 
     // write to csv
@@ -144,6 +144,24 @@ int main() {
     std::cout << "Error compared to non-iterative solver in Linf norm: "
               << (x_iter - x_precise).lpNorm<Eigen::Infinity>() << std::endl;
 
-    std::cout << "----------------------------------- \n \n" << std::endl;
+
+
+    // Print the solution vectors
+    std::cout << "print first 40 elements of each results vector: " << std::endl;
+    std::cout << "Eigen: " << std::endl;
+    for (int i = 0; i < 40; i++) {
+      std::cout << x_precise[i] << "   ";
+    }
+    std::cout << "\nKaczmarz: " << std::endl;
+    for (int i = 0; i < 40; i++) {
+      std::cout << x_kaczmarz[i] << "   ";
+    }
+    std::cout << "\nIterative: " << std::endl;
+    for (int i = 0; i < 40; i++) {
+      std::cout << x_iter[i] << "   ";
+    }
+    std::cout << std::endl;
+
+        std::cout << "----------------------------------- \n \n" << std::endl;
   }
 }

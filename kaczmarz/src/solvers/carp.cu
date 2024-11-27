@@ -56,7 +56,6 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
   // the below code is for
   int *h_affected = new int[dim]();
   for (unsigned row = 0; row < dim; row++) {
-    const unsigned thread = (unsigned)(row / ROWS_PER_THREAD);
     int h_A_outer_row = h_A_outer[row];
     int h_A_outer_row_plus_one = h_A_outer[row + 1];
     for (unsigned i = h_A_outer_row; i < h_A_outer_row_plus_one; i++) {
