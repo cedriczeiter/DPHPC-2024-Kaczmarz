@@ -34,7 +34,7 @@ int main() {
   bandwidth).to_sparse_system();*/
 
   std::ifstream lse_input_stream(
-      "../../generated_bvp_matrices/problem1_complexity6.txt");
+      "../../generated_bvp_matrices/problem1_complexity5.txt");
   const SparseLinearSystem sparse_lse =
       SparseLinearSystem::read_from_stream(lse_input_stream);
 
@@ -78,8 +78,7 @@ int main() {
     const auto iter_start = hrclock::now();
     const auto A = sparse_lse.A();
     const auto b = sparse_lse.b();
-    Eigen::LeastSquaresConjugateGradient<SparseMatrix,
-                                         Eigen::IdentityPreconditioner>
+    Eigen::LeastSquaresConjugateGradient<SparseMatrix>
         lscg(A);
     // lscg.preconditioner() = Eigen::IdentityPreconditioner;
     lscg.setTolerance(precision);
