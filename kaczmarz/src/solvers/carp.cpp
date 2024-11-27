@@ -14,8 +14,7 @@
 
 KaczmarzSolverStatus carp_gpu(const SparseLinearSystem& lse, Vector& x,
                               const unsigned max_iterations,
-                              const double precision,
-                              const unsigned num_threads) {
+                              const double precision) {
   // get the sparse matrix in CSR format
   const int* A_outer =
       lse.A().outerIndexPtr();  // outer index of the sparse matrix in CSR
@@ -29,15 +28,19 @@ KaczmarzSolverStatus carp_gpu(const SparseLinearSystem& lse, Vector& x,
   // get the right-hand side vector
   const double* b = lse.b().data();
 
+  const double b_norm = lse.b().norm();
+
   // get information about sparse matrix
   const unsigned rows = lse.row_count();
   const unsigned cols = lse.column_count();
+  assert(cols == rows);  // check for square matrix, always if Galerkin
+  const unsigned dim = cols;
   const unsigned nnz = lse.A().nonZeros();
 
   // get squared norms of the rows of the matrix (precompute for performance)
 
-  std::vector<double> h_sq_norms(rows);
-  for (unsigned i = 0; i < rows; i++) {
+  std::vector<double> h_sq_norms(dim);
+  for (unsigned i = 0; i < dim; i++) {
     // get the row i of the matrix
     Eigen::SparseVector<double> A_row_i = lse.A().innerVector(i);
     h_sq_norms[i] = A_row_i.dot(A_row_i);
@@ -50,13 +53,15 @@ KaczmarzSolverStatus carp_gpu(const SparseLinearSystem& lse, Vector& x,
   // get maximum nr of nnz in row
   int max_nnz_in_row = 0;
   int nnz_in_row = 0;  // preallocate
-  for (unsigned i = 0; i < rows; i++) {
+  for (unsigned i = 0; i < dim; i++) {
     nnz_in_row = A_outer[i + 1] - A_outer[i];
-    max_nnz_in_row = std::max(max_nnz_in_row, nnz_in_row);
+    if (nnz_in_row > max_nnz_in_row) {
+      max_nnz_in_row = nnz_in_row;
+    }
   }
 
   // call carp solver for beginning
   return invoke_carp_solver_gpu(A_outer, A_inner, A_values, b, x.data(),
-                                h_sq_norms.data(), rows, cols, nnz,
-                                max_iterations, precision, max_nnz_in_row);
+                                h_sq_norms.data(), dim, nnz, max_iterations,
+                                precision, max_nnz_in_row, b_norm);
 }

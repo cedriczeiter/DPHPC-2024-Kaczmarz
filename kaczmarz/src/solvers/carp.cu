@@ -10,170 +10,86 @@
 #include <random>
 #include <set>
 
+#include "carp_utils.hpp"
 #include "common.hpp"
 
-#define L_RESIDUAL 500
-#define ROWS_PER_THREAD 1
-#define LOCAL_RUNS_PER_THREAD 5
-#define THREADS_PER_BLOCK 256
-#define RELAXATION 1.0
-
 // IMPORTANT: ONLY WORKS ON SQUARE MATRICES ATM AND IF ROWS_PER_THREAD DIVIDES
-// TOTAL ROWS
-
-__global__ void step(const int *A_outer, const int *A_inner,
-                     const double *A_values_shared, const double *b_local,
-                     const unsigned rows, const unsigned cols,
-                     const double *sq_norms_local, double *x, double *X,
-                      const unsigned nnz,
-                     const unsigned max_nnz_in_row) {
-  const unsigned tid = blockIdx.x * blockDim.x + threadIdx.x;
-
-  if (tid * ROWS_PER_THREAD < rows)  // only if thread has assigned rows
-  {
-    // copy x to local memory
-    for (unsigned k = 0; k < ROWS_PER_THREAD; k++) {
-      for (unsigned i = A_outer[tid * ROWS_PER_THREAD + k];
-           i < A_outer[tid * ROWS_PER_THREAD + k + 1]; i++) {
-        X[tid * rows + A_inner[i]] = x[A_inner[i]];
-      }
-    }
-
-    // perform one update step for assigned row
-    for (unsigned local_iter = 0; local_iter < LOCAL_RUNS_PER_THREAD;
-         local_iter++) {
-      for (unsigned k = 0; k < ROWS_PER_THREAD; k++) {
-        // compute dot product row * x
-        double dot_product = 0.;
-        for (unsigned i = A_outer[tid * ROWS_PER_THREAD + k];
-             i < A_outer[tid * ROWS_PER_THREAD + k + 1]; i++) {
-          const double x_value = X[tid * rows + A_inner[i]];
-          dot_product += A_values_shared[i] * x_value;
-        }
-        // calculate update
-        const double update_coeff =
-            RELAXATION * ((b_local[tid * ROWS_PER_THREAD + k] - dot_product) /
-                          sq_norms_local[tid * ROWS_PER_THREAD + k]);
-        // save update for x in local memory
-        for (unsigned i = A_outer[tid * ROWS_PER_THREAD + k];
-             i < A_outer[tid * ROWS_PER_THREAD + k + 1]; i++) {
-          X[tid * rows + A_inner[i]] += update_coeff * A_values_shared[i];
-        }
-      }
-    }
-  }
-}
-
-// Update x with the average of the updates
-__global__ void update(const int *A_outerIndex, const int *A_innerIndex,
-                       const double *A_values, const double *b,
-                       const unsigned rows, const unsigned cols,
-                       const double *sq_norms, double *x, double *X,
-                       int *affected, 
-                       const unsigned total_threads) {
-  const unsigned tid = blockIdx.x * blockDim.x + threadIdx.x;
-  if (tid * ROWS_PER_THREAD < cols) {
-    for (unsigned k = 0; k < ROWS_PER_THREAD; k++) {
-      // sum up updates for assigned entry
-      double sum = 0;
-      int counter = 0;
-      while (true) {
-        int affecting_thread =
-            affected[(tid * ROWS_PER_THREAD + k) * (total_threads + 1) +
-                     counter];
-        if (affecting_thread < 0) break;
-        counter++;
-        const double value =
-            X[affecting_thread * rows + tid * ROWS_PER_THREAD + k];
-        sum += value;
-      }
-      // Avoid division by zero
-      if (counter > 0) {
-      x[tid * ROWS_PER_THREAD + k] = sum / (double)counter;
-      } else {
-        x[tid * ROWS_PER_THREAD + k] = 0.0;  // Default to zero if no updates
-      }
-    }
-  }
-}
+// TOTAL ROWS(dim)
 
 KaczmarzSolverStatus invoke_carp_solver_gpu(
     const int *h_A_outer, const int *h_A_inner, const double *h_A_values,
-    const double *h_b, double *h_x, double *h_sq_norms, const unsigned rows,
-    const unsigned cols, const unsigned nnz, const unsigned max_iterations,
-    const double precision, const unsigned max_nnz_in_row) {
-  // check if matrix is square
-  assert(rows == cols);
-
+    const double *h_b, double *h_x, double *h_sq_norms, const unsigned dim,
+    const unsigned nnz, const unsigned max_iterations, const double precision,
+    const unsigned max_nnz_in_row, const double b_norm) {
   // define some variables
   bool converged = false;
-  const unsigned total_threads = rows / ROWS_PER_THREAD;
+  const unsigned total_threads = dim / ROWS_PER_THREAD;
 
   // allocate move squared norms on device
   double *d_sq_norms;
-  cudaMalloc((void **)&d_sq_norms, rows * sizeof(double));
-  cudaMemcpy(d_sq_norms, h_sq_norms, rows * sizeof(double),
-             cudaMemcpyHostToDevice);
+  CUDA_SAFE_CALL(cudaMalloc((void **)&d_sq_norms, dim * sizeof(double)));
+  CUDA_SAFE_CALL(cudaMemcpy(d_sq_norms, h_sq_norms, dim * sizeof(double),
+                            cudaMemcpyHostToDevice));
 
   // move x to device
   double *d_x;
-  cudaMalloc((void **)&d_x, cols * sizeof(double));
-  cudaMemcpy(d_x, h_x, cols * sizeof(double), cudaMemcpyHostToDevice);
+  CUDA_SAFE_CALL(cudaMalloc((void **)&d_x, dim * sizeof(double)));
+  CUDA_SAFE_CALL(
+      cudaMemcpy(d_x, h_x, dim * sizeof(double), cudaMemcpyHostToDevice));
 
   // move A to device
   int *d_A_outer;
   int *d_A_inner;
   double *d_A_values;
-  cudaMalloc((void **)&d_A_outer, (rows + 1) * sizeof(int));
-  cudaMalloc((void **)&d_A_inner, nnz * sizeof(int));
-  cudaMalloc((void **)&d_A_values, nnz * sizeof(double));
-  cudaMemcpy(d_A_outer, h_A_outer, (rows + 1) * sizeof(int),
-             cudaMemcpyHostToDevice);
-  cudaMemcpy(d_A_inner, h_A_inner, nnz * sizeof(int), cudaMemcpyHostToDevice);
-  cudaMemcpy(d_A_values, h_A_values, nnz * sizeof(double),
-             cudaMemcpyHostToDevice);
+  CUDA_SAFE_CALL(cudaMalloc((void **)&d_A_outer, (dim + 1) * sizeof(int)));
+  CUDA_SAFE_CALL(cudaMalloc((void **)&d_A_inner, nnz * sizeof(int)));
+  CUDA_SAFE_CALL(cudaMalloc((void **)&d_A_values, nnz * sizeof(double)));
+  CUDA_SAFE_CALL(cudaMemcpy(d_A_outer, h_A_outer, (dim + 1) * sizeof(int),
+                            cudaMemcpyHostToDevice));
+  CUDA_SAFE_CALL(cudaMemcpy(d_A_inner, h_A_inner, nnz * sizeof(int),
+                            cudaMemcpyHostToDevice));
+  CUDA_SAFE_CALL(cudaMemcpy(d_A_values, h_A_values, nnz * sizeof(double),
+                            cudaMemcpyHostToDevice));
 
   // we need to know which values in x are affected by which thread; thats what
   // the below code is for
-  std::vector<std::set<unsigned>> affects(
-      rows);  // coding: affects[j]: the x at position j is affected by thread
-              // in set
-  for (unsigned k = 0; k < rows; k++) {
-    for (unsigned i = h_A_outer[k]; i < h_A_outer[k + 1]; i++) {
-      const unsigned thread = (unsigned)(h_A_inner[i] / ROWS_PER_THREAD);
-      affects.at(k).insert(thread);
-    }
-  }
-  const int affects_size = affects.size();
-
-  // move affects to device memory, set to -1 if no thread affects the value
-  // (default value)
-  int *h_affected = new int[(total_threads + 1) * rows];
-  std::memset(h_affected, -1, rows * (total_threads + 1) * sizeof(int));
-  // Translate it to a 1D array
-  for (int k = 0; k < affects_size; k++) {
-    unsigned counter = 0;
-    for (const auto &thread : affects[k]) {
-      h_affected[k * (total_threads + 1) + counter] = thread;
-      counter++;
+  int *h_affected = new int[dim]();
+  for (unsigned row = 0; row < dim; row++) {
+    const unsigned thread = (unsigned)(row / ROWS_PER_THREAD);
+    int h_A_outer_row = h_A_outer[row];
+    int h_A_outer_row_plus_one = h_A_outer[row + 1];
+    for (unsigned i = h_A_outer_row; i < h_A_outer_row_plus_one; i++) {
+      h_affected[h_A_inner[i]]++;
     }
   }
 
   // move affects to device
   int *d_affected;
-  cudaMalloc((void **)&d_affected, rows * (total_threads + 1) * sizeof(int));
-  cudaMemcpy(d_affected, h_affected, rows * (total_threads + 1) * sizeof(int),
-             cudaMemcpyHostToDevice);
+  CUDA_SAFE_CALL(cudaMalloc((void **)&d_affected, dim * sizeof(int)));
+  CUDA_SAFE_CALL(cudaMemcpy(d_affected, h_affected, dim * sizeof(int),
+                            cudaMemcpyHostToDevice));
 
   // move b to device
   double *d_b;
-  cudaMalloc((void **)&d_b, cols * sizeof(double));
-  cudaMemcpy(d_b, h_b, cols * sizeof(double), cudaMemcpyHostToDevice);
+  CUDA_SAFE_CALL(cudaMalloc((void **)&d_b, dim * sizeof(double)));
+  CUDA_SAFE_CALL(
+      cudaMemcpy(d_b, h_b, dim * sizeof(double), cudaMemcpyHostToDevice));
 
-  // move X to device
-  double *d_X;
-  cudaMalloc((void **)&d_X, total_threads * cols * sizeof(double));
-  cudaMemset((void **)d_X, 0, total_threads * cols * sizeof(double));
+  // move p, r, q and intermediate storage to device
+  double *d_p;
+  double *d_r;
+  double *d_q;
+  double *d_intermediate;
+  double *d_intermediate_two;
+  double *d_zero;
+  CUDA_SAFE_CALL(cudaMalloc((void **)&d_p, dim * sizeof(double)));
+  CUDA_SAFE_CALL(cudaMalloc((void **)&d_r, dim * sizeof(double)));
+  CUDA_SAFE_CALL(cudaMalloc((void **)&d_q, dim * sizeof(double)));
+  CUDA_SAFE_CALL(cudaMalloc((void **)&d_intermediate, dim * sizeof(double)));
+  CUDA_SAFE_CALL(
+      cudaMalloc((void **)&d_intermediate_two, dim * sizeof(double)));
+  CUDA_SAFE_CALL(cudaMalloc((void **)&d_zero, dim * sizeof(double)));
+  CUDA_SAFE_CALL(cudaMemset((void **)d_zero, 0, dim * sizeof(double)));
 
   // calculate nr of blocks and threads
   const int blocks =
@@ -181,14 +97,20 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
 
   // solve LSE
   double base_residual = 0;
+
+  // init stuff
+  const double relaxation = 1.0;
+  dcswp(d_A_outer, d_A_inner, d_A_values, d_b, dim, d_sq_norms, d_x, relaxation,
+        d_affected, total_threads, d_r, d_intermediate, blocks);
+  copy_gpu(d_r, d_p, dim);
+
   for (int iter = 0; iter < max_iterations; iter++) {
     // calculate residual every L_RESIDUAL iterations
     if (iter % L_RESIDUAL == 0) {
-      cudaMemcpy(h_x, d_x, cols * sizeof(double), cudaMemcpyDeviceToHost);
+      cudaMemcpy(h_x, d_x, dim * sizeof(double), cudaMemcpyDeviceToHost);
       double residual = 0.0;
-
-      // Calculate residual
-      for (unsigned i = 0; i < rows; i++) {
+      // Calulate residual
+      for (unsigned i = 0; i < dim; i++) {
         double dot_product = 0.0;
         for (unsigned j = h_A_outer[i]; j < h_A_outer[i + 1]; j++) {
           dot_product += h_A_values[j] * h_x[h_A_inner[j]];
@@ -203,45 +125,45 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
       }
 
       // debugging output
-      printf("Iteration: %d out of %d, Residual/Base_residual: %f\n", iter,
-             max_iterations, residual / base_residual);
+      printf("Iteration: %d out of %u, Residual/B_norm: %f\n", iter,
+             max_iterations, residual / b_norm);
 
       // check for convergence
-      if (residual / base_residual < precision) {
+      if (residual / b_norm < precision) {
         converged = true;
         break;  // stop all the iterations
       }
     }
 
-
-    // perform iteration steps and updates
-    step<<<blocks, THREADS_PER_BLOCK>>>(
-        d_A_outer, d_A_inner, d_A_values, d_b, rows, cols, d_sq_norms, d_x, d_X,
-         nnz, max_nnz_in_row);
-
-    // synchronize threads and check for errors
-    auto res = cudaDeviceSynchronize();
-    assert(res == 0);
-
-    // update x
-    update<<<blocks, THREADS_PER_BLOCK>>>(
-        d_A_outer, d_A_inner, d_A_values, d_b, rows, cols, d_sq_norms, d_x, d_X,
-        d_affected,  total_threads);
-    // synchronize threads and check for errors
-    res = cudaDeviceSynchronize();
-    assert(res == 0);
+    // the actual calculation begin here
+    dcswp(d_A_outer, d_A_inner, d_A_values, d_zero, dim, d_sq_norms, d_p,
+          relaxation, d_affected, total_threads, d_intermediate,
+          d_intermediate_two, blocks);
+    add_gpu(d_p, d_intermediate, d_q, -1., dim);
+    const double sq_norm_r_old = dot_product_gpu(d_r, d_r, d_intermediate, dim);
+    const double alpha =
+        sq_norm_r_old / dot_product_gpu(d_p, d_q, d_intermediate, dim);
+    add_gpu(d_x, d_p, d_x, alpha, dim);
+    add_gpu(d_r, d_q, d_r, -alpha, dim);
+    const double beta =
+        dot_product_gpu(d_r, d_r, d_intermediate, dim) / sq_norm_r_old;
+    add_gpu(d_r, d_p, d_p, beta, dim);
   }
 
   // free memory
   cudaFree(d_x);
-  cudaFree(d_X);
   cudaFree(d_affected);
   cudaFree(d_sq_norms);
   cudaFree(d_A_outer);
   cudaFree(d_A_inner);
   cudaFree(d_A_values);
   cudaFree(d_b);
-
+  cudaFree(d_p);
+  cudaFree(d_r);
+  cudaFree(d_q);
+  cudaFree(d_intermediate);
+  cudaFree(d_intermediate_two);
+  cudaFree(d_zero);
   // check for convergence
   if (converged) {
     return KaczmarzSolverStatus::Converged;
