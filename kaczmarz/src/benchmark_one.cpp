@@ -23,22 +23,22 @@ using hrclock = std::chrono::high_resolution_clock;
  */
 
 int main() {
-  constexpr unsigned dim = 100;
-  constexpr unsigned bandwidth = 2;
+  //constexpr unsigned dim = 10;
+  //constexpr unsigned bandwidth = 1;
   // constexpr unsigned max_iterations = 100'000;
   //constexpr double precision = 1e-1;
 
-  std::mt19937 rng(13);
+  /*std::mt19937 rng(13);
   const auto sparse_lse =
       BandedLinearSystem::generate_random_regular(rng, dim,
-  bandwidth).to_sparse_system();
+  bandwidth).to_sparse_system();*/
 
-  /*std::ifstream lse_input_stream(
-      "../../generated_bvp_matrices/problem1_complexity7.txt");
+  std::ifstream lse_input_stream(
+      "../../generated_bvp_matrices/problem1_complexity6.txt");
   const SparseLinearSystem sparse_lse =
       SparseLinearSystem::read_from_stream(lse_input_stream);
 
-  const unsigned dim = sparse_lse.row_count();*/
+  const unsigned dim = sparse_lse.row_count();
 
   std::cout << "Dimension: " << dim << std::endl;
 
@@ -55,8 +55,8 @@ int main() {
                    .count()
             << " milliseconds" << std::endl;*/
 
-  double precision = 1e-14;
-  for (int i = 0; i < 1; i++) {
+  double precision = 1;
+  for (int i = 0; i < 10; i++) {
     const unsigned max_iterations =
         std::numeric_limits<unsigned int>::max() - 1;
     Vector x_kaczmarz = Vector::Zero(dim);
@@ -97,7 +97,7 @@ int main() {
 
     //write to csv
     outFile << precision << "," << kaczmarz_time << "," << iter_time << std::endl;
-    precision = precision * 0.5;
+    precision = precision * 0.1;
   }
   /*std::cout << "Kaczmarz solver status: " << kaczmarz_status_string(status)
             << std::endl;*/
