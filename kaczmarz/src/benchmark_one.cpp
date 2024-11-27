@@ -42,8 +42,8 @@ int main() {
   const auto kaczmarz_start = hrclock::now();
   /*const auto status =
       kaczmarz_banded_serial(lse, x_kaczmarz, max_iterations, precision);*/
-  //const auto status = asynchronous_gpu(lse.to_sparse_system(), x_kaczmarz,
-                                       //max_iterations, precision, 10);
+  // const auto status = asynchronous_gpu(lse.to_sparse_system(), x_kaczmarz,
+  // max_iterations, precision, 10);
   const auto kaczmarz_end = hrclock::now();
 
   std::cout << "Kaczmarz solution computed in "
@@ -51,8 +51,8 @@ int main() {
                    kaczmarz_end - kaczmarz_start)
                    .count()
             << " milliseconds" << std::endl;
-/*   std::cout << "Kaczmarz solver status: " << kaczmarz_status_string(status)
-            << std::endl; */
+  /*   std::cout << "Kaczmarz solver status: " << kaczmarz_status_string(status)
+              << std::endl; */
 
   const Vector error = x_kaczmarz - x_eigen;
 

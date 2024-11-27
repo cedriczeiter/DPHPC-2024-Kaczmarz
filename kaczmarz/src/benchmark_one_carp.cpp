@@ -144,10 +144,9 @@ int main() {
     std::cout << "Error compared to non-iterative solver in Linf norm: "
               << (x_iter - x_precise).lpNorm<Eigen::Infinity>() << std::endl;
 
-
-
     // Print the solution vectors
-    std::cout << "print first 40 elements of each results vector: " << std::endl;
+    std::cout << "print first 40 elements of each results vector: "
+              << std::endl;
     std::cout << "Eigen: " << std::endl;
     for (int i = 0; i < 40; i++) {
       std::cout << x_precise[i] << "   ";
@@ -162,6 +161,6 @@ int main() {
     }
     std::cout << std::endl;
 
-        std::cout << "----------------------------------- \n \n" << std::endl;
+    std::cout << "----------------------------------- \n \n" << std::endl;
   }
 }
