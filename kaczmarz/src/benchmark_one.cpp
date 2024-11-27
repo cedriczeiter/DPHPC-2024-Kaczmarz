@@ -23,9 +23,9 @@ using hrclock = std::chrono::high_resolution_clock;
  */
 
 int main() {
-  // constexpr unsigned dim = 5000;
-  //constexpr unsigned bandwidth = 2;
-  // constexpr unsigned max_iterations = 100'000;
+  // constexpr unsigned dim = 10;
+  // constexpr unsigned bandwidth = 1;
+  //  constexpr unsigned max_iterations = 100'000;
   // constexpr double precision = 1e-1;
 
   /*std::mt19937 rng(13);
@@ -34,7 +34,7 @@ int main() {
   bandwidth).to_sparse_system();*/
 
   std::ifstream lse_input_stream(
-      "../../generated_bvp_matrices/problem1_complexity7.txt");
+      "../../generated_bvp_matrices/problem1_complexity5.txt");
   const SparseLinearSystem sparse_lse =
       SparseLinearSystem::read_from_stream(lse_input_stream);
 
@@ -55,8 +55,8 @@ int main() {
                    .count()
             << " milliseconds" << std::endl;*/
 
-  double precision = 0.5;
-  for (int i = 0; i < 20; i++) {
+  double precision = 1;
+  for (int i = 0; i < 10; i++) {
     const unsigned max_iterations =
         std::numeric_limits<unsigned int>::max() - 1;
     Vector x_kaczmarz = Vector::Zero(dim);
@@ -66,38 +66,41 @@ int main() {
         carp_gpu(sparse_lse, x_kaczmarz, max_iterations, precision);
     const auto kaczmarz_end = hrclock::now();
 
-    const auto kaczmarz_time = std::chrono::duration_cast<std::chrono::milliseconds>(kaczmarz_end - kaczmarz_start).count();
+    const auto kaczmarz_time =
+        std::chrono::duration_cast<std::chrono::milliseconds>(kaczmarz_end -
+                                                              kaczmarz_start)
+            .count();
 
-    std::cout << "Kaczmarz solution computed in "
-              << kaczmarz_time
+    std::cout << "Kaczmarz solution computed in " << kaczmarz_time
               << " milliseconds" << std::endl;
 
     Vector x_iter = Vector::Zero(dim);
     const auto iter_start = hrclock::now();
     const auto A = sparse_lse.A();
     const auto b = sparse_lse.b();
-    Eigen::LeastSquaresConjugateGradient<SparseMatrix,
-                                         Eigen::IdentityPreconditioner>
+    Eigen::LeastSquaresConjugateGradient<SparseMatrix>
         lscg(A);
     // lscg.preconditioner() = Eigen::IdentityPreconditioner;
     lscg.setTolerance(precision);
     lscg.setMaxIterations(max_iterations);
     x_iter = lscg.solve(b);
     const auto iter_end = hrclock::now();
-    const auto iter_time = std::chrono::duration_cast<std::chrono::milliseconds>(iter_end - iter_start).count();
+    const auto iter_time =
+        std::chrono::duration_cast<std::chrono::milliseconds>(iter_end -
+                                                              iter_start)
+            .count();
 
-    std::cout << "Iterative solution computed in "
-              << iter_time
+    std::cout << "Iterative solution computed in " << iter_time
               << " milliseconds" << std::endl;
 
     std::cout << "Precision: " << precision << "\nTime CARP / Time Eigen: "
-              << (double)kaczmarz_time /(double)iter_time
-              << "\n\n"
+              << (double)kaczmarz_time / (double)iter_time << "\n\n"
               << std::endl;
 
-    //write to csv
-    outFile << precision << "," << kaczmarz_time << "," << iter_time << std::endl;
-    precision = precision * 0.5;
+    // write to csv
+    outFile << precision << "," << kaczmarz_time << "," << iter_time
+            << std::endl;
+    precision = precision * 0.1;
   }
   /*std::cout << "Kaczmarz solver status: " << kaczmarz_status_string(status)
             << std::endl;*/

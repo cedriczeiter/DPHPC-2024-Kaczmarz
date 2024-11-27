@@ -7,6 +7,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
+#include <limits>
 #include <random>
 #include <set>
 
@@ -95,39 +96,23 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
   const int blocks =
       (total_threads + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
 
-  // solve LSE
-  double base_residual = 0;
-
+  // solve LSE:
   // init stuff
   const double relaxation = 1.0;
+  double residual = 1.;  // init value, will be overwritten as soon as we check
+                         // for convergence
   dcswp(d_A_outer, d_A_inner, d_A_values, d_b, dim, d_sq_norms, d_x, relaxation,
-        d_affected, total_threads, d_r, d_intermediate, blocks);
+        d_affected, total_threads, d_r, d_intermediate, blocks, max_nnz_in_row);
   copy_gpu(d_r, d_p, dim);
 
   for (int iter = 0; iter < max_iterations; iter++) {
     // calculate residual every L_RESIDUAL iterations
     if (iter % L_RESIDUAL == 0) {
-      cudaMemcpy(h_x, d_x, dim * sizeof(double), cudaMemcpyDeviceToHost);
-      double residual = 0.0;
-      // Calulate residual
-      for (unsigned i = 0; i < dim; i++) {
-        double dot_product = 0.0;
-        for (unsigned j = h_A_outer[i]; j < h_A_outer[i + 1]; j++) {
-          dot_product += h_A_values[j] * h_x[h_A_inner[j]];
-        }
-        residual += (dot_product - h_b[i]) * (dot_product - h_b[i]);
-      }
-      residual = sqrt(residual);
-
-      // First residual is the base residual
-      if (iter == 0) {
-        base_residual = residual;
-      }
-
+      residual =
+          get_residual(h_x, h_b, d_x, h_A_outer, h_A_inner, h_A_values, dim);
       // debugging output
-      printf("Iteration: %d out of %u, Residual/B_norm: %f\n", iter,
-             max_iterations, residual / b_norm);
-
+      std::cout << "Iteration: " << iter << " out of " << max_iterations
+                << " , Residual/B_norm: " << residual / b_norm << std::endl;
       // check for convergence
       if (residual / b_norm < precision) {
         converged = true;
@@ -138,11 +123,25 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
     // the actual calculation begin here
     dcswp(d_A_outer, d_A_inner, d_A_values, d_zero, dim, d_sq_norms, d_p,
           relaxation, d_affected, total_threads, d_intermediate,
-          d_intermediate_two, blocks);
+          d_intermediate_two, blocks, max_nnz_in_row);
     add_gpu(d_p, d_intermediate, d_q, -1., dim);
     const double sq_norm_r_old = dot_product_gpu(d_r, d_r, d_intermediate, dim);
-    const double alpha =
-        sq_norm_r_old / dot_product_gpu(d_p, d_q, d_intermediate, dim);
+    const double dot_r_p = dot_product_gpu(d_p, d_q, d_intermediate, dim);
+    if (dot_r_p < 1e-26) {  // if dot_r_p too small, algorithm is in flat region
+                            // and cannot move further. Either we converged, or
+                            // we need to continue with a different algorithm
+      residual =
+          get_residual(h_x, h_b, d_x, h_A_outer, h_A_inner, h_A_values, dim);
+      break;
+    }
+    const double alpha = sq_norm_r_old / dot_r_p;
+    if (std::isinf(alpha) ||
+        std::isnan(alpha)) {  // another safeguard to see if converged, nothing
+                              // more to the algorithm can do
+      residual =
+          get_residual(h_x, h_b, d_x, h_A_outer, h_A_inner, h_A_values, dim);
+      break;
+    }
     add_gpu(d_x, d_p, d_x, alpha, dim);
     add_gpu(d_r, d_q, d_r, -alpha, dim);
     const double beta =
