@@ -8,6 +8,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <chrono>
 
 using namespace Eigen;
 using namespace std;
@@ -158,7 +159,7 @@ SparseLinearSystem reorder_system_rcm(const SparseLinearSystem &system) {
 }
 
 int main() {
-  std::ifstream in_stream("problem1_complexity1.txt");
+  std::ifstream in_stream("problem1_complexity6.txt");
   if (!in_stream.is_open()) {
     std::cerr << "Error: Could not open input file." << std::endl;
     return 1;
@@ -207,8 +208,14 @@ int main() {
     write_sparsity_pattern(system.A, "sparsity_before.txt");
 
   // Reorder using Reverse Cuthill-McKee
+  double starting_time = std::chrono::duration_cast<std::chrono::milliseconds>(
+      std::chrono::system_clock::now().time_since_epoch())
+      .count();
   SparseLinearSystem reordered_system = reorder_system_rcm(system);
-  
+  double stopping_time = std::chrono::duration_cast<std::chrono::milliseconds>(
+      std::chrono::system_clock::now().time_since_epoch())
+      .count();
+      std::cout << "Time: " << stopping_time - starting_time << std::endl;
     write_sparsity_pattern(reordered_system.A, "sparsity_after.txt");
 
     std::cout << "Bandwidth:    " << compute_bandwidth(reordered_system.A) << std::endl;
