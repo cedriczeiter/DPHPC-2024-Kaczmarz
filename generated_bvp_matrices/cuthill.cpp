@@ -2,134 +2,135 @@
 #include <Eigen/Sparse>
 #include <algorithm>
 #include <cassert>
+#include <chrono>
 #include <fstream>
 #include <iostream>
 #include <queue>
 #include <sstream>
 #include <string>
 #include <vector>
-#include <chrono>
 
 using namespace Eigen;
 using namespace std;
 
-void write_sparsity_pattern(const Eigen::SparseMatrix<double>& matrix, const std::string& filename) {
-    std::ofstream out_stream(filename);
-    if (!out_stream.is_open()) {
-        std::cerr << "Error: Could not open output file: " << filename << std::endl;
-        return;
-    }
+void write_sparsity_pattern(const Eigen::SparseMatrix<double> &matrix,
+                            const std::string &filename) {
+  std::ofstream out_stream(filename);
+  if (!out_stream.is_open()) {
+    std::cerr << "Error: Could not open output file: " << filename << std::endl;
+    return;
+  }
 
-    // Write each non-zero element's row and column index to the file
-    for (int k = 0; k < matrix.outerSize(); ++k) {
-        for (Eigen::SparseMatrix<double>::InnerIterator it(matrix, k); it; ++it) {
-            out_stream << it.row() << " " << it.col() << "\n";
-        }
+  // Write each non-zero element's row and column index to the file
+  for (int k = 0; k < matrix.outerSize(); ++k) {
+    for (Eigen::SparseMatrix<double>::InnerIterator it(matrix, k); it; ++it) {
+      out_stream << it.row() << " " << it.col() << "\n";
     }
+  }
 
-    out_stream.close();
+  out_stream.close();
 }
 
 int compute_bandwidth(const Eigen::SparseMatrix<double> &A) {
-    int bandwidth = 0;
+  int bandwidth = 0;
 
-    // Traverse each row (or column) of the sparse matrix
-    for (int i = 0; i < A.outerSize(); ++i) {
-        for (Eigen::SparseMatrix<double>::InnerIterator it(A, i); it; ++it) {
-            int row = it.row(); // Row index of the current nonzero entry
-            int col = it.col(); // Column index of the current nonzero entry
-            bandwidth = std::max(bandwidth, std::abs(row - col));
-        }
+  // Traverse each row (or column) of the sparse matrix
+  for (int i = 0; i < A.outerSize(); ++i) {
+    for (Eigen::SparseMatrix<double>::InnerIterator it(A, i); it; ++it) {
+      int row = it.row();  // Row index of the current nonzero entry
+      int col = it.col();  // Column index of the current nonzero entry
+      bandwidth = std::max(bandwidth, std::abs(row - col));
     }
+  }
 
-    return bandwidth;
+  return bandwidth;
 }
-
 
 std::vector<int> reverse_cuthill_mckee(const Eigen::SparseMatrix<double> &A) {
-    int n = A.rows();
-    std::vector<int> perm(n, -1);         // Output permutation (will store node indices)
-    std::vector<int> degree(n, 0);        // Degree of each node
-    std::vector<bool> visited(n, false);  // Visited nodes
+  int n = A.rows();
+  std::vector<int> perm(n, -1);  // Output permutation (will store node indices)
+  std::vector<int> degree(n, 0);        // Degree of each node
+  std::vector<bool> visited(n, false);  // Visited nodes
 
-    // Step 1: Compute degree of each node
-    for (int k = 0; k < A.outerSize(); ++k) {
-        for (Eigen::SparseMatrix<double>::InnerIterator it(A, k); it; ++it) {
-            if (it.row() != it.col()) {  // Ignore self-loops
-                degree[it.row()]++;
-                degree[it.col()]++;
-            }
-        }
+  // Step 1: Compute degree of each node
+  for (int k = 0; k < A.outerSize(); ++k) {
+    for (Eigen::SparseMatrix<double>::InnerIterator it(A, k); it; ++it) {
+      if (it.row() != it.col()) {  // Ignore self-loops
+        degree[it.row()]++;
+        degree[it.col()]++;
+      }
+    }
+  }
+
+  int index = 0;  // Result permutation index
+
+  // Step 2: Perform BFS for all nodes to ensure all components are covered
+  while (index < n) {
+    // Find an unvisited node with the smallest degree to start a new BFS
+    int start_node = -1;
+    int min_degree = n + 1;  // Start with a large degree
+    for (int j = 0; j < n; ++j) {
+      if (!visited[j] && degree[j] < min_degree) {
+        min_degree = degree[j];
+        start_node = j;
+      }
     }
 
-    int index = 0;  // Result permutation index
+    if (start_node == -1) break;  // All nodes have been visited
 
-    // Step 2: Perform BFS for all nodes to ensure all components are covered
-    while (index < n) {
-        // Find an unvisited node with the smallest degree to start a new BFS
-        int start_node = -1;
-        int min_degree = n + 1; // Start with a large degree
-        for (int j = 0; j < n; ++j) {
-            if (!visited[j] && degree[j] < min_degree) {
-                min_degree = degree[j];
-                start_node = j;
-            }
+    // Step 3: Start BFS from `start_node`
+    std::queue<int> Q;
+    Q.push(start_node);
+    visited[start_node] = true;
+
+    while (!Q.empty()) {
+      int v = Q.front();
+      Q.pop();
+      perm[index++] = v;  // Assign current node to perm
+
+      // Collect unvisited neighbors
+      std::vector<int> neighbors;
+      for (Eigen::SparseMatrix<double>::InnerIterator it(A, v); it; ++it) {
+        int neighbor = it.col();
+        if (!visited[neighbor]) {
+          neighbors.push_back(neighbor);
+          visited[neighbor] = true;
         }
+      }
 
-        if (start_node == -1) break; // All nodes have been visited
+      // Sort neighbors by degree (ascending order)
+      std::sort(neighbors.begin(), neighbors.end(),
+                [&degree](int a, int b) { return degree[a] < degree[b]; });
 
-        // Step 3: Start BFS from `start_node`
-        std::queue<int> Q;
-        Q.push(start_node);
-        visited[start_node] = true;
-
-        while (!Q.empty()) {
-            int v = Q.front();
-            Q.pop();
-            perm[index++] = v;  // Assign current node to perm
-
-            // Collect unvisited neighbors
-            std::vector<int> neighbors;
-            for (Eigen::SparseMatrix<double>::InnerIterator it(A, v); it; ++it) {
-                int neighbor = it.col();
-                if (!visited[neighbor]) {
-                    neighbors.push_back(neighbor);
-                    visited[neighbor] = true;
-                }
-            }
-
-            // Sort neighbors by degree (ascending order)
-            std::sort(neighbors.begin(), neighbors.end(),
-                      [&degree](int a, int b) { return degree[a] < degree[b]; });
-
-            // Add sorted neighbors to the queue
-            for (int neighbor : neighbors) {
-                Q.push(neighbor);
-            }
-        }
+      // Add sorted neighbors to the queue
+      for (int neighbor : neighbors) {
+        Q.push(neighbor);
+      }
     }
+  }
 
-    // Reverse the permutation for RCM order
-    std::reverse(perm.begin(), perm.end());
+  // Reverse the permutation for RCM order
+  std::reverse(perm.begin(), perm.end());
 
-    // Debugging: Print permutation vector to check correctness
-    std::cout << "Permutation vector (perm): ";
-    for (int p : perm) {
-        std::cout << p << " ";
+  // Debugging: Print permutation vector to check correctness
+  std::cout << "Permutation vector (perm): ";
+  for (int p : perm) {
+    std::cout << p << " ";
+  }
+  std::cout << std::endl;
+
+  // Check if the perm vector is fully populated
+  for (int p : perm) {
+    if (p == -1) {
+      std::cerr
+          << "Error: Permutation vector contains unvisited nodes (-1 values)."
+          << std::endl;
+      break;
     }
-    std::cout << std::endl;
+  }
 
-    // Check if the perm vector is fully populated
-    for (int p : perm) {
-        if (p == -1) {
-            std::cerr << "Error: Permutation vector contains unvisited nodes (-1 values)." << std::endl;
-            break;
-        }
-    }
-
-    return perm;
+  return perm;
 }
-
 
 struct SparseLinearSystem {
   Eigen::SparseMatrix<double> A;
@@ -137,25 +138,30 @@ struct SparseLinearSystem {
 };
 
 SparseLinearSystem reorder_system_rcm(const SparseLinearSystem &system) {
-    std::vector<int> perm = reverse_cuthill_mckee(system.A);
+  std::vector<int> perm = reverse_cuthill_mckee(system.A);
 
-    // Check if the perm vector has the correct size
-    if (perm.size() != system.A.rows()) {
-        std::cerr << "Error: Permutation vector size does not match matrix row count!" << std::endl;
-        return system; // Return the original system in case of an error
-    }
+  // Check if the perm vector has the correct size
+  if (perm.size() != system.A.rows()) {
+    std::cerr
+        << "Error: Permutation vector size does not match matrix row count!"
+        << std::endl;
+    return system;  // Return the original system in case of an error
+  }
 
-    Eigen::VectorXi perm_eigen = Eigen::Map<Eigen::VectorXi>(perm.data(), perm.size());
-    Eigen::PermutationMatrix<Eigen::Dynamic, Eigen::Dynamic> perm_matrix(perm_eigen);
+  Eigen::VectorXi perm_eigen =
+      Eigen::Map<Eigen::VectorXi>(perm.data(), perm.size());
+  Eigen::PermutationMatrix<Eigen::Dynamic, Eigen::Dynamic> perm_matrix(
+      perm_eigen);
 
-    // Permute the system
-    Eigen::SparseMatrix<double> A_temp = perm_matrix.transpose() * system.A * perm_matrix;
-    Eigen::VectorXd b_reordered = perm_matrix.transpose() * system.b;
+  // Permute the system
+  Eigen::SparseMatrix<double> A_temp =
+      perm_matrix.transpose() * system.A * perm_matrix;
+  Eigen::VectorXd b_reordered = perm_matrix.transpose() * system.b;
 
-    SparseLinearSystem reordered_system;
-    reordered_system.A = A_temp;
-    reordered_system.b = b_reordered;
-    return reordered_system;
+  SparseLinearSystem reordered_system;
+  reordered_system.A = A_temp;
+  reordered_system.b = b_reordered;
+  return reordered_system;
 }
 
 int main() {
@@ -201,27 +207,31 @@ int main() {
     }
   }
 
-      in_stream.close();
+  in_stream.close();
 
   // Create SparseLinearSystem
   SparseLinearSystem system{matrix, rhs};
-    write_sparsity_pattern(system.A, "sparsity_before.txt");
+  write_sparsity_pattern(system.A, "sparsity_before.txt");
 
   // Reorder using Reverse Cuthill-McKee
-  double starting_time = std::chrono::duration_cast<std::chrono::milliseconds>(
-      std::chrono::system_clock::now().time_since_epoch())
-      .count();
+  double starting_time =
+      std::chrono::duration_cast<std::chrono::milliseconds>(
+          std::chrono::system_clock::now().time_since_epoch())
+          .count();
   SparseLinearSystem reordered_system = reorder_system_rcm(system);
-  double stopping_time = std::chrono::duration_cast<std::chrono::milliseconds>(
-      std::chrono::system_clock::now().time_since_epoch())
-      .count();
-      std::cout << "Time: " << stopping_time - starting_time << std::endl;
-    write_sparsity_pattern(reordered_system.A, "sparsity_after.txt");
+  double stopping_time =
+      std::chrono::duration_cast<std::chrono::milliseconds>(
+          std::chrono::system_clock::now().time_since_epoch())
+          .count();
+  std::cout << "Time: " << stopping_time - starting_time << std::endl;
+  write_sparsity_pattern(reordered_system.A, "sparsity_after.txt");
 
-    std::cout << "Bandwidth:    " << compute_bandwidth(reordered_system.A) << std::endl;
-    std::cout << "Original Size:    " <<rows << std::endl;
-    std::cout << "Percentage:    " << (1 - (double)compute_bandwidth(reordered_system.A)/rows) * 100 << std::endl;
-
+  std::cout << "Bandwidth:    " << compute_bandwidth(reordered_system.A)
+            << std::endl;
+  std::cout << "Original Size:    " << rows << std::endl;
+  std::cout << "Percentage:    "
+            << (1 - (double)compute_bandwidth(reordered_system.A) / rows) * 100
+            << std::endl;
 
   return 0;
 }
