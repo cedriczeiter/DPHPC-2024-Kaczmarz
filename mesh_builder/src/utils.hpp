@@ -16,13 +16,33 @@
 SparseLinearSystem generate_system(nlohmann::json config_data) {
   // set up rhs functions for problems we want to benchmark on
   // f for problem 1 of benchmarking PDEs (transferred to 2d)
-  // see
-  // https://www.sciencedirect.com/science/article/pii/S0167819109001252#sec5
+  //we craft analytical solutions for: u = xy(1-x)(1-y)
+  //problem one: -lapl(u) + 1000 = F
   auto f1 = [](Eigen::Vector2d x) {
     return 2 * (x[0] - x[0] * x[0]) + 2 * (x[1] - x[1] * x[1]) + 1000;
   };
+  auto gamma1 = [](Eigen::Vector2d x){
+    return 1;
+  };
+  //problem 2: -lapl(u) + (x*x + y*y)u = F
+  auto f2 = [](Eigen::Vector2d x_vec) {
+    const double x = x_vec[0];
+    const double y = y_vec[0];
+    return 2*(x-x*x) + 2*(y-y*y) + (x*x + y*y)(x-x*x)(y-y*y);
+  }
+  auto gamma2 = [](Eigen::Vector2d x_vec){
+    const double x = x_vec[0];
+    const double y = y_vec[0];
+    return (x*x + y*y);
+  }
+
   std::vector<decltype(f1)> rhs_functions;
   rhs_functions.push_back(f1);
+  rhs_functions.push_back(f2);
+
+  std::vector<decltype(gamma1)> gamma_functions;
+  gamma_functions.push_back(gamma1);
+  gamma_functions.push_back(gamma2);
 
   unsigned selector_mesh = config_data["selector"];
   double scale = config_data["scale"];
@@ -44,17 +64,21 @@ SparseLinearSystem generate_system(nlohmann::json config_data) {
 
   // define diffusion coefficient
   const lf::mesh::utils::MeshFunctionConstant mf_alpha(1);
+
   // define rhs load
   unsigned problem = config_data["problem"];
   lf::mesh::utils::MeshFunctionGlobal mf_load{rhs_functions.at(problem - 1)};
+
+  //define reaction coefficient
+  lf::mesh::utils::MeshFunctionGlobal mf_gamma{gamma_functions.at(problem - 1)}; 
 
   // Assemble the system matrix and right hand side
   Eigen::VectorXd rhs = Eigen::VectorXd::Zero(fe_space->LocGlobMap().NumDofs());
   const lf::assemble::DofHandler &dofh = fe_space->LocGlobMap();
   lf::assemble::COOMatrix<double> A_COO(dofh.NumDofs(), dofh.NumDofs());
 
-  lf::fe::DiffusionElementMatrixProvider element_matrix_provider(fe_space,
-                                                                 mf_alpha);
+  lf::fe::ReactionDiffusionElementMatrixProvider element_matrix_provider(fe_space,
+                                                                 mf_alpha, mf_gamma);
   AssembleMatrixLocally(0, dofh, dofh, element_matrix_provider, A_COO);
   lf::fe::ScalarLoadElementVectorProvider element_vector_provider(fe_space,
                                                                   mf_load);
