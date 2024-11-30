@@ -5,6 +5,7 @@
 #include <lf/mesh/mesh_factory.h>
 #include <lf/mesh/test_utils/test_meshes.h>
 #include <lf/mesh/utils/utils.h>
+#include <lf/uscalfe/uscalfe.h>
 
 #include <Eigen/SparseCore>
 #include <fstream>
@@ -21,26 +22,26 @@ SparseLinearSystem generate_system(nlohmann::json config_data) {
   auto f1 = [](Eigen::Vector2d x) {
     return 2 * (x[0] - x[0] * x[0]) + 2 * (x[1] - x[1] * x[1]) + 1000;
   };
-  auto gamma1 = [](Eigen::Vector2d x){
+  auto gamma1 = [](Eigen::Vector2d){
     return 1;
   };
   //problem 2: -lapl(u) + (x*x + y*y)u = F
   auto f2 = [](Eigen::Vector2d x_vec) {
     const double x = x_vec[0];
-    const double y = y_vec[0];
-    return 2*(x-x*x) + 2*(y-y*y) + (x*x + y*y)(x-x*x)(y-y*y);
-  }
+    const double y = x_vec[0];
+    return 2*(x-x*x) + 2*(y-y*y) + (x*x + y*y)*(x-x*x)*(y-y*y);
+  };
   auto gamma2 = [](Eigen::Vector2d x_vec){
     const double x = x_vec[0];
-    const double y = y_vec[0];
+    const double y = x_vec[0];
     return (x*x + y*y);
-  }
+  };
 
-  std::vector<decltype(f1)> rhs_functions;
+  std::vector<std::function<double(Eigen::Vector2d)>> rhs_functions;
   rhs_functions.push_back(f1);
   rhs_functions.push_back(f2);
 
-  std::vector<decltype(gamma1)> gamma_functions;
+  std::vector<std::function<double(Eigen::Vector2d)>> gamma_functions;
   gamma_functions.push_back(gamma1);
   gamma_functions.push_back(gamma2);
 
@@ -58,9 +59,9 @@ SparseLinearSystem generate_system(nlohmann::json config_data) {
   mesh_p = multi_mesh.getMesh(L - 1);
 
   // Create HierarchicalFESpace
-  const unsigned degree = config_data["degree"];
+  //const unsigned degree = config_data["degree"];  //degree not used anymore! alsways linear now
   const auto fe_space =
-      std::make_shared<lf::fe::HierarchicScalarFESpace<double>>(mesh_p, degree);
+      std::make_shared<lf::uscalfe::FeSpaceLagrangeO1<double>>(mesh_p);
 
   // define diffusion coefficient
   const lf::mesh::utils::MeshFunctionConstant mf_alpha(1);
@@ -77,8 +78,7 @@ SparseLinearSystem generate_system(nlohmann::json config_data) {
   const lf::assemble::DofHandler &dofh = fe_space->LocGlobMap();
   lf::assemble::COOMatrix<double> A_COO(dofh.NumDofs(), dofh.NumDofs());
 
-  lf::fe::ReactionDiffusionElementMatrixProvider element_matrix_provider(fe_space,
-                                                                 mf_alpha, mf_gamma);
+  lf::uscalfe::ReactionDiffusionElementMatrixProvider<double, decltype(mf_alpha), decltype(mf_gamma)> element_matrix_provider(fe_space, mf_alpha, mf_gamma);
   AssembleMatrixLocally(0, dofh, dofh, element_matrix_provider, A_COO);
   lf::fe::ScalarLoadElementVectorProvider element_vector_provider(fe_space,
                                                                   mf_load);
