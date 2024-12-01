@@ -16,7 +16,7 @@
 using hrclock = std::chrono::high_resolution_clock;
 
 #define PRECISION 1e-10
-#define NRUNS 10
+#define NRUNS 1 // usefull if we want to time the stuff multiple times
 
 /**
  * The purpose of this file is to be easily able to manually benchmark a single
@@ -34,7 +34,7 @@ int main() {
 
   // Read in the system from file
   std::ifstream lse_input_stream(
-      "../../generated_bvp_matrices/problem1_complexity6.txt");
+      "../../generated_bvp_matrices/problem1_complexity5.txt");
   const SparseLinearSystem sparse_lse =
       SparseLinearSystem::read_from_stream(lse_input_stream);
 
@@ -52,8 +52,8 @@ int main() {
   outFile2 << "Relaxation,Carp_steps\n";  // Write the header for the CSV file
 
   double start_relaxation = 0.1;
-  double end_relaxation = 4.0;
-  double step_relaxation = 0.05;
+  double end_relaxation = 10.0;
+  double step_relaxation = 0.1;
 
   while (start_relaxation < end_relaxation)
   {
