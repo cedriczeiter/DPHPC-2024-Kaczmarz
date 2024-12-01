@@ -21,7 +21,7 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
     const int *h_A_outer, const int *h_A_inner, const double *h_A_values,
     const double *h_b, double *h_x, double *h_sq_norms, const unsigned dim,
     const unsigned nnz, const unsigned max_iterations, const double precision,
-    const unsigned max_nnz_in_row, const double b_norm) {
+    const unsigned max_nnz_in_row, const double b_norm, int& nr_of_steps) {
   // define some variables
   bool converged = false;
   const unsigned total_threads = dim / ROWS_PER_THREAD;
@@ -110,11 +110,12 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
       residual =
           get_residual(h_x, h_b, d_x, h_A_outer, h_A_inner, h_A_values, dim);
       // debugging output
-      std::cout << "Iteration: " << iter << " out of " << max_iterations
-                << " , Residual/B_norm: " << residual / b_norm << std::endl;
+      /* std::cout << "Iteration: " << iter << " out of " << max_iterations
+              << " , Residual/B_norm: " << residual / b_norm << std::endl; */
       // check for convergence
       if (residual / b_norm < precision) {
         converged = true;
+        nr_of_steps = iter;
         break;  // stop all the iterations
       }
     }
