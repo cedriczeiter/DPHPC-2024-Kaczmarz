@@ -126,13 +126,14 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
     add_gpu(d_p, d_intermediate, d_q, -1., dim);
     const double sq_norm_r_old = dot_product_gpu(d_r, d_r, d_intermediate, dim);
     const double dot_r_p = dot_product_gpu(d_p, d_q, d_intermediate, dim);
-    if (dot_r_p < 1e-26) {  // if dot_r_p too small, algorithm is in flat region
+    /*if (dot_r_p < 1e-30) {  // if dot_r_p too small, algorithm is in flat
+    region
                             // and cannot move further. Either we converged, or
                             // we need to continue with a different algorithm
       residual =
           get_residual(h_x, h_b, d_x, h_A_outer, h_A_inner, h_A_values, dim);
       break;
-    }
+    }*/  //this does not work. It prevents the algorithm fom converging for PDE 2
     const double alpha = sq_norm_r_old / dot_r_p;
     if (std::isinf(alpha) ||
         std::isnan(alpha)) {  // another safeguard to see if converged, nothing
