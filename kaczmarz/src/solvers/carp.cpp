@@ -13,8 +13,8 @@
 #include "common.hpp"
 
 KaczmarzSolverStatus carp_gpu(const SparseLinearSystem& lse, Vector& x,
-                              const unsigned max_iterations,
-                              const double precision, int& nr_of_steps) {
+                              const unsigned max_iterations, const double precision,
+                              const double relaxation, int& nr_of_steps) {
   // get the sparse matrix in CSR format
   const int* A_outer =
       lse.A().outerIndexPtr();  // outer index of the sparse matrix in CSR
@@ -63,5 +63,5 @@ KaczmarzSolverStatus carp_gpu(const SparseLinearSystem& lse, Vector& x,
   // call carp solver for beginning
   return invoke_carp_solver_gpu(A_outer, A_inner, A_values, b, x.data(),
                                 h_sq_norms.data(), dim, nnz, max_iterations,
-                                precision, max_nnz_in_row, b_norm, nr_of_steps);
+                                precision, max_nnz_in_row, b_norm, nr_of_steps, relaxation);
 }

@@ -52,8 +52,8 @@ int main() {
   outFile2 << "Relaxation,Carp_steps\n";  // Write the header for the CSV file
 
   double start_relaxation = 0.1;
-  double end_relaxation = 10.0;
-  double step_relaxation = 0.1;
+  double end_relaxation = 4.0;
+  double step_relaxation = 0.05;
 
   while (start_relaxation < end_relaxation)
   {
@@ -69,7 +69,7 @@ int main() {
       const auto kaczmarz_start = hrclock::now();
       int nr_of_steps = 0;
       const auto status =
-          carp_gpu(sparse_lse, x_kaczmarz, max_iterations, start_relaxation, nr_of_steps);
+          carp_gpu(sparse_lse, x_kaczmarz, max_iterations,PRECISION, start_relaxation, nr_of_steps);
       const auto kaczmarz_end = hrclock::now();
 
       const auto kaczmarz_time =

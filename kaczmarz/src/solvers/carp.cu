@@ -21,7 +21,7 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
     const int *h_A_outer, const int *h_A_inner, const double *h_A_values,
     const double *h_b, double *h_x, double *h_sq_norms, const unsigned dim,
     const unsigned nnz, const unsigned max_iterations, const double precision,
-    const unsigned max_nnz_in_row, const double b_norm, int& nr_of_steps) {
+    const unsigned max_nnz_in_row, const double b_norm, int& nr_of_steps, const double relaxation) {
   // define some variables
   bool converged = false;
   const unsigned total_threads = dim / ROWS_PER_THREAD;
@@ -97,7 +97,6 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
 
   // solve LSE:
   // init stuff
-  const double relaxation = 1.0;
   double residual = 1.;  // init value, will be overwritten as soon as we check
                          // for convergence
   dcswp(d_A_outer, d_A_inner, d_A_values, d_b, dim, d_sq_norms, d_x, relaxation,
