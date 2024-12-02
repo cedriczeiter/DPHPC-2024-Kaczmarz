@@ -59,5 +59,6 @@ target_link_libraries(mesh_builder LF::lf.mesh.utils)
 target_link_libraries(mesh_builder LF::lf.mesh.test_utils)
 target_link_libraries(mesh_builder LF::lf.fe)
 target_link_libraries(mesh_builder LF::lf.assemble)
+target_link_libraries(mesh_builder LF::lf.uscalfe)
 target_link_libraries(mesh_builder linear_systems)
 
