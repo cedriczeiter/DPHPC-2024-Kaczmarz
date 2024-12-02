@@ -15,6 +15,10 @@ KaczmarzSolverStatus kaczmarz_banded_2_cpu_threads(
     const BandedLinearSystem& lse, Eigen::VectorXd& x, unsigned max_iterations,
     double precision);
 
+KaczmarzSolverStatus kaczmarz_banded_2_cpu_threads_simpl(
+    const BandedLinearSystem& lse, Eigen::VectorXd& x, unsigned max_iterations,
+    double precision);
+
 /**
  * Run an implementation of the Kaczmarz solver which is specialized for LSEs
  * with banded coefficient matrices. This implementation does not attempt any

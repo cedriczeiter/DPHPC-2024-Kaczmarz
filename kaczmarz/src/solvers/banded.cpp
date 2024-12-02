@@ -6,6 +6,107 @@
 #include "banded_cuda.hpp"
 #include "omp.h"
 
+KaczmarzSolverStatus kaczmarz_banded_2_cpu_threads_simpl(
+    const BandedLinearSystem& lse, Eigen::VectorXd& x, unsigned max_iterations,
+    double precision) {
+  const unsigned bandwidth = lse.bandwidth();
+  const unsigned dim = lse.dim();
+  const unsigned dim_padded = ((dim - 1) / 4 + 1) * 4;
+  std::vector<double> x_padded(bandwidth + dim_padded + bandwidth, 0.0);
+  std::copy(x.begin(), x.end(), x_padded.begin() + bandwidth);
+
+  std::vector<double> A_data_padded(dim_padded * (2 * bandwidth + 1), 0.0);
+  unsigned elem_idx = 0;
+  for (unsigned row_idx = 0; row_idx < bandwidth; row_idx++) {
+    const unsigned to_copy_count = row_idx + 1 + bandwidth;
+    std::copy_n(lse.A_data().begin() + elem_idx, to_copy_count,
+                A_data_padded.begin() + row_idx * (2 * bandwidth + 1) +
+                    (bandwidth - row_idx));
+    elem_idx += to_copy_count;
+  }
+  const unsigned middle_to_copy_count =
+      (dim - 2 * bandwidth) * (2 * bandwidth + 1);
+  std::copy_n(lse.A_data().begin() + elem_idx, middle_to_copy_count,
+              A_data_padded.begin() + bandwidth * (2 * bandwidth + 1));
+  elem_idx += middle_to_copy_count;
+  for (unsigned row_i = 0; row_i < bandwidth; row_i++) {
+    const unsigned to_copy_count = 2 * bandwidth - row_i;
+    std::copy_n(lse.A_data().begin() + elem_idx, to_copy_count,
+                A_data_padded.begin() +
+                    (dim - bandwidth + row_i) * (2 * bandwidth + 1));
+    elem_idx += to_copy_count;
+  }
+  for (unsigned pad_row_idx = dim; pad_row_idx < dim_padded; pad_row_idx++) {
+    A_data_padded[pad_row_idx * (2 * bandwidth + 1) + bandwidth] = 1.0;
+  }
+  const std::vector<double> sq_norms_padded = [bandwidth, dim, dim_padded,
+                                               &lse]() {
+    std::vector<double> sq_norms(dim_padded, 1.0);
+    unsigned elem_idx = 0;
+    for (unsigned row_idx = 0; row_idx < dim; row_idx++) {
+      const unsigned row_nnz =
+          std::min({2 * bandwidth + 1, bandwidth + 1 + row_idx,
+                    bandwidth + 1 + (dim - 1 - row_idx)});
+      sq_norms[row_idx] =
+          std::inner_product(lse.A_data().begin() + elem_idx,
+                             lse.A_data().begin() + elem_idx + row_nnz,
+                             lse.A_data().begin() + elem_idx, 0.0);
+      elem_idx += row_nnz;
+    }
+    return sq_norms;
+  }();
+  std::vector<double> b_padded(dim_padded, 0.0);
+  std::copy(lse.b().begin(), lse.b().end(), b_padded.begin());
+
+  for (unsigned iter = 0; iter < max_iterations; iter++) {
+#pragma omp parallel num_threads(2)
+    {
+      const int id = omp_get_thread_num();
+      const unsigned start_row_idx = dim_padded / 2 * id;
+      const unsigned batch_row_count = dim_padded / 4;
+      for (unsigned row_idx = start_row_idx;
+           row_idx < start_row_idx + batch_row_count; row_idx++) {
+        const auto x_iter = x_padded.begin() + bandwidth + row_idx - bandwidth;
+        const auto row_iter =
+            A_data_padded.begin() + (2 * bandwidth + 1) * row_idx;
+        const double dot = std::inner_product(
+            row_iter, row_iter + 2 * bandwidth + 1, x_iter, 0.0);
+        const double update_coeff =
+            (b_padded[row_idx] - dot) / sq_norms_padded[row_idx];
+        std::transform(x_iter, x_iter + 2 * bandwidth + 1, row_iter, x_iter,
+                       [update_coeff](const double xi, const double ai) {
+                         return xi + update_coeff * ai;
+                       });
+      }
+    }
+
+#pragma omp parallel num_threads(2)
+    {
+      const int id = omp_get_thread_num();
+      const unsigned start_row_idx = dim_padded / 2 * id + dim_padded / 4;
+      const unsigned batch_row_count = dim_padded / 4;
+      for (unsigned row_idx = start_row_idx;
+           row_idx < start_row_idx + batch_row_count; row_idx++) {
+        const auto x_iter = x_padded.begin() + bandwidth + row_idx - bandwidth;
+        const auto row_iter =
+            A_data_padded.begin() + (2 * bandwidth + 1) * row_idx;
+        const double dot = std::inner_product(
+            row_iter, row_iter + 2 * bandwidth + 1, x_iter, 0.0);
+        const double update_coeff =
+            (b_padded[row_idx] - dot) / sq_norms_padded[row_idx];
+        std::transform(x_iter, x_iter + 2 * bandwidth + 1, row_iter, x_iter,
+                       [update_coeff](const double xi, const double ai) {
+                         return xi + update_coeff * ai;
+                       });
+      }
+    }
+  }
+
+  std::copy_n(x_padded.begin() + bandwidth, dim, x.begin());
+
+  return KaczmarzSolverStatus::Converged;
+}
+
 KaczmarzSolverStatus kaczmarz_banded_2_cpu_threads(
     const BandedLinearSystem& lse, Eigen::VectorXd& x, unsigned max_iterations,
     double precision) {
