@@ -2,7 +2,7 @@
 #include <cusolverSp.h>
 #include <cusparse.h>
 #include <stdexcept>
-#include "cuda_native_solver.hpp"
+#include "cuda_native.hpp"
 
 KaczmarzSolverStatus native_cuda_solver(const SparseLinearSystem& lse, Vector& x,
                                         const unsigned max_iterations,
