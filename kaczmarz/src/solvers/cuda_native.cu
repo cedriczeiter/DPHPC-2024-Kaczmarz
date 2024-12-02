@@ -2,69 +2,66 @@
 #include <cusolverSp.h>
 #include <cusparse.h>
 #include <stdexcept>
-#include "cuda_native.hpp"
+#include "cuda_native_solver.hpp"
 
 KaczmarzSolverStatus native_cuda_solver(const SparseLinearSystem& lse, Vector& x,
                                         const unsigned max_iterations,
                                         const double precision) {
     // Extract matrix data in CSR format
-    const auto A_csr = lse.A();  // CSR format matrix
-    const auto b = lse.b();
-    const unsigned rows = A_csr.rows();
-    const unsigned cols = A_csr.cols();
-    const int nnz = A_csr.nnz();
+    const auto& A = lse.A();  // Eigen::SparseMatrix
+    const auto& b = lse.b();  // Eigen::VectorXd
+
+    const unsigned rows = A.rows();
+    const unsigned cols = A.cols();
+    const int nnz = A.nonZeros();  // Number of non-zero entries
+
+    // Get CSR pointers from Eigen
+    const int* rowPtr = A.outerIndexPtr();  // Row pointers
+    const int* colInd = A.innerIndexPtr();  // Column indices
+    const double* values = A.valuePtr();    // Non-zero values
 
     // Allocate device memory
-    int *d_A_outerIndex, *d_A_innerIndex;
-    double *d_A_values, *d_b, *d_x;
+    int *d_rowPtr, *d_colInd;
+    double *d_values, *d_b, *d_x;
 
-    cudaMalloc((void**)&d_A_outerIndex, sizeof(int) * (rows + 1));
-    cudaMalloc((void**)&d_A_innerIndex, sizeof(int) * nnz);
-    cudaMalloc((void**)&d_A_values, sizeof(double) * nnz);
+    cudaMalloc((void**)&d_rowPtr, sizeof(int) * (rows + 1));
+    cudaMalloc((void**)&d_colInd, sizeof(int) * nnz);
+    cudaMalloc((void**)&d_values, sizeof(double) * nnz);
     cudaMalloc((void**)&d_b, sizeof(double) * rows);
     cudaMalloc((void**)&d_x, sizeof(double) * cols);
 
     // Copy data to device
-    cudaMemcpy(d_A_outerIndex, A_csr.rowPtr(), sizeof(int) * (rows + 1), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_A_innerIndex, A_csr.colInd(), sizeof(int) * nnz, cudaMemcpyHostToDevice);
-    cudaMemcpy(d_A_values, A_csr.values(), sizeof(double) * nnz, cudaMemcpyHostToDevice);
+    cudaMemcpy(d_rowPtr, rowPtr, sizeof(int) * (rows + 1), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_colInd, colInd, sizeof(int) * nnz, cudaMemcpyHostToDevice);
+    cudaMemcpy(d_values, values, sizeof(double) * nnz, cudaMemcpyHostToDevice);
     cudaMemcpy(d_b, b.data(), sizeof(double) * rows, cudaMemcpyHostToDevice);
 
     // Initialize cuSolverSP handle
     cusolverSpHandle_t cusolverH = nullptr;
     cusolverStatus_t status = cusolverSpCreate(&cusolverH);
     if (status != CUSOLVER_STATUS_SUCCESS) {
-        cudaFree(d_A_outerIndex);
-        cudaFree(d_A_innerIndex);
-        cudaFree(d_A_values);
+        cudaFree(d_rowPtr);
+        cudaFree(d_colInd);
+        cudaFree(d_values);
         cudaFree(d_b);
         cudaFree(d_x);
         throw std::runtime_error("Failed to create cuSolverSP handle.");
     }
 
-    // Allocate workspace for cuSolverSP
-    size_t workspaceSize = 0;
-    cusolverSpDcsrlsvchol_bufferSize(cusolverH, rows, nnz, nullptr, d_A_outerIndex, d_A_innerIndex, d_A_values,
-                                     nullptr, 0, &workspaceSize);
-
-    void* d_workspace = nullptr;
-    cudaMalloc(&d_workspace, workspaceSize);
-
     // Solve the system using Cholesky factorization
     int singularity = 0;
-    status = cusolverSpDcsrlsvchol(cusolverH, rows, nnz, nullptr, d_A_outerIndex, d_A_innerIndex, d_A_values, d_b,
+    status = cusolverSpDcsrlsvchol(cusolverH, rows, nnz, nullptr, d_rowPtr, d_colInd, d_values, d_b,
                                    precision, max_iterations, d_x, &singularity);
 
     // Check solver status
     if (status != CUSOLVER_STATUS_SUCCESS || singularity >= 0) {
         cusolverSpDestroy(cusolverH);
-        cudaFree(d_A_outerIndex);
-        cudaFree(d_A_innerIndex);
-        cudaFree(d_A_values);
+        cudaFree(d_rowPtr);
+        cudaFree(d_colInd);
+        cudaFree(d_values);
         cudaFree(d_b);
         cudaFree(d_x);
-        cudaFree(d_workspace);
-        return KaczmarzSolverStatus::ZeroNormRow;
+        return KaczmarzSolverStatus::OutOfIterations;
     }
 
     // Copy result back to host
@@ -72,12 +69,11 @@ KaczmarzSolverStatus native_cuda_solver(const SparseLinearSystem& lse, Vector& x
 
     // Free resources
     cusolverSpDestroy(cusolverH);
-    cudaFree(d_A_outerIndex);
-    cudaFree(d_A_innerIndex);
-    cudaFree(d_A_values);
+    cudaFree(d_rowPtr);
+    cudaFree(d_colInd);
+    cudaFree(d_values);
     cudaFree(d_b);
     cudaFree(d_x);
-    cudaFree(d_workspace);
 
     return KaczmarzSolverStatus::Converged;
 }
