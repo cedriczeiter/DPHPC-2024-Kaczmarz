@@ -12,7 +12,7 @@
 #include "solvers/basic.hpp"
 #include "solvers/random.hpp"
 #include "solvers/carp.hpp"
-#include "solvers/cuda_native.hpp"
+//#include "solvers/cuda_native.hpp"
 #include <Eigen/IterativeLinearSolvers>
 
 #define MAX_IT 1000000
@@ -349,35 +349,35 @@ double benchmark_EigenCG_sparse(const std::string& file_path, const int numItera
 }
 
 /// @brief Benchmarks cudas's solver on a sparse linear system.
-double benchmark_cudadirect_sparse(const std::string& file_path, const int numIterations,
-                                    double& stdDev) {
-  std::vector<double> times;
-      // Read the precomputed matrix from the file
-  std::ifstream lse_input_stream(file_path);
-  if (!lse_input_stream) {
-    throw std::runtime_error("Failed to open matrix file: " + file_path);
-  }
-  const SparseLinearSystem lse =
-      SparseLinearSystem::read_from_stream(lse_input_stream);
-          const auto A = lse.A();
-    const auto b = lse.b();
-    for (int i = 0; i < numIterations; ++i) {
-        Eigen::VectorXd x_kaczmarz_sparse =
-        Eigen::VectorXd::Zero(lse.column_count());
-     auto start = std::chrono::high_resolution_clock::now();
-     
-        KaczmarzSolverStatus status = native_cuda_solver(lse, x_kaczmarz_sparse, MAX_IT, PRECISION);
+// double benchmark_cudadirect_sparse(const std::string& file_path, const int numIterations,
+//                                     double& stdDev) {
+//   std::vector<double> times;
+//       // Read the precomputed matrix from the file
+//   std::ifstream lse_input_stream(file_path);
+//   if (!lse_input_stream) {
+//     throw std::runtime_error("Failed to open matrix file: " + file_path);
+//   }
+//   const SparseLinearSystem lse =
+//       SparseLinearSystem::read_from_stream(lse_input_stream);
+//           const auto A = lse.A();
+//     const auto b = lse.b();
+//     for (int i = 0; i < numIterations; ++i) {
+//         Eigen::VectorXd x_kaczmarz_sparse =
+//         Eigen::VectorXd::Zero(lse.column_count());
+//      auto start = std::chrono::high_resolution_clock::now();
 
-        // End timer
-        auto end = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> elapsed = end - start;
-    times.push_back(elapsed.count());
-  }
+//         KaczmarzSolverStatus status = native_cuda_solver(lse, x_kaczmarz_sparse, MAX_IT, PRECISION);
 
-  double avgTime = 0;
-  compute_statistics(times, avgTime, stdDev);
-  return avgTime;
-}
+//         // End timer
+//         auto end = std::chrono::high_resolution_clock::now();
+//     std::chrono::duration<double> elapsed = end - start;
+//     times.push_back(elapsed.count());
+//   }
+
+//   double avgTime = 0;
+//   compute_statistics(times, avgTime, stdDev);
+//   return avgTime;
+// }
 
 int main() {
   const int numIterations = NUM_IT;  // Number of iterations to reduce noise
@@ -569,32 +569,32 @@ for (int complexity = 1; complexity <= 6; ++complexity) {
   /// Cuda Direct Solver Sparse///
   //////////////////////////////////////////
 
-  // Open the file for output
-  std::ofstream outFileCD("results_cudadirect_sparse_pde.csv");
-  outFileCD << "File,Problem,Complexity,AvgTime,StdDev\n";  // Write the header for the CSV file
+//   // Open the file for output
+//   std::ofstream outFileCD("results_cudadirect_sparse_pde.csv");
+//   outFileCD << "File,Problem,Complexity,AvgTime,StdDev\n";  // Write the header for the CSV file
 
-for (int problem_i = 1; problem_i <= MAX_PROBLEMS; ++problem_i){
-  // Loop over problem sizes, benchmark, and write to file
-for (int complexity = 1; complexity <= 6; ++complexity) {
-    std::cout << "CUDA DIRECT PROBLEM "<<problem_i<<" COMPLEXITY "<<complexity<<" is being worked on now!"<<std::endl;
-    std::string file_path = "../../generated_bvp_matrices/problem" + std::to_string(problem_i) +"_complexity" +
-                          std::to_string(complexity) + ".txt";
-    double stdDev;
-     try {
-    double avgTime =
-        benchmark_cudadirect_sparse(file_path, 
-        numIterations, stdDev);
+// for (int problem_i = 1; problem_i <= MAX_PROBLEMS; ++problem_i){
+//   // Loop over problem sizes, benchmark, and write to file
+// for (int complexity = 1; complexity <= 6; ++complexity) {
+//     std::cout << "CUDA DIRECT PROBLEM "<<problem_i<<" COMPLEXITY "<<complexity<<" is being worked on now!"<<std::endl;
+//     std::string file_path = "../../generated_bvp_matrices/problem" + std::to_string(problem_i) +"_complexity" +
+//                           std::to_string(complexity) + ".txt";
+//     double stdDev;
+//      try {
+//     double avgTime =
+//         benchmark_cudadirect_sparse(file_path, 
+//         numIterations, stdDev);
 
-    // Write results to the file
-    outFileCD << file_path << "," << problem_i << "," << complexity << "," << avgTime << "," << stdDev << "\n";
-    } catch (const std::exception& e) {
-    std::cerr << "Error processing file " << file_path << ": " << e.what()
-              << std::endl;
-  }
-}
-}
-  outFileCD.close();  // Close the file after writing
-    std::cout << "CUDA DIRECT IS DONE NOW"<<std::endl;
+//     // Write results to the file
+//     outFileCD << file_path << "," << problem_i << "," << complexity << "," << avgTime << "," << stdDev << "\n";
+//     } catch (const std::exception& e) {
+//     std::cerr << "Error processing file " << file_path << ": " << e.what()
+//               << std::endl;
+//   }
+// }
+// }
+//   outFileCD.close();  // Close the file after writing
+//     std::cout << "CUDA DIRECT IS DONE NOW"<<std::endl;
 
   return 0;
 }

@@ -64,7 +64,7 @@ set(CUDA_SOURCES
   ${SOURCE_DIR}/solvers/carp.cu
   ${SOURCE_DIR}/solvers/carp.cpp
   ${SOURCE_DIR}/solvers/carp_utils.cu
-  ${SOURCE_DIR}/solvers/cuda_native.cu
+  #${SOURCE_DIR}/solvers/cuda_native.cu
 )
 
 ################################
