@@ -116,7 +116,7 @@ if (CMAKE_CUDA_COMPILER)
   add_executable(kaczmarz_example ${SOURCE_DIR}/kaczmarz_example.cpp)
   add_executable(benchmark_one ${SOURCE_DIR}/benchmark_one.cpp)
   add_executable(benchmark_one_carp ${SOURCE_DIR}/benchmark_one_carp.cpp)
-  add_executable(benchmark_pde ${SOURCE_DIR}/benchmark_pde.cpp)
+  add_executable(benchmarking_pde ${SOURCE_DIR}/benchmarking_pde.cpp)
 
   # Link the non-CUDA and CUDA libraries to the executables
   target_link_libraries(benchmark_convergence PRIVATE non_cuda_library cuda_library linear_systems)
@@ -124,7 +124,7 @@ if (CMAKE_CUDA_COMPILER)
   target_link_libraries(kaczmarz_example PRIVATE non_cuda_library cuda_library linear_systems)
   target_link_libraries(benchmark_one PRIVATE non_cuda_library cuda_library linear_systems)
   target_link_libraries(benchmark_one_carp PRIVATE non_cuda_library cuda_library linear_systems)
-  target_link_libraries(benchmark_pde PRIVATE non_cuda_library cuda_library linear_systems)
+  target_link_libraries(benchmarking_pde PRIVATE non_cuda_library cuda_library linear_systems)
 
 else()
   message(STATUS "No CUDA compiler found, skipping CUDA targets")
