@@ -11,7 +11,8 @@
 #include "solvers/banded.hpp"
 #include "solvers/basic.hpp"
 #include "solvers/random.hpp"
-
+#include "solvers/carp.hpp"
+#include <Eigen/IterativeLinearSolvers>
 
 #define MAX_IT 1000000
 //#define BANDWIDTH 4
@@ -21,6 +22,152 @@
 //#define MIN_DIM 8
 #define NUM_IT 4
 //#define RANDOM_SEED 43
+#define MAX_PROBLEMS 2
+
+void write_sparsity_pattern(const Eigen::SparseMatrix<double> &matrix,
+                            const std::string &filename) {
+  std::ofstream out_stream(filename);
+  if (!out_stream.is_open()) {
+    std::cerr << "Error: Could not open output file: " << filename << std::endl;
+    return;
+  }
+
+  // Write each non-zero element's row and column index to the file
+  for (int k = 0; k < matrix.outerSize(); ++k) {
+    for (Eigen::SparseMatrix<double>::InnerIterator it(matrix, k); it; ++it) {
+      out_stream << it.row() << " " << it.col() << "\n";
+    }
+  }
+
+  out_stream.close();
+}
+
+int compute_bandwidth(const Eigen::SparseMatrix<double> &A) {
+  int bandwidth = 0;
+
+  // Traverse each row (or column) of the sparse matrix
+  for (int i = 0; i < A.outerSize(); ++i) {
+    for (Eigen::SparseMatrix<double>::InnerIterator it(A, i); it; ++it) {
+      int row = it.row();  // Row index of the current nonzero entry
+      int col = it.col();  // Column index of the current nonzero entry
+      bandwidth = std::max(bandwidth, std::abs(row - col));
+    }
+  }
+
+  return bandwidth;
+}
+
+std::vector<int> reverse_cuthill_mckee(const Eigen::SparseMatrix<double> &A) {
+  int n = A.rows();
+  std::vector<int> perm(n, -1);  // Output permutation (will store node indices)
+  std::vector<int> degree(n, 0);        // Degree of each node
+  std::vector<bool> visited(n, false);  // Visited nodes
+
+  // Step 1: Compute degree of each node
+  for (int k = 0; k < A.outerSize(); ++k) {
+    for (Eigen::SparseMatrix<double>::InnerIterator it(A, k); it; ++it) {
+      if (it.row() != it.col()) {  // Ignore self-loops
+        degree[it.row()]++;
+        degree[it.col()]++;
+      }
+    }
+  }
+
+  int index = 0;  // Result permutation index
+
+  // Step 2: Perform BFS for all nodes to ensure all components are covered
+  while (index < n) {
+    // Find an unvisited node with the smallest degree to start a new BFS
+    int start_node = -1;
+    int min_degree = n + 1;  // Start with a large degree
+    for (int j = 0; j < n; ++j) {
+      if (!visited[j] && degree[j] < min_degree) {
+        min_degree = degree[j];
+        start_node = j;
+      }
+    }
+
+    if (start_node == -1) break;  // All nodes have been visited
+
+    // Step 3: Start BFS from `start_node`
+    std::queue<int> Q;
+    Q.push(start_node);
+    visited[start_node] = true;
+
+    while (!Q.empty()) {
+      int v = Q.front();
+      Q.pop();
+      perm[index++] = v;  // Assign current node to perm
+
+      // Collect unvisited neighbors
+      std::vector<int> neighbors;
+      for (Eigen::SparseMatrix<double>::InnerIterator it(A, v); it; ++it) {
+        int neighbor = it.col();
+        if (!visited[neighbor]) {
+          neighbors.push_back(neighbor);
+          visited[neighbor] = true;
+        }
+      }
+
+      // Sort neighbors by degree (ascending order)
+      std::sort(neighbors.begin(), neighbors.end(),
+                [&degree](int a, int b) { return degree[a] < degree[b]; });
+
+      // Add sorted neighbors to the queue
+      for (int neighbor : neighbors) {
+        Q.push(neighbor);
+      }
+    }
+  }
+
+  // Reverse the permutation for RCM order
+  std::reverse(perm.begin(), perm.end());
+
+  // Debugging: Print permutation vector to check correctness
+  std::cout << "Permutation vector (perm): ";
+  for (int p : perm) {
+    std::cout << p << " ";
+  }
+  std::cout << std::endl;
+
+  // Check if the perm vector is fully populated
+  for (int p : perm) {
+    if (p == -1) {
+      std::cerr
+          << "Error: Permutation vector contains unvisited nodes (-1 values)."
+          << std::endl;
+      break;
+    }
+  }
+
+  return perm;
+}
+
+SparseLinearSystem reorder_system_rcm(const SparseLinearSystem &system) {
+  std::vector<int> perm = reverse_cuthill_mckee(system.A());
+
+  // Check if the perm vector has the correct size
+  if (perm.size() != system.A().rows()) {
+    std::cerr
+        << "Error: Permutation vector size does not match matrix row count!"
+        << std::endl;
+    return system;  // Return the original system in case of an error
+  }
+
+  Eigen::VectorXi perm_eigen =
+      Eigen::Map<Eigen::VectorXi>(perm.data(), perm.size());
+  Eigen::PermutationMatrix<Eigen::Dynamic, Eigen::Dynamic> perm_matrix(
+      perm_eigen);
+
+  // Permute the system
+  Eigen::SparseMatrix<double> A_temp =
+      perm_matrix.transpose() * system.A() * perm_matrix;
+  Eigen::VectorXd b_reordered = perm_matrix.transpose() * system.b();
+
+  SparseLinearSystem reordered_system(A_temp, b_reordered);
+  return reordered_system;
+}
+
 
 /// @brief Computes the average and standard deviation of a vector of times.
 /// @param times A vector of times recorded for benchmarking in seconds.
@@ -44,14 +191,14 @@ void compute_statistics(const std::vector<double>& times, double& avgTime,
   stdDev = std::sqrt(variance);
 }
 
-/// @brief Benchmarks the asynchronous Kaczmarz algorithm run on cuda on a
+/// @brief Benchmarks the CARP Kaczmarz algorithm run on cuda on a
 /// sparse linear system.
 /// @param dim Dimension of the system.
 /// @param numIterations Number of iterations for timing.
 /// @param stdDev Output parameter for the computed standard deviation.
 /// @param rng Random generator for system generation.
 /// @return Average time taken for solution.
-double benchmark_asynchronouscuda_solver_sparse(const std::string& file_path,
+double benchmark_carpcuda_solver_sparse(const std::string& file_path,
                                                 const int numIterations,
                                                 double& stdDev) {
   std::vector<double> times;
@@ -73,8 +220,8 @@ double benchmark_asynchronouscuda_solver_sparse(const std::string& file_path,
     std::vector<int> iterations;
     const auto start = std::chrono::high_resolution_clock::now();
 
-    asynchronous_gpu(lse, x_kaczmarz_sparse, MAX_IT, PRECISION,
-                     NUM_THREADS);
+    const auto status =
+        carp_gpu(lse, x_kaczmarz_sparse, MAX_IT, PRECISION);
 
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
@@ -86,14 +233,14 @@ double benchmark_asynchronouscuda_solver_sparse(const std::string& file_path,
   return avgTime;
 }
 
-/// @brief Benchmarks the Kaczmarz algorithm run on cuda on a sparse linear
+/// @brief Benchmarks the CARP Kaczmarz algorithm run on cpu on a sparse linear
 /// system.
 /// @param dim Dimension of the system.
 /// @param numIterations Number of iterations for timing.
 /// @param stdDev Output parameter for the computed standard deviation.
 /// @param rng Random generator for system generation.
 /// @return Average time taken for solution.
-double benchmark_asynchronouscpu_solver_sparse(const std::string& file_path,
+double benchmark_carpcpu_solver_sparse(const std::string& file_path,
                                                const int numIterations,
                                                double& stdDev) {
   std::vector<double> times;
@@ -156,8 +303,8 @@ double benchmark_banded_2_cpu_threads_solver_sparse(const std::string& file_path
     std::vector<int> iterations;
     const auto start = std::chrono::high_resolution_clock::now();
 
-    const auto status =  kaczmarz_banded_2_cpu_threads(lse, x_kaczmarz, MAX_IT,
-    PRECISION);
+    // const auto status =  kaczmarz_banded_2_cpu_threads(lse, x_kaczmarz, MAX_IT,
+    // PRECISION);
 
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
@@ -185,8 +332,61 @@ double benchmark_banded_cuda_solver_sparse(const std::string& file_path,
   if (!lse_input_stream) {
     throw std::runtime_error("Failed to open matrix file: " + file_path);
   }
+
+  unsigned nnz, rows, cols;
+  lse_input_stream >> nnz >> rows >> cols;
+
+  if (lse_input_stream.fail() || nnz == 0 || rows == 0 || cols == 0) {
+    std::cerr << "Error: Invalid file format or empty input." << std::endl;
+    return 1;
+  }
+
+  std::vector<Eigen::Triplet<double>> triplets_A;
+  triplets_A.reserve(nnz);
+
+  // Read triplets for the sparse matrix
+  for (unsigned i = 0; i < nnz; i++) {
+    unsigned row, col;
+    double value;
+    lse_input_stream >> row >> col >> value;
+    if (row >= rows || col >= cols) {
+      std::cerr << "Error: Row or column index out of bounds in input."
+                << std::endl;
+      return 1;
+    }
+    triplets_A.emplace_back(row, col, value);
+  }
+
+  Eigen::SparseMatrix<double> matrix(rows, cols);
+  matrix.setFromTriplets(triplets_A.begin(), triplets_A.end());
+
+  // Read RHS vector
+  Eigen::VectorXd rhs(rows);
+  for (unsigned i = 0; i < rows; i++) {
+    if (!(lse_input_stream >> rhs[i])) {
+      std::cerr << "Error: Insufficient elements in RHS vector." << std::endl;
+      return 1;
+    }
+  }
+
+  lse_input_stream.close();
+
+  // Create SparseLinearSystem
+  SparseLinearSystem system{matrix, rhs};
+
+  // Reorder using Reverse Cuthill-McKee
+  double starting_time =
+      std::chrono::duration_cast<std::chrono::milliseconds>(
+          std::chrono::system_clock::now().time_since_epoch())
+          .count();
+  SparseLinearSystem reordered_system = reorder_system_rcm(system);
+
   const SparseLinearSystem lse =
       SparseLinearSystem::read_from_stream(lse_input_stream);
+
+        // const BandedLinearSystem banded_lse(lse.row_count(),(unsigned int) compute_bandwidth(lse.A()),
+        //               lse.A(), lse.b());
+
       //still need to convert the SparseLinearSystem to BandedLinearSystem
 
   for (int i = 0; i < numIterations; ++i) {
@@ -198,8 +398,8 @@ double benchmark_banded_cuda_solver_sparse(const std::string& file_path,
     std::vector<int> iterations;
     const auto start = std::chrono::high_resolution_clock::now();
 
-    const auto status =  kaczmarz_banded_cuda(lse, x_kaczmarz, MAX_IT,
-    PRECISION);
+    // const auto status =  kaczmarz_banded_cuda(banded_lse, x_kaczmarz, MAX_IT,
+    // PRECISION);
 
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
@@ -300,6 +500,38 @@ double benchmark_Eigeniterative_sparse(const std::string& file_path, const int n
   return avgTime;
 }
 
+/// @brief Benchmarks Eigen's iterative CG solver on a sparse linear system.
+double benchmark_EigenCG_sparse(const std::string& file_path, const int numIterations,
+                                    double& stdDev) {
+  std::vector<double> times;
+      // Read the precomputed matrix from the file
+  std::ifstream lse_input_stream(file_path);
+  if (!lse_input_stream) {
+    throw std::runtime_error("Failed to open matrix file: " + file_path);
+  }
+  const SparseLinearSystem lse =
+      SparseLinearSystem::read_from_stream(lse_input_stream);
+  for (int i = 0; i < numIterations; ++i) {
+    const auto A = lse.A();
+    const auto b = lse.b();
+    Eigen::LeastSquaresConjugateGradient<SparseMatrix> lscg(A);
+    // lscg.preconditioner() = Eigen::IdentityPreconditioner;
+    lscg.setTolerance(PRECISION);
+    lscg.setMaxIterations(MAX_IT);
+    const auto start = std::chrono::high_resolution_clock::now();
+
+    Vector x_kaczmarz_sparse = lscg.solve(b);
+
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed = end - start;
+    times.push_back(elapsed.count());
+  }
+
+  double avgTime = 0;
+  compute_statistics(times, avgTime, stdDev);
+  return avgTime;
+}
+
 int main() {
   const int numIterations = NUM_IT;  // Number of iterations to reduce noise
 
@@ -308,68 +540,73 @@ int main() {
   //////////////////////////////////////////
 
   // Open the file for output
-  std::ofstream outFileBS1("results_banded_cuda_sparse_pde.csv");
-  outFileBS1 << "File,AvgTime,StdDev\n";  // Write the header for the CSV file
+//   std::ofstream outFileBS1("results_banded_cuda_sparse_pde.csv");
+//   outFileBS1 << "File,AvgTime,StdDev\n";  // Write the header for the CSV file
 
-  // Loop over problem sizes, benchmark, and write to file
-for (int complexity = 1; complexity <= 6; ++complexity) {
-    std::string file_path = "../../generated_bvp_matrices/problem1_complexity" +
-                          std::to_string(complexity) + ".txt";
-    double stdDev;
-     try {
-    double avgTime = benchmark_banded_cuda_solver_sparse(file_path, 
-        numIterations, stdDev);
+// for (int problem_i = 1; problem_i <= MAX_PROBLEMS; ++problem_i){
+//   // Loop over problem sizes, benchmark, and write to file
+// for (int complexity = 1; complexity <= 6; ++complexity) {
+//     std::string file_path = "../../generated_bvp_matrices/problem" + std::to_string(problem_i) +"_complexity" +
+//                           std::to_string(complexity) + ".txt";
+//     double stdDev;
+//      try {
+//     double avgTime = benchmark_banded_cuda_solver_sparse(file_path, 
+//         numIterations, stdDev);
 
-    // Write results to the file
-    outFileBS1 << file_path << "," << avgTime << "," << stdDev << "\n";
-    } catch (const std::exception& e) {
-    std::cerr << "Error processing file " << file_path << ": " << e.what()
-              << std::endl;
-    }
-  }
-  outFileBS1.close();  // Close the file after writing
+//     // Write results to the file
+//     outFileBS1 << file_path << "," << avgTime << "," << stdDev << "\n";
+//     } catch (const std::exception& e) {
+//     std::cerr << "Error processing file " << file_path << ": " << e.what()
+//               << std::endl;
+//     }
+//   }
+// }
+//   outFileBS1.close();  // Close the file after writing
 
 //////////////////////////////////////////
   /// CPU 2 threads Banded Solver Sparse (Viktor)///
   //////////////////////////////////////////
 
   // Open the file for output
-  std::ofstream outFileBS2("results_banded_cpu_2_threads_sparse_pde.csv");
-  outFileBS2 << "File,AvgTime,StdDev\n";  // Write the header for the CSV file
+//   std::ofstream outFileBS2("results_banded_cpu_2_threads_sparse_pde.csv");
+//   outFileBS2 << "File,AvgTime,StdDev\n";  // Write the header for the CSV file
 
-  // Loop over problem sizes, benchmark, and write to file
-for (int complexity = 1; complexity <= 6; ++complexity) {
-    std::string file_path = "../../generated_bvp_matrices/problem1_complexity" +
-                          std::to_string(complexity) + ".txt";
-    double stdDev;
-     try {
-    double avgTime = benchmark_banded_2_cpu_threads_solver_sparse(file_path, 
-        numIterations, stdDev);
+// for (int problem_i = 1; problem_i <= MAX_PROBLEMS; ++problem_i){
+//   // Loop over problem sizes, benchmark, and write to file
+// for (int complexity = 1; complexity <= 6; ++complexity) {
+//     std::string file_path = "../../generated_bvp_matrices/problem" + std::to_string(problem_i) +"_complexity" +
+//                           std::to_string(complexity) + ".txt";
+//     double stdDev;
+//      try {
+//     double avgTime = benchmark_banded_2_cpu_threads_solver_sparse(file_path, 
+//         numIterations, stdDev);
 
-    // Write results to the file
-    outFileBS2 << file_path << "," << avgTime << "," << stdDev << "\n";
-    } catch (const std::exception& e) {
-    std::cerr << "Error processing file " << file_path << ": " << e.what()
-              << std::endl;
-  }
-}
-  outFileBS2.close();  // Close the file after writing
+//     // Write results to the file
+//     outFileBS2 << file_path << "," << avgTime << "," << stdDev << "\n";
+//     } catch (const std::exception& e) {
+//     std::cerr << "Error processing file " << file_path << ": " << e.what()
+//               << std::endl;
+//   }
+// }
+// }
+//   outFileBS2.close();  // Close the file after writing
 
   ////////////////////////////////////////
-  // Cuda Asynchronous Solver Sparse///
+  // Cuda CARP Solver Sparse///
   ////////////////////////////////////////
 
   // Open the file for output
   std::ofstream outFileNS1("results_asynchronous_cuda_sparse_pde.csv");
   outFileNS1 << "File,AvgTime,StdDev\n";  // Write the header for the CSV file
 
+for (int problem_i = 1; problem_i <= MAX_PROBLEMS; ++problem_i){
   // Loop over problem sizes, benchmark, and write to file
 for (int complexity = 1; complexity <= 6; ++complexity) {
-    std::string file_path = "../../generated_bvp_matrices/problem1_complexity" +
+    std::string file_path = "../../generated_bvp_matrices/problem" + std::to_string(problem_i) +"_complexity" +
                           std::to_string(complexity) + ".txt";
     double stdDev;
      try {
-    double avgTime = benchmark_asynchronouscuda_solver_sparse(file_path, 
+    double avgTime = benchmark_carpcuda_solver_sparse(file_path, 
         numIterations, stdDev);
 
     // Write results to the file
@@ -379,13 +616,14 @@ for (int complexity = 1; complexity <= 6; ++complexity) {
               << std::endl;
   }
 }
+}
   outFileNS1.close();  // Close the file after writing
 
   //////////////////////////////////////////
-  /// CPU Asynchronous Solver Sparse///
+  /// CPU CARP Solver Sparse///
   //////////////////////////////////////////
 
-  // // Open the file for output
+  // Open the file for output
   // std::ofstream outFileNS2("results_asynchronous_cpu_sparse_pde.csv");
   // outFileNS2 << "Dim,AvgTime,StdDev\n";  // Write the header for the CSV file
 
@@ -395,7 +633,7 @@ for (int complexity = 1; complexity <= 6; ++complexity) {
   //                        std::to_string(complexity) + ".txt";
   //   double stdDev;
   // try {
-  //   double avgTime = benchmark_asynchronouscpu_solver_sparse(file_path, numIterations,
+  //   double avgTime = benchmark_carpcpu_solver_sparse(file_path, numIterations,
   //                                                            stdDev);
 
   //   // Write results to the file
@@ -415,9 +653,10 @@ for (int complexity = 1; complexity <= 6; ++complexity) {
   std::ofstream outFileNS3("results_sparsesolver_sparse_pde.csv");
   outFileNS3 << "File,AvgTime,StdDev\n";  // Write the header for the CSV file
 
+for (int problem_i = 1; problem_i <= MAX_PROBLEMS; ++problem_i){
   // Loop over problem sizes, benchmark, and write to file
 for (int complexity = 1; complexity <= 6; ++complexity) {
-    std::string file_path = "../../generated_bvp_matrices/problem1_complexity" +
+    std::string file_path = "../../generated_bvp_matrices/problem" + std::to_string(problem_i) +"_complexity" +
                           std::to_string(complexity) + ".txt";
     double stdDev;
      try {
@@ -432,6 +671,7 @@ for (int complexity = 1; complexity <= 6; ++complexity) {
               << std::endl;
   }
 }
+}
   outFileNS3.close();  // Close the file after writing
 
   //////////////////////////////////////////
@@ -441,10 +681,10 @@ for (int complexity = 1; complexity <= 6; ++complexity) {
   // Open the file for output
   std::ofstream outFileES("results_eigensolver_sparse_pde.csv");
   outFileES << "File,AvgTime,StdDev\n";  // Write the header for the CSV file
-
+for (int problem_i = 1; problem_i <= MAX_PROBLEMS; ++problem_i){
   // Loop over problem sizes, benchmark, and write to file
 for (int complexity = 1; complexity <= 6; ++complexity) {
-    std::string file_path = "../../generated_bvp_matrices/problem1_complexity" +
+    std::string file_path = "../../generated_bvp_matrices/problem" + std::to_string(problem_i) +"_complexity" +
                           std::to_string(complexity) + ".txt";
     double stdDev;
      try {
@@ -459,6 +699,7 @@ for (int complexity = 1; complexity <= 6; ++complexity) {
               << std::endl;
   }
 }
+}
   outFileES.close();  // Close the file after writing
 
     //////////////////////////////////////////
@@ -469,14 +710,15 @@ for (int complexity = 1; complexity <= 6; ++complexity) {
   std::ofstream outFileEI("results_eigeniterative_sparse_pde.csv");
   outFileEI << "File,AvgTime,StdDev\n";  // Write the header for the CSV file
 
+for (int problem_i = 1; problem_i <= MAX_PROBLEMS; ++problem_i){
   // Loop over problem sizes, benchmark, and write to file
 for (int complexity = 1; complexity <= 6; ++complexity) {
-    std::string file_path = "../../generated_bvp_matrices/problem1_complexity" +
+    std::string file_path = "../../generated_bvp_matrices/problem" + std::to_string(problem_i) +"_complexity" +
                           std::to_string(complexity) + ".txt";
     double stdDev;
      try {
     double avgTime =
-        benchmark_Eigeniterative_sparse(file_path, 
+        benchmark_EigenCG_sparse(file_path, 
         numIterations, stdDev);
 
     // Write results to the file
@@ -485,6 +727,7 @@ for (int complexity = 1; complexity <= 6; ++complexity) {
     std::cerr << "Error processing file " << file_path << ": " << e.what()
               << std::endl;
   }
+}
 }
   outFileEI.close();  // Close the file after writing
 

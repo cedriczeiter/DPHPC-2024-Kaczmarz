@@ -19,6 +19,12 @@ Vector SparseLinearSystem::eigen_BiCGSTAB() const {
   return solver.solve(this->_b);
 }
 
+Vector SparseLinearSystem::eigen_CG() const {
+    Eigen::ConjugateGradient<SparseMatrix, Eigen::Lower | Eigen::Upper> solver;
+    solver.compute(this->_A);
+  return solver.solve(this->_b);
+}
+
 /**
  * Precondition: A is compressed
  */
