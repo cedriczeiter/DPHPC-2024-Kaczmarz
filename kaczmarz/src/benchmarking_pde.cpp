@@ -474,6 +474,7 @@ for (int complexity = 1; complexity <= 6; ++complexity) {
 }
   outFileNS1.close();  // Close the file after writing
 
+std::cout << "CARP IS DONE NOW";
   //////////////////////////////////////////
   /// CPU CARP Solver Sparse///
   //////////////////////////////////////////
