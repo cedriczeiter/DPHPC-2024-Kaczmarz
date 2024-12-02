@@ -50,22 +50,31 @@ KaczmarzSolverStatus native_cuda_solver(const SparseLinearSystem& lse, Vector& x
 
     // Solve the system using Cholesky factorization
     int singularity = 0;
-    
-cusolverStatus_t status = cusolverSpDcsrlsvchol(
-    cusolverH,                 // cuSolver handle
-    rows,                      // Number of rows
-    nnz,                       // Number of non-zero elements
-    descrA,                    // Matrix descriptor (ensure you create this)
-    d_values,                  // Matrix values
-    d_rowPtr,                  // Row pointers
-    d_colInd,                  // Column indices
-    d_b,                       // Right-hand side vector
-    precision,                 // Tolerance
-    0,                         // Reorder flag (0 for no reordering)
-    d_x,                       // Solution vector
-    &singularity               // Singular matrix info
-);
 
+// Declare and initialize the matrix descriptor
+cusparseMatDescr_t descrA;
+cusparseCreateMatDescr(&descrA);
+cusparseSetMatType(descrA, CUSPARSE_MATRIX_TYPE_GENERAL);
+cusparseSetMatIndexBase(descrA, CUSPARSE_INDEX_BASE_ZERO);
+
+// Declare cusolver status variable (once)
+cusolverStatus_t status;
+
+// Call the cuSolver function
+status = cusolverSpDcsrlsvchol(
+    cusolverH,          // cuSolver handle
+    rows,               // Number of rows
+    nnz,                // Number of non-zero elements
+    descrA,             // Matrix descriptor
+    d_values,           // Matrix values (double*)
+    d_rowPtr,           // Row pointers (int*)
+    d_colInd,           // Column indices (int*)
+    d_b,                // Right-hand side vector (double*)
+    precision,          // Tolerance
+    0,                  // Reorder flag
+    d_x,                // Solution vector (double*)
+    &singularity        // Singular matrix info
+);
     // Check solver status
     if (status != CUSOLVER_STATUS_SUCCESS || singularity >= 0) {
         cusolverSpDestroy(cusolverH);
