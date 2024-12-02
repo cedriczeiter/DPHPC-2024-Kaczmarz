@@ -16,7 +16,7 @@
 using hrclock = std::chrono::high_resolution_clock;
 
 #define PRECISION 1e-10
-#define NRUNS 1 // usefull if we want to time the stuff multiple times
+#define NRUNS 1  // usefull if we want to time the stuff multiple times
 
 /**
  * The purpose of this file is to be easily able to manually benchmark a single
@@ -40,8 +40,10 @@ int main() {
 
   // Define Variables
   const unsigned dim = sparse_lse.row_count();
-  //const unsigned max_iterations = std::numeric_limits<unsigned int>::max() - 1;
-  const unsigned max_iterations = 100'000; // set such that it doesnt take tooo long
+  // const unsigned max_iterations = std::numeric_limits<unsigned int>::max() -
+  // 1;
+  const unsigned max_iterations =
+      100'000;  // set such that it doesnt take tooo long
 
   std::cout << "Dimension: \n" << dim << std::endl;
 
@@ -56,21 +58,20 @@ int main() {
   double end_relaxation = 5.0;
   double step_relaxation = 0.05;
 
-  while (start_relaxation < end_relaxation)
-  {
+  while (start_relaxation < end_relaxation) {
     std::cout << "----------------------------------- \n" << std::endl;
-    std::cout << "Relaxation: " << start_relaxation << " out of " << end_relaxation << std::endl;
+    std::cout << "Relaxation: " << start_relaxation << " out of "
+              << end_relaxation << std::endl;
 
-    //let each relaxation parameter run for NRUNS times
-    for(int i = 0; i < NRUNS; i++)
-    {
+    // let each relaxation parameter run for NRUNS times
+    for (int i = 0; i < NRUNS; i++) {
       Vector x_kaczmarz = Vector::Zero(dim);
 
       // Timing the Kaczmarz solver
       const auto kaczmarz_start = hrclock::now();
       int nr_of_steps = 0;
-      const auto status =
-          carp_gpu(sparse_lse, x_kaczmarz, max_iterations,PRECISION, start_relaxation, nr_of_steps);
+      const auto status = carp_gpu(sparse_lse, x_kaczmarz, max_iterations,
+                                   PRECISION, start_relaxation, nr_of_steps);
       const auto kaczmarz_end = hrclock::now();
 
       const auto kaczmarz_time =
@@ -86,9 +87,11 @@ int main() {
       } else {
         int nr_runs = NRUNS;
         std::cout << "Time: " << kaczmarz_time
-                  << " milliseconds --- Relaxation: " << start_relaxation << " --- Nr. of steps: " << nr_of_steps << "   >>>> Internal run: " << i << "/" << nr_runs << std::endl;
+                  << " milliseconds --- Relaxation: " << start_relaxation
+                  << " --- Nr. of steps: " << nr_of_steps
+                  << "   >>>> Internal run: " << i << "/" << nr_runs
+                  << std::endl;
       }
-
 
       // write to csv
       outFile << start_relaxation << "," << kaczmarz_time << "\n";
@@ -98,6 +101,5 @@ int main() {
     start_relaxation += step_relaxation;
   }
 
-    std::cout << "----------------------------------- \n \n" << std::endl;
-  
+  std::cout << "----------------------------------- \n \n" << std::endl;
 }
