@@ -9,7 +9,7 @@ make
 cd ../..
 
 #create meshes for problems 1 and 2
-for j in $(seq 1 2);
+for j in $(seq 1 3);
 do
     DIM=2
     PROBLEM=$j

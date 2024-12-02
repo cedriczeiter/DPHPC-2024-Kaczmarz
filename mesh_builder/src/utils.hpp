@@ -22,27 +22,50 @@ SparseLinearSystem generate_system(nlohmann::json config_data) {
   auto f1 = [](Eigen::Vector2d x) {
     return 2 * (x[0] - x[0] * x[0]) + 2 * (x[1] - x[1] * x[1]) + 1000;
   };
+  auto alpha1 = [](Eigen::Vector2d) {return 1.; };
   auto gamma1 = [](Eigen::Vector2d) { return 1; };
+
   // problem 2: -lapl(u) + (x*x + y*y)u = F
   auto f2 = [](Eigen::Vector2d x_vec) {
     const double x = x_vec[0];
-    const double y = x_vec[0];
+    const double y = x_vec[1];
     return 2 * (x - x * x) + 2 * (y - y * y) +
            (x * x + y * y) * (x - x * x) * (y - y * y);
   };
+  auto alpha2 = [](Eigen::Vector2d) {return 1.; };
   auto gamma2 = [](Eigen::Vector2d x_vec) {
     const double x = x_vec[0];
     const double y = x_vec[0];
     return (x * x + y * y);
   };
 
+  //problem 3: -div(x*y*grad(u)) + x*y*u = F
+  auto f3 = [](Eigen::Vector2d x_vec){
+    const double x = x_vec[0];
+    const double y = x_vec[1];
+    return -((1-4*x)(y*y - y*y*y) + (1-4*y)(x*x - x*x*x)) + (x*x - x*x*x)(y*y - y*y*y);
+  }
+  auto alpha3 = [](Eigen::Vector2d x){
+    return x[0]*x[1];
+  }
+  auto gamma3 = [](Eigen::Vector2d x){
+    return x[0]*x[1];
+  }
+
   std::vector<std::function<double(Eigen::Vector2d)>> rhs_functions;
   rhs_functions.push_back(f1);
   rhs_functions.push_back(f2);
+  rhs_functions.push_back(f3);
+
+  std::vector<std::function<double(Eigen::Vector2d)>> alpha_functions;
+  rhs_functions.push_back(alpha1);
+  rhs_functions.push_back(alpha2);
+  rhs_functions.push_back(alpha3);
 
   std::vector<std::function<double(Eigen::Vector2d)>> gamma_functions;
   gamma_functions.push_back(gamma1);
   gamma_functions.push_back(gamma2);
+  gamma_functions.push_back(gamma3);
 
   unsigned selector_mesh = config_data["selector"];
   double scale = config_data["scale"];
@@ -64,7 +87,7 @@ SparseLinearSystem generate_system(nlohmann::json config_data) {
       std::make_shared<lf::uscalfe::FeSpaceLagrangeO1<double>>(mesh_p);
 
   // define diffusion coefficient
-  const lf::mesh::utils::MeshFunctionConstant mf_alpha(1);
+  lf::mesh::utils::MeshFunctionGlobal mf_alpha{alpha_functions.at(problem - 1)};
 
   // define rhs load
   unsigned problem = config_data["problem"];
