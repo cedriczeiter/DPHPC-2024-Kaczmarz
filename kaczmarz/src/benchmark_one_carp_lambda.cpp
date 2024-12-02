@@ -34,13 +34,14 @@ int main() {
 
   // Read in the system from file
   std::ifstream lse_input_stream(
-      "../../generated_bvp_matrices/problem1_complexity5.txt");
+      "../../generated_bvp_matrices/problem1_complexity6.txt");
   const SparseLinearSystem sparse_lse =
       SparseLinearSystem::read_from_stream(lse_input_stream);
 
   // Define Variables
   const unsigned dim = sparse_lse.row_count();
-  const unsigned max_iterations = std::numeric_limits<unsigned int>::max() - 1;
+  //const unsigned max_iterations = std::numeric_limits<unsigned int>::max() - 1;
+  const unsigned max_iterations = 100'000; // set such that it doesnt take tooo long
 
   std::cout << "Dimension: \n" << dim << std::endl;
 
@@ -48,12 +49,12 @@ int main() {
   std::ofstream outFile("carp-cg-lambda-relax-time.csv");
   outFile << "Relaxation,Carp_time\n";  // Write the header for the CSV file
 
-  std::ofstream outFile2("carp-cg-lambda-relax-steps.csv");
+  std::ofstream outFile2("carp-cg-lambda-relax-steps-p1-7.csv");
   outFile2 << "Relaxation,Carp_steps\n";  // Write the header for the CSV file
 
   double start_relaxation = 0.1;
-  double end_relaxation = 10.0;
-  double step_relaxation = 0.1;
+  double end_relaxation = 5.0;
+  double step_relaxation = 0.05;
 
   while (start_relaxation < end_relaxation)
   {
