@@ -58,10 +58,10 @@ cusparseSetMatType(descrA, CUSPARSE_MATRIX_TYPE_GENERAL);
 cusparseSetMatIndexBase(descrA, CUSPARSE_INDEX_BASE_ZERO);
 
 // Declare cusolver status variable (once)
-cusolverStatus_t status;
+cusolverStatus_t status_solver;
 
 // Call the cuSolver function
-status = cusolverSpDcsrlsvchol(
+status_solver = cusolverSpDcsrlsvchol(
     cusolverH,          // cuSolver handle
     rows,               // Number of rows
     nnz,                // Number of non-zero elements
@@ -76,7 +76,7 @@ status = cusolverSpDcsrlsvchol(
     &singularity        // Singular matrix info
 );
     // Check solver status
-    if (status != CUSOLVER_STATUS_SUCCESS || singularity >= 0) {
+    if (status_solver != CUSOLVER_STATUS_SUCCESS || singularity >= 0) {
         cusolverSpDestroy(cusolverH);
         cudaFree(d_rowPtr);
         cudaFree(d_colInd);
