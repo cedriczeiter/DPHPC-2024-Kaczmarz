@@ -35,7 +35,7 @@ SparseLinearSystem generate_system(nlohmann::json config_data) {
   auto alpha2 = [](Eigen::Vector2d) {return 1.; };
   auto gamma2 = [](Eigen::Vector2d x_vec) {
     const double x = x_vec[0];
-    const double y = x_vec[0];
+    const double y = x_vec[1];
     return (x * x + y * y);
   };
 
@@ -43,14 +43,14 @@ SparseLinearSystem generate_system(nlohmann::json config_data) {
   auto f3 = [](Eigen::Vector2d x_vec){
     const double x = x_vec[0];
     const double y = x_vec[1];
-    return -((1-4*x)(y*y - y*y*y) + (1-4*y)(x*x - x*x*x)) + (x*x - x*x*x)(y*y - y*y*y);
-  }
+    return -((1-4*x)*(y*y - y*y*y) + (1-4*y)*(x*x - x*x*x)) + (x*x - x*x*x)*(y*y - y*y*y);
+  };
   auto alpha3 = [](Eigen::Vector2d x){
     return x[0]*x[1];
-  }
+  };
   auto gamma3 = [](Eigen::Vector2d x){
     return x[0]*x[1];
-  }
+  };
 
   std::vector<std::function<double(Eigen::Vector2d)>> rhs_functions;
   rhs_functions.push_back(f1);
@@ -58,9 +58,9 @@ SparseLinearSystem generate_system(nlohmann::json config_data) {
   rhs_functions.push_back(f3);
 
   std::vector<std::function<double(Eigen::Vector2d)>> alpha_functions;
-  rhs_functions.push_back(alpha1);
-  rhs_functions.push_back(alpha2);
-  rhs_functions.push_back(alpha3);
+  alpha_functions.push_back(alpha1);
+  alpha_functions.push_back(alpha2);
+  alpha_functions.push_back(alpha3);
 
   std::vector<std::function<double(Eigen::Vector2d)>> gamma_functions;
   gamma_functions.push_back(gamma1);
@@ -86,11 +86,14 @@ SparseLinearSystem generate_system(nlohmann::json config_data) {
   const auto fe_space =
       std::make_shared<lf::uscalfe::FeSpaceLagrangeO1<double>>(mesh_p);
 
+
+  unsigned problem = config_data["problem"];
+
+
   // define diffusion coefficient
   lf::mesh::utils::MeshFunctionGlobal mf_alpha{alpha_functions.at(problem - 1)};
 
   // define rhs load
-  unsigned problem = config_data["problem"];
   lf::mesh::utils::MeshFunctionGlobal mf_load{rhs_functions.at(problem - 1)};
 
   // define reaction coefficient
