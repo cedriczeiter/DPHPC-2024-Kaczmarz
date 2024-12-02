@@ -50,8 +50,21 @@ KaczmarzSolverStatus native_cuda_solver(const SparseLinearSystem& lse, Vector& x
 
     // Solve the system using Cholesky factorization
     int singularity = 0;
-      cusolverSpDcsrlsvchol(cusolverH, rows, nnz, nullptr, d_rowPtr, d_colInd, d_values, d_b,
-                      precision, max_iterations, d_x, &singularity);
+    
+cusolverStatus_t status = cusolverSpDcsrlsvchol(
+    cusolverH,                 // cuSolver handle
+    rows,                      // Number of rows
+    nnz,                       // Number of non-zero elements
+    descrA,                    // Matrix descriptor (ensure you create this)
+    d_values,                  // Matrix values
+    d_rowPtr,                  // Row pointers
+    d_colInd,                  // Column indices
+    d_b,                       // Right-hand side vector
+    precision,                 // Tolerance
+    0,                         // Reorder flag (0 for no reordering)
+    d_x,                       // Solution vector
+    &singularity               // Singular matrix info
+);
 
     // Check solver status
     if (status != CUSOLVER_STATUS_SUCCESS || singularity >= 0) {
