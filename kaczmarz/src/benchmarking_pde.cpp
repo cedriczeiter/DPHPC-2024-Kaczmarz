@@ -483,7 +483,7 @@ std::cout << "CARP IS DONE NOW"<<std::endl;
 
 for (int problem_i = 1; problem_i <= MAX_PROBLEMS; ++problem_i){
   // Loop over problem sizes, benchmark, and write to file
-for (int complexity = 1; complexity <= 6; ++complexity) {
+for (int complexity = 1; complexity <= 3; ++complexity) {
     std::cout << "NORMAL SEQUENTIAL SOLVER PROBLEM "<<problem_i<<" COMPLEXITY "<<complexity<<" is being worked on now!"<<std::endl;
     std::string file_path = "../../generated_bvp_matrices/problem" + std::to_string(problem_i) +"_complexity" +
                           std::to_string(complexity) + ".txt";
@@ -513,7 +513,7 @@ for (int complexity = 1; complexity <= 6; ++complexity) {
   outFileES << "File,Problem,Complexity,AvgTime,StdDev\n";  // Write the header for the CSV file
 for (int problem_i = 1; problem_i <= MAX_PROBLEMS; ++problem_i){
   // Loop over problem sizes, benchmark, and write to file
-for (int complexity = 1; complexity <= 6; ++complexity) {
+for (int complexity = 1; complexity <= 3; ++complexity) {
     std::cout << "EIGEN SOLVER PROBLEM "<<problem_i<<" COMPLEXITY "<<complexity<<" is being worked on now!"<<std::endl;
     std::string file_path = "../../generated_bvp_matrices/problem" + std::to_string(problem_i) +"_complexity" +
                           std::to_string(complexity) + ".txt";
