@@ -477,62 +477,62 @@ std::cout << "CARP IS DONE NOW"<<std::endl;
   /// Normal Solver Sparse///
   //////////////////////////////////////////
 
-//   // Open the file for output
-//   std::ofstream outFileNS3("results_sparsesolver_sparse_pde.csv");
-//   outFileNS3 << "File,Problem,Complexity,AvgTime,StdDev\n";  // Write the header for the CSV file
+  // Open the file for output
+  std::ofstream outFileNS3("results_sparsesolver_sparse_pde.csv");
+  outFileNS3 << "File,Problem,Complexity,AvgTime,StdDev\n";  // Write the header for the CSV file
 
-// for (int problem_i = 1; problem_i <= MAX_PROBLEMS; ++problem_i){
-//   // Loop over problem sizes, benchmark, and write to file
-// for (int complexity = 1; complexity <= 6; ++complexity) {
-//     std::cout << "NORMAL SEQUENTIAL SOLVER PROBLEM "<<problem_i<<" COMPLEXITY "<<complexity<<" is being worked on now!"<<std::endl;
-//     std::string file_path = "../../generated_bvp_matrices/problem" + std::to_string(problem_i) +"_complexity" +
-//                           std::to_string(complexity) + ".txt";
-//     double stdDev;
-//      try {
-//     double avgTime =
-//         benchmark_sparsesolver_sparse(file_path, 
-//         numIterations, stdDev);
+for (int problem_i = 1; problem_i <= MAX_PROBLEMS; ++problem_i){
+  // Loop over problem sizes, benchmark, and write to file
+for (int complexity = 1; complexity <= 6; ++complexity) {
+    std::cout << "NORMAL SEQUENTIAL SOLVER PROBLEM "<<problem_i<<" COMPLEXITY "<<complexity<<" is being worked on now!"<<std::endl;
+    std::string file_path = "../../generated_bvp_matrices/problem" + std::to_string(problem_i) +"_complexity" +
+                          std::to_string(complexity) + ".txt";
+    double stdDev;
+     try {
+    double avgTime =
+        benchmark_sparsesolver_sparse(file_path, 
+        numIterations, stdDev);
 
-//     // Write results to the file
-//     outFileNS3 << file_path << "," << problem_i << "," << complexity << "," << avgTime << "," << stdDev << "\n";
-//     } catch (const std::exception& e) {
-//     std::cerr << "Error processing file " << file_path << ": " << e.what()
-//               << std::endl;
-//   }
-// }
-// }
-//   outFileNS3.close();  // Close the file after writing
-//   std::cout << "NORMAL SEQUENTIAL SOLVER IS DONE NOW"<<std::endl;
+    // Write results to the file
+    outFileNS3 << file_path << "," << problem_i << "," << complexity << "," << avgTime << "," << stdDev << "\n";
+    } catch (const std::exception& e) {
+    std::cerr << "Error processing file " << file_path << ": " << e.what()
+              << std::endl;
+  }
+}
+}
+  outFileNS3.close();  // Close the file after writing
+  std::cout << "NORMAL SEQUENTIAL SOLVER IS DONE NOW"<<std::endl;
 
   //////////////////////////////////////////
   /// Eigen Solver Sparse///
   //////////////////////////////////////////
 
   // Open the file for output
-//   std::ofstream outFileES("results_eigensolver_sparse_pde.csv");
-//   outFileES << "File,Problem,Complexity,AvgTime,StdDev\n";  // Write the header for the CSV file
-// for (int problem_i = 1; problem_i <= MAX_PROBLEMS; ++problem_i){
-//   // Loop over problem sizes, benchmark, and write to file
-// for (int complexity = 1; complexity <= 6; ++complexity) {
-//     std::cout << "EIGEN SOLVER PROBLEM "<<problem_i<<" COMPLEXITY "<<complexity<<" is being worked on now!"<<std::endl;
-//     std::string file_path = "../../generated_bvp_matrices/problem" + std::to_string(problem_i) +"_complexity" +
-//                           std::to_string(complexity) + ".txt";
-//     double stdDev;
-//      try {
-//     double avgTime =
-//         benchmark_EigenSolver_sparse(file_path, 
-//         numIterations, stdDev);
+  std::ofstream outFileES("results_eigensolver_sparse_pde.csv");
+  outFileES << "File,Problem,Complexity,AvgTime,StdDev\n";  // Write the header for the CSV file
+for (int problem_i = 1; problem_i <= MAX_PROBLEMS; ++problem_i){
+  // Loop over problem sizes, benchmark, and write to file
+for (int complexity = 1; complexity <= 6; ++complexity) {
+    std::cout << "EIGEN SOLVER PROBLEM "<<problem_i<<" COMPLEXITY "<<complexity<<" is being worked on now!"<<std::endl;
+    std::string file_path = "../../generated_bvp_matrices/problem" + std::to_string(problem_i) +"_complexity" +
+                          std::to_string(complexity) + ".txt";
+    double stdDev;
+     try {
+    double avgTime =
+        benchmark_EigenSolver_sparse(file_path, 
+        numIterations, stdDev);
 
-//     // Write results to the file
-//     outFileES << file_path << "," << problem_i << "," << complexity << "," << avgTime << "," << stdDev << "\n";
-//     } catch (const std::exception& e) {
-//     std::cerr << "Error processing file " << file_path << ": " << e.what()
-//               << std::endl;
-//   }
-// }
-// }
-//   outFileES.close();  // Close the file after writing
-//   std::cout << "EIGEN NON ITERATIVE IS DONE NOW"<<std::endl;
+    // Write results to the file
+    outFileES << file_path << "," << problem_i << "," << complexity << "," << avgTime << "," << stdDev << "\n";
+    } catch (const std::exception& e) {
+    std::cerr << "Error processing file " << file_path << ": " << e.what()
+              << std::endl;
+  }
+}
+}
+  outFileES.close();  // Close the file after writing
+  std::cout << "EIGEN NON ITERATIVE IS DONE NOW"<<std::endl;
 
   //////////////////////////////////////////
   /// Eigen Iterative Solver Sparse///
