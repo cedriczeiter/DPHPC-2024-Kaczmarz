@@ -26,6 +26,9 @@
  * @param max_nnz_in_row Maximum number of non-zero elements in any row of the
  * matrix.
  * @param b_norm Norm of the right-hand side vector.
+ * @param nr_of_steps Number of steps to take in the relaxation parameter pass
+ * by reference.
+ * @param relaxation The relaxation parameter to use in the Kaczmarz method.
  * @return Status of the solver after execution.
  */
 
@@ -33,6 +36,7 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
     const int *h_A_outer, const int *h_A_inner, const double *h_A_values,
     const double *h_b, double *h_x, double *h_sq_norms, const unsigned dim,
     const unsigned nnz, const unsigned max_iterations, const double precision,
-    const unsigned max_nnz_in_row, const double b_norm);
+    const unsigned max_nnz_in_row, const double b_norm, int &nr_of_steps,
+    const double relaxation);
 
 #endif  // CARP_CUDA_HPP
