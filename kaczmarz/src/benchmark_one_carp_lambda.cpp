@@ -34,7 +34,7 @@ int main() {
 
   // Read in the system from file
   std::ifstream lse_input_stream(
-      "../../generated_bvp_matrices/problem1_complexity4_degree2.txt");
+      "../../generated_bvp_matrices/problem1_complexity3_degree3.txt");
   const SparseLinearSystem sparse_lse =
       SparseLinearSystem::read_from_stream(lse_input_stream);
 
