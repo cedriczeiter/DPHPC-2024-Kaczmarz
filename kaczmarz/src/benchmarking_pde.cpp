@@ -14,6 +14,7 @@
 #include "solvers/carp.hpp"
 //#include "solvers/cuda_native.hpp"
 #include <Eigen/IterativeLinearSolvers>
+#include <Eigen/SparseLU>
 
 #define MAX_IT 1000000
 //#define BANDWIDTH 4
@@ -273,11 +274,14 @@ double benchmark_EigenSolver_sparse(const std::string& file_path, const int numI
   }
   const SparseLinearSystem lse =
       SparseLinearSystem::read_from_stream(lse_input_stream);
+  const auto A = lse.A();
+  const auto b = lse.b();
   for (int i = 0; i < numIterations; ++i) {
-
     const auto start = std::chrono::high_resolution_clock::now();
-
-    Vector x_kaczmarz_sparse = lse.eigen_solve();
+  Eigen::SparseLU<Eigen::SparseMatrix<double>> solver;
+  solver.compute(A);
+  Vector x_kaczmarz_sparse = solver.solve(b);
+    //Vector x_kaczmarz_sparse = lse.eigen_solve();
 
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
@@ -513,7 +517,7 @@ for (int complexity = 1; complexity <= 3; ++complexity) {
   outFileES << "File,Problem,Complexity,AvgTime,StdDev\n";  // Write the header for the CSV file
 for (int problem_i = 1; problem_i <= MAX_PROBLEMS; ++problem_i){
   // Loop over problem sizes, benchmark, and write to file
-for (int complexity = 1; complexity <= 3; ++complexity) {
+for (int complexity = 1; complexity <= 6; ++complexity) {
     std::cout << "EIGEN SOLVER PROBLEM "<<problem_i<<" COMPLEXITY "<<complexity<<" is being worked on now!"<<std::endl;
     std::string file_path = "../../generated_bvp_matrices/problem" + std::to_string(problem_i) +"_complexity" +
                           std::to_string(complexity) + ".txt";
