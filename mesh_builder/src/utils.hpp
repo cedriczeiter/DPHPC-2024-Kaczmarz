@@ -1,3 +1,4 @@
+#include <any>
 #include <lf/assemble/assemble.h>
 #include <lf/fe/fe.h>
 #include <lf/io/io.h>
@@ -10,6 +11,7 @@
 #include <Eigen/SparseCore>
 #include <fstream>
 #include <iostream>
+#include <memory>
 #include <nlohmann/json.hpp>
 
 #include "linear_systems/sparse.hpp"
@@ -80,14 +82,18 @@ SparseLinearSystem generate_system(nlohmann::json config_data) {
 
   // Create HierarchicalFESpace
   const unsigned degree = config_data["degree"]; //two degrees to choose from at the moment
+  std::shared_ptr<const lf::uscalfe::UniformScalarFESpace<double>> fe_space;
+
   if (degree == 1){
-    const auto fe_space =
+    fe_space =
       std::make_shared<lf::uscalfe::FeSpaceLagrangeO1<double>>(mesh_p);
   }
   else{
-    const auto fe_space =
+    fe_space =
       std::make_shared<lf::uscalfe::FeSpaceLagrangeO2<double>>(mesh_p);
   }
+
+
 
   unsigned problem = config_data["problem"];
 
