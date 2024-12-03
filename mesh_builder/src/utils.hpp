@@ -79,10 +79,15 @@ SparseLinearSystem generate_system(nlohmann::json config_data) {
   mesh_p = multi_mesh.getMesh(L - 1);
 
   // Create HierarchicalFESpace
-  // const unsigned degree = config_data["degree"];  //degree not used anymore!
-  // alsways linear now
-  const auto fe_space =
+  const unsigned degree = config_data["degree"]; //two degrees to choose from at the moment
+  if (degree == 1){
+    const auto fe_space =
       std::make_shared<lf::uscalfe::FeSpaceLagrangeO1<double>>(mesh_p);
+  }
+  else{
+    const auto fe_space =
+      std::make_shared<lf::uscalfe::FeSpaceLagrangeO2<double>>(mesh_p);
+  }
 
   unsigned problem = config_data["problem"];
 
