@@ -88,9 +88,13 @@ SparseLinearSystem generate_system(nlohmann::json config_data) {
     fe_space =
       std::make_shared<lf::uscalfe::FeSpaceLagrangeO1<double>>(mesh_p);
   }
-  else{
+  else if (degree == 2){
     fe_space =
       std::make_shared<lf::uscalfe::FeSpaceLagrangeO2<double>>(mesh_p);
+  }
+  else{
+    fe_space =
+      std::make_shared<lf::uscalfe::FeSpaceLagrangeO3<double>>(mesh_p);
   }
 
 
