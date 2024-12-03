@@ -14,35 +14,38 @@ using namespace Eigen;
 using namespace std;
 
 std::string get_output_filename(const std::string &input_filename) {
-    size_t last_dot = input_filename.find_last_of(".");
-    if (last_dot == std::string::npos) {
-        return input_filename + "_banded";
-    } else {
-        return input_filename.substr(0, last_dot) + "_banded" + input_filename.substr(last_dot);
-    }
+  size_t last_dot = input_filename.find_last_of(".");
+  if (last_dot == std::string::npos) {
+    return input_filename + "_banded";
+  } else {
+    return input_filename.substr(0, last_dot) + "_banded" +
+           input_filename.substr(last_dot);
+  }
 }
 
-void export_matrix(const Eigen::SparseMatrix<double> &matrix, const Eigen::VectorXd &rhs, const std::string &filename) {
-    std::ofstream out_stream(filename);
-    if (!out_stream.is_open()) {
-        std::cerr << "Error opening file for writing: " << filename << std::endl;
-        return;
+void export_matrix(const Eigen::SparseMatrix<double> &matrix,
+                   const Eigen::VectorXd &rhs, const std::string &filename) {
+  std::ofstream out_stream(filename);
+  if (!out_stream.is_open()) {
+    std::cerr << "Error opening file for writing: " << filename << std::endl;
+    return;
+  }
+
+  out_stream << matrix.nonZeros() << std::endl;
+  out_stream << matrix.rows() << " " << matrix.cols() << std::endl;
+
+  for (int k = 0; k < matrix.outerSize(); ++k) {
+    for (Eigen::SparseMatrix<double>::InnerIterator it(matrix, k); it; ++it) {
+      out_stream << it.row() << " " << it.col() << " " << it.value()
+                 << std::endl;
     }
+  }
 
-    out_stream << matrix.nonZeros() << std::endl;
-    out_stream << matrix.rows() << " " << matrix.cols() << std::endl;
+  for (int i = 0; i < rhs.size(); ++i) {
+    out_stream << rhs[i] << std::endl;
+  }
 
-    for (int k = 0; k < matrix.outerSize(); ++k) {
-        for (Eigen::SparseMatrix<double>::InnerIterator it(matrix, k); it; ++it) {
-            out_stream << it.row() << " " << it.col() << " " << it.value() << std::endl;
-        }
-    }
-
-    for (int i = 0; i < rhs.size(); ++i) {
-        out_stream << rhs[i] << std::endl;
-    }
-
-    out_stream.close();
+  out_stream.close();
 }
 
 void write_sparsity_pattern(const Eigen::SparseMatrix<double> &matrix,
@@ -199,7 +202,7 @@ SparseLinearSystem reorder_system_rcm(const SparseLinearSystem &system) {
 }
 
 int main() {
-  std::string input_filename = "../problem1_complexity3.txt";
+  std::string input_filename = "../problem3_complexity6.txt";
   std::ifstream in_stream(input_filename);
   if (!in_stream.is_open()) {
     std::cerr << "Error: Could not open input file." << std::endl;
@@ -208,7 +211,7 @@ int main() {
 
   unsigned nnz, rows, cols;
   in_stream >> nnz >> rows >> cols;
-  //std::cout << nnz << std::endl;
+  // std::cout << nnz << std::endl;
   if (in_stream.fail() || nnz == 0 || rows == 0 || cols == 0) {
     std::cerr << "Error: Invalid file format or empty input." << std::endl;
     return 1;
@@ -268,7 +271,7 @@ int main() {
             << (1 - (double)compute_bandwidth(reordered_system.A) / rows) * 100
             << std::endl;
   */
- std::string output_filename = get_output_filename(input_filename);
- export_matrix(reordered_system.A, reordered_system.b, output_filename);
- return 0;
+  std::string output_filename = get_output_filename(input_filename);
+  export_matrix(reordered_system.A, reordered_system.b, output_filename);
+  return 0;
 }
