@@ -11,7 +11,7 @@ cd ../..
 #create meshes for problems 1, 2, 3
 for j in $(seq 1 3);
 do
-    for k in $(seq 1 2); #for degrees 1 & 2
+    for k in $(seq 1 3); #for degrees 1 & 2
     do
         DIM=2
         PROBLEM=$j
