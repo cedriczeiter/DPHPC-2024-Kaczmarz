@@ -202,7 +202,7 @@ SparseLinearSystem reorder_system_rcm(const SparseLinearSystem &system) {
 }
 
 int main() {
-  std::string input_filename = "../problem3_complexity6.txt";
+  std::string input_filename = "../problem1_complexity6_degree3.txt";
   std::ifstream in_stream(input_filename);
   if (!in_stream.is_open()) {
     std::cerr << "Error: Could not open input file." << std::endl;
