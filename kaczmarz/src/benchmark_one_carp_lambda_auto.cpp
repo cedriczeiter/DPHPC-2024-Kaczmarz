@@ -34,7 +34,7 @@ int main() {
   double step_relaxation = 0.25;
 
   const unsigned max_iterations =
-      100'000;  // set such that it doesnt take tooo long
+      250'000;  // set such that it doesnt take tooo long
 
   for (const auto &entry : std::filesystem::directory_iterator(file_path)) {
     // file ends by txt and begins with problem
@@ -82,6 +82,7 @@ int main() {
           std::cout << "Zero norm row detected" << std::endl;
         } else if (status == KaczmarzSolverStatus::OutOfIterations) {
           std::cout << "Max iterations reached" << std::endl;
+          break;
         } else {
           std::cout << " --- Relaxation: " << start_relaxation
                     << " --- Nr. of steps: " << nr_of_steps << std::endl;
