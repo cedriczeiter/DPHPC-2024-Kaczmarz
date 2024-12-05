@@ -75,10 +75,14 @@ double benchmark_carpcuda_solver_sparse(const std::string& file_path,
     std::vector<double> times_residuals;
     std::vector<double> residuals;
     std::vector<int> iterations;
+     int nr_of_steps =
+        0;  // just a placeholder, used in benchmark_one_carp_lambda.cpp
+    int relaxation =
+        1;  // just a placeholder, used in benchmark_one_carp_lambda.cpp
     const auto start = std::chrono::high_resolution_clock::now();
 
     const auto status =
-        carp_gpu(lse, x_kaczmarz_sparse, MAX_IT, PRECISION);
+        carp_gpu(lse, x_kaczmarz_sparse, MAX_IT, PRECISION, relaxation, nr_of_steps);
 
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
