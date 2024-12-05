@@ -118,7 +118,7 @@ KaczmarzSolverStatus sparse_kaczmarz(
                           residual_norm_0);  // Takes residual fraction
 
       iterations.push_back(iter);
-      std::cout << residual_norm_now / residual_norm_0 << std::endl;
+      //std::cout << residual_norm_now / residual_norm_0 << std::endl;
 
       // if residual small enough, return
       if (residual_norm_now < precision) {

@@ -22,7 +22,7 @@
 #define PRECISION 1e-7
 #define NUM_THREADS 8
 //#define MIN_DIM 8
-#define NUM_IT 4
+#define NUM_IT 10
 //#define RANDOM_SEED 43
 #define MAX_PROBLEMS 3
 #define NR_OF_STEPS_CARP 0
@@ -612,10 +612,10 @@ int main() {
 
   //make_file_cuda_banded(1,MAX_PROBLEMS,1,6,1,3,NUM_IT);
   //make_file_cpu_banded(1,MAX_PROBLEMS,1,6,1,3,NUM_IT);
-  make_file_cuda_carp(1,MAX_PROBLEMS,1,6,1,1,NUM_IT);
-  make_file_normal_solver(1,MAX_PROBLEMS,1,3,1,1,NUM_IT);
-  make_file_eigen_solver(1,MAX_PROBLEMS,1,6,1,1,NUM_IT);
-  make_file_eigen_iterative(1,MAX_PROBLEMS,1,6,1,1,NUM_IT);
+  make_file_cuda_carp(1,MAX_PROBLEMS,1,6,1,3,NUM_IT);
+  make_file_normal_solver(1,MAX_PROBLEMS,1,3,1,3,NUM_IT);
+  make_file_eigen_solver(1,MAX_PROBLEMS,1,6,1,3,NUM_IT);
+  make_file_eigen_iterative(1,MAX_PROBLEMS,1,6,1,3,NUM_IT);
   //make_file_cuda_direct(1,MAX_PROBLEMS,1,6,1,3,NUM_IT);
 
   return 0;
