@@ -24,7 +24,7 @@
 //#define MIN_DIM 8
 #define NUM_IT 4
 //#define RANDOM_SEED 43
-#define MAX_PROBLEMS 2
+#define MAX_PROBLEMS 3
 #define NR_OF_STEPS_CARP 0
 #define RELAXATION 1
 
