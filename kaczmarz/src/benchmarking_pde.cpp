@@ -391,6 +391,9 @@ double benchmark_cudadirect_sparse(const std::string& file_path, const int numIt
   return avgTime;
 }
 
+
+
+
 void make_file_cuda_banded(const unsigned int min_problem, const unsigned int max_problem,const unsigned int min_complexity,const unsigned int max_complexity, const unsigned int min_degree, const unsigned int max_degree, const unsigned int iterations){
    // Open the file for output
   std::ofstream outFile("results_banded_cuda_sparse_pde.csv");
@@ -400,7 +403,7 @@ for (unsigned int problem_i = min_problem; problem_i <= max_problem; ++problem_i
   // Loop over problem sizes, benchmark, and write to file
 for (unsigned int complexity = min_complexity; complexity <= max_complexity; ++complexity) {
   for(unsigned int degree = min_degree; degree <=max_degree; ++degree){
-    std::cout << "BANDED GPU PROBLEM "<<problem_i<<" COMPLEXITY "<<complexity<<" is being worked on now!"<<std::endl;
+    std::cout << "BANDED GPU PROBLEM "<<problem_i<<" COMPLEXITY "<<complexity<<" DEGREE "<<degree<<" is being worked on now!"<<std::endl;
    std::string file_path = "../../generated_bvp_matrices/problem" + std::to_string(problem_i) +"_complexity" +
                          std::to_string(complexity) + "_degree" + std::to_string(degree) + ".txt";
     double stdDev;
@@ -430,7 +433,7 @@ for (unsigned int problem_i = min_problem; problem_i <= max_problem; ++problem_i
   // Loop over problem sizes, benchmark, and write to file
 for (unsigned int complexity = min_complexity; complexity <= max_complexity; ++complexity) {
   for(unsigned int degree = min_degree; degree <= max_degree; ++degree){
-    std::cout << "BANDED CPU PROBLEM "<<problem_i<<" COMPLEXITY "<<complexity<<" is being worked on now!"<<std::endl;
+    std::cout << "BANDED CPU PROBLEM "<<problem_i<<" COMPLEXITY "<<complexity<<" DEGREE "<<degree<<" is being worked on now!"<<std::endl;
    std::string file_path = "../../generated_bvp_matrices/problem" + std::to_string(problem_i) +"_complexity" +
                          std::to_string(complexity) + "_degree" + std::to_string(degree) + ".txt";
     double stdDev;
@@ -491,7 +494,7 @@ for (unsigned int problem_i = min_problem; problem_i <= max_problem; ++problem_i
   // Loop over problem sizes, benchmark, and write to file
 for (unsigned int complexity = min_complexity; complexity <= max_complexity; ++complexity) {
     for(unsigned int degree = min_degree; degree <= max_degree; ++degree){
-    std::cout << "NORMAL SEQUENTIAL SOLVER PROBLEM "<<problem_i<<" COMPLEXITY "<<complexity<<" is being worked on now!"<<std::endl;
+    std::cout << "NORMAL SEQUENTIAL SOLVER PROBLEM "<<problem_i<<" COMPLEXITY "<<complexity<<" DEGREE "<<degree<<" is being worked on now!"<<std::endl;
     std::string file_path = "../../generated_bvp_matrices/problem" + std::to_string(problem_i) +"_complexity" +
                           std::to_string(complexity) + "_degree" + std::to_string(degree) + ".txt";
     double stdDev;
@@ -521,7 +524,7 @@ for (unsigned int problem_i = min_problem; problem_i <= max_problem; ++problem_i
   // Loop over problem sizes, benchmark, and write to file
 for (unsigned int complexity = min_complexity; complexity <= max_complexity; ++complexity) {
     for(unsigned int degree = min_degree; degree <= max_degree; ++degree){
-    std::cout << "EIGEN SOLVER PROBLEM "<<problem_i<<" COMPLEXITY "<<complexity<<" is being worked on now!"<<std::endl;
+    std::cout << "EIGEN SOLVER PROBLEM "<<problem_i<<" COMPLEXITY "<<complexity<<" DEGREE "<<degree<<" is being worked on now!"<<std::endl;
     std::string file_path = "../../generated_bvp_matrices/problem" + std::to_string(problem_i) +"_complexity" +
                           std::to_string(complexity) + "_degree" + std::to_string(degree) + ".txt";
     double stdDev;
@@ -552,7 +555,7 @@ for (unsigned int problem_i = min_problem; problem_i <= max_problem; ++problem_i
   // Loop over problem sizes, benchmark, and write to file
 for (unsigned int complexity = min_complexity; complexity <= max_complexity; ++complexity) {
     for(unsigned int degree = min_degree; degree <= max_degree; ++degree){
-    std::cout << "EIGEN ITERATIVE PROBLEM "<<problem_i<<" COMPLEXITY "<<complexity<<" is being worked on now!"<<std::endl;
+    std::cout << "EIGEN ITERATIVE PROBLEM "<<problem_i<<" COMPLEXITY "<<complexity<<" DEGREE "<<degree<<" is being worked on now!"<<std::endl;
     std::string file_path = "../../generated_bvp_matrices/problem" + std::to_string(problem_i) +"_complexity" +
                           std::to_string(complexity) + "_degree" + std::to_string(degree) + ".txt";
     double stdDev;
@@ -583,7 +586,7 @@ for (unsigned int problem_i = min_problem; problem_i <= max_problem; ++problem_i
   // Loop over problem sizes, benchmark, and write to file
 for (unsigned int complexity = min_complexity; complexity <= max_complexity; ++complexity) {
   for(unsigned int degree = min_degree; degree <= max_degree; ++degree){
-    std::cout << "CUDA DIRECT PROBLEM "<<problem_i<<" COMPLEXITY "<<complexity<<" is being worked on now!"<<std::endl;
+    std::cout << "CUDA DIRECT PROBLEM "<<problem_i<<" COMPLEXITY "<<complexity<<" DEGREE "<<degree<<" is being worked on now!"<<std::endl;
    std::string file_path = "../../generated_bvp_matrices/problem" + std::to_string(problem_i) +"_complexity" +
                          std::to_string(complexity) + "_degree" + std::to_string(degree) + ".txt";
     double stdDev;
