@@ -22,6 +22,9 @@ using hrclock = std::chrono::high_resolution_clock;
  * run of one of our implementations for the carp solver.
  */
 
+/// Beware: For serious timed testing, we need to put up the L_RESIDUAL in
+/// carp_utils.hpp up to maybe like 1000
+
 int main() {
   std::cout << "  ____    _    ____  ____  " << std::endl;
   std::cout << " / ___|  / \\  |  _ \\|  _ \\ " << std::endl;
@@ -33,7 +36,7 @@ int main() {
 
   // Read in the system from file
   std::ifstream lse_input_stream(
-      "../../generated_bvp_matrices/problem2_complexity5.txt");
+      "../../generated_bvp_matrices/problem2_complexity5_degree1.txt");
   const SparseLinearSystem sparse_lse =
       SparseLinearSystem::read_from_stream(lse_input_stream);
 
@@ -78,8 +81,12 @@ int main() {
     Vector x_kaczmarz = Vector::Zero(dim);
 
     const auto kaczmarz_start = hrclock::now();
-    const auto status =
-        carp_gpu(sparse_lse, x_kaczmarz, max_iterations, precision);
+    int nr_of_steps =
+        0;  // just a placeholder, used in benchmark_one_carp_lambda.cpp
+    int relaxation =
+        1;  // just a placeholder, used in benchmark_one_carp_lambda.cpp
+    const auto status = carp_gpu(sparse_lse, x_kaczmarz, max_iterations,
+                                 precision, relaxation, nr_of_steps);
     const auto kaczmarz_end = hrclock::now();
 
     const auto kaczmarz_time =

@@ -14,7 +14,8 @@
 
 KaczmarzSolverStatus carp_gpu(const SparseLinearSystem& lse, Vector& x,
                               const unsigned max_iterations,
-                              const double precision) {
+                              const double precision, const double relaxation,
+                              int& nr_of_steps) {
   // get the sparse matrix in CSR format
   const int* A_outer =
       lse.A().outerIndexPtr();  // outer index of the sparse matrix in CSR
@@ -59,9 +60,11 @@ KaczmarzSolverStatus carp_gpu(const SparseLinearSystem& lse, Vector& x,
       max_nnz_in_row = nnz_in_row;
     }
   }
+  std::cout << "Max nnz in a row: " << max_nnz_in_row << std::endl;
 
   // call carp solver for beginning
   return invoke_carp_solver_gpu(A_outer, A_inner, A_values, b, x.data(),
                                 h_sq_norms.data(), dim, nnz, max_iterations,
-                                precision, max_nnz_in_row, b_norm);
+                                precision, max_nnz_in_row, b_norm, nr_of_steps,
+                                relaxation);
 }
