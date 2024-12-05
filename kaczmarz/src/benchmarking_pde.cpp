@@ -609,10 +609,10 @@ int main() {
 
   //make_file_cuda_banded(1,MAX_PROBLEMS,1,6,1,3,NUM_IT);
   //make_file_cpu_banded(1,MAX_PROBLEMS,1,6,1,3,NUM_IT);
-  make_file_cuda_carp(1,MAX_PROBLEMS,1,6,1,3,NUM_IT);
-  make_file_normal_solver(1,MAX_PROBLEMS,1,3,1,3,NUM_IT);
-  make_file_eigen_solver(1,MAX_PROBLEMS,1,6,1,3,NUM_IT);
-  make_file_eigen_iterative(1,MAX_PROBLEMS,1,6,1,3,NUM_IT);
+  make_file_cuda_carp(1,MAX_PROBLEMS,1,6,1,1,NUM_IT);
+  make_file_normal_solver(1,MAX_PROBLEMS,1,3,1,1,NUM_IT);
+  make_file_eigen_solver(1,MAX_PROBLEMS,1,6,1,1,NUM_IT);
+  make_file_eigen_iterative(1,MAX_PROBLEMS,1,6,1,1,NUM_IT);
   //make_file_cuda_direct(1,MAX_PROBLEMS,1,6,1,3,NUM_IT);
 
   return 0;
