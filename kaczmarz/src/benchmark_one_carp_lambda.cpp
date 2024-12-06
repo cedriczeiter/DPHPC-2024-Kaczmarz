@@ -34,7 +34,7 @@ int main() {
 
   // Read in the system from file
   std::ifstream lse_input_stream(
-      "../../generated_bvp_matrices/problem1_complexity6.txt");
+      "../../generated_bvp_matrices/problem1_complexity3_degree3.txt");
   const SparseLinearSystem sparse_lse =
       SparseLinearSystem::read_from_stream(lse_input_stream);
 
@@ -55,8 +55,8 @@ int main() {
   outFile2 << "Relaxation,Carp_steps\n";  // Write the header for the CSV file
 
   double start_relaxation = 0.1;
-  double end_relaxation = 5.0;
-  double step_relaxation = 0.05;
+  double end_relaxation = 30.0;
+  double step_relaxation = 0.20;
 
   while (start_relaxation < end_relaxation) {
     std::cout << "----------------------------------- \n" << std::endl;

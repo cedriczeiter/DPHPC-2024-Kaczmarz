@@ -64,7 +64,7 @@ int main() {
 
   // read in from file
   std::ifstream lse_input_stream(
-      "../../generated_bvp_matrices/elementmatrix_unitsquare.txt");
+      "../../generated_bvp_matrices/problem1_complexity6_degree2.txt");
   const SparseLinearSystem sparse_lse =
       SparseLinearSystem::read_from_stream(lse_input_stream);
   // solve
