@@ -71,7 +71,7 @@ status_solver = cusolverSpDcsrlsvqr(
     d_rowPtr,           // Row pointers (int*)
     d_colInd,           // Column indices (int*)
     d_b,                // Right-hand side vector (double*)
-    precision,          // Tolerance
+    1e-7,          // Tolerance
     0,                  // Reorder flag
     d_x,                // Solution vector (double*)
     &singularity        // Singular matrix info
@@ -84,6 +84,7 @@ status_solver = cusolverSpDcsrlsvqr(
         cudaFree(d_values);
         cudaFree(d_b);
         cudaFree(d_x);
+        std::cout << "CUDA native solver failed with error code: " << status_solver <<std::endl;
         return KaczmarzSolverStatus::OutOfIterations;
     }
 
