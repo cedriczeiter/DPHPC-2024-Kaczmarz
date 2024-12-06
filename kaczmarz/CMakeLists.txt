@@ -12,7 +12,7 @@ set(CMAKE_CXX_STANDARD 20)
 # Enable all warnings and extra warnings
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -fopenmp -pthread -g")
 
-set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -G")
+set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -G -lcusparse")
 
 #################################
 ## Download dependencies
@@ -64,6 +64,7 @@ set(CUDA_SOURCES
   ${SOURCE_DIR}/solvers/carp.cu
   ${SOURCE_DIR}/solvers/carp.cpp
   ${SOURCE_DIR}/solvers/carp_utils.cu
+  ${SOURCE_DIR}/solvers/cusolver.cpp
 )
 
 ################################
@@ -104,11 +105,13 @@ if (CMAKE_CUDA_COMPILER)
   endif()
   # Allow many relevant CUDA architectures
   set(CUDA_ARCHITECTURES 60 61 70 75 80 86)
+
+  include_directories(${CUDA_INCLUDE_DIRS})
   
   # Create CUDA library
   add_library(cuda_library STATIC ${CUDA_SOURCES})
   set_target_properties(cuda_library PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
-  target_link_libraries(cuda_library PRIVATE Eigen3::Eigen)
+  target_link_libraries(cuda_library PRIVATE Eigen3::Eigen ${CUDA_LIBRARIES} cusparse cusolver)
 
   # CUDA-enabled executables
   add_executable(benchmark_convergence ${SOURCE_DIR}/benchmarking_convergence.cpp)
