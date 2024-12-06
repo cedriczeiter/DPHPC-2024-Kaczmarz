@@ -22,7 +22,7 @@
 #define PRECISION 1e-7
 #define NUM_THREADS 8
 //#define MIN_DIM 8
-#define NUM_IT 10
+#define NUM_IT 4
 //#define RANDOM_SEED 43
 #define MAX_PROBLEMS 3
 #define NR_OF_STEPS_CARP 0
