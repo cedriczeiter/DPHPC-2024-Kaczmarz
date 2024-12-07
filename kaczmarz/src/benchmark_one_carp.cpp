@@ -37,7 +37,7 @@ int main() {
 
   // Read in the system from file
   std::ifstream lse_input_stream(
-      "../../generated_bvp_matrices/problem1_complexity7_degree1.txt");
+      "../../generated_bvp_matrices/problem1_complexity6_degree1.txt");
   const SparseLinearSystem sparse_lse =
       SparseLinearSystem::read_from_stream(lse_input_stream);
 
@@ -118,7 +118,7 @@ int main() {
     x_iter = lscg.solve(b);
     const auto iter_end = hrclock::now();*/
     const auto iter_start = hrclock::now();
-    cusolver(sparse_lse, x_iter, max_iterations, precision);
+    //cusolver(sparse_lse, x_iter, max_iterations, precision);
     const auto iter_end = hrclock::now();
     const auto iter_time =
         std::chrono::duration_cast<std::chrono::milliseconds>(iter_end -

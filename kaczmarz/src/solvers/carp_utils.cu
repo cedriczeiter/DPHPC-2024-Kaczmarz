@@ -119,16 +119,16 @@ void add_gpu(const double *d_a, const double *d_b, double *d_output,
   // Calculate the number of blocks needed
   const int blocks = (dim + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
   add<<<blocks, THREADS_PER_BLOCK>>>(d_a, d_b, d_output, factor, dim);
-  auto res = cudaDeviceSynchronize();
-  assert(res == 0);
+  /*auto res = cudaDeviceSynchronize();
+  assert(res == 0);*/
 }
 
 void copy_gpu(const double *d_from, double *d_to, const unsigned dim) {
   // Calculate the number of blocks needed
   const int blocks = (dim + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
   copy<<<blocks, THREADS_PER_BLOCK>>>(d_from, d_to, dim);
-  auto res = cudaDeviceSynchronize();
-  assert(res == 0);
+  /*auto res = cudaDeviceSynchronize();
+  assert(res == 0);*/
 }
 
 double dot_product_gpu(const double *d_a, const double *d_b, double *d_to,
@@ -136,8 +136,8 @@ double dot_product_gpu(const double *d_a, const double *d_b, double *d_to,
   // Calculate the number of blocks needed
   const int blocks = (dim + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
   square_vector<<<blocks, THREADS_PER_BLOCK>>>(d_a, d_b, d_to, dim);
-  auto res = cudaDeviceSynchronize();
-  assert(res == 0);
+  /*auto res = cudaDeviceSynchronize();
+  assert(res == 0);*/
 
   double h_intermediate[dim];
   cudaMemcpy(h_intermediate, d_to, dim * sizeof(double),
@@ -166,8 +166,8 @@ void dcswp(const int *d_A_outer, const int *d_A_inner, const double *d_A_values,
                                       relaxation, d_intermediate, d_affected,
                                       true, max_nnz_in_row);
 
-  auto res = cudaDeviceSynchronize();
-  assert(res == 0);
+  /*auto res = cudaDeviceSynchronize();
+  assert(res == 0);*/
 
   // copy intermediate vector over to output vector
   copy_gpu(d_intermediate, d_output, dim);
@@ -176,8 +176,8 @@ void dcswp(const int *d_A_outer, const int *d_A_inner, const double *d_A_values,
       d_A_outer, d_A_inner, d_A_values, d_b, dim, d_sq_norms, d_intermediate,
       ROWS_PER_THREAD, relaxation, d_output, d_affected, false, max_nnz_in_row);
 
-  res = cudaDeviceSynchronize();
-  assert(res == 0);
+  /*res = cudaDeviceSynchronize();
+  assert(res == 0);*/
 }
 
 // copies x from device to host, and calculates residual
