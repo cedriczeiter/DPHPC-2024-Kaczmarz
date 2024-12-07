@@ -21,7 +21,7 @@ __global__ void kswp(const int *A_outer, const int *A_inner,
                      const unsigned dim, const double *sq_norms_local,
                      const double *x, const unsigned rows_per_thread,
                      const double relaxation, double *output,
-                     const int *affected, bool forward,
+                    bool forward,
                      const unsigned max_nnz_in_row) {
   const unsigned tid = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -55,7 +55,7 @@ __global__ void kswp(const int *A_outer, const int *A_inner,
             // update_coeff);
             //  save update for output
             for (unsigned i = a_outer_row; i < a_outer_row_next; i++) {
-              assert(affected[A_inner[i]] != 0);
+              //assert(affected[A_inner[i]] != 0);
               atomicAdd(&output[A_inner[i]], update_coeff * A_values_shared[i]);
             }
           }
@@ -154,7 +154,7 @@ double dot_product_gpu(const double *d_a, const double *d_b, double *d_to,
 // solver)
 void dcswp(const int *d_A_outer, const int *d_A_inner, const double *d_A_values,
            const double *d_b, const unsigned dim, const double *d_sq_norms,
-           const double *d_x, const double relaxation, const int *d_affected,
+           const double *d_x, const double relaxation,
            const unsigned total_threads, double *d_output,
            double *d_intermediate, const unsigned blocks,
            const unsigned max_nnz_in_row) {
@@ -163,7 +163,7 @@ void dcswp(const int *d_A_outer, const int *d_A_inner, const double *d_A_values,
   // perform step forward
   kswp<<<blocks, THREADS_PER_BLOCK>>>(d_A_outer, d_A_inner, d_A_values, d_b,
                                       dim, d_sq_norms, d_x, ROWS_PER_THREAD,
-                                      relaxation, d_intermediate, d_affected,
+                                      relaxation, d_intermediate,
                                       true, max_nnz_in_row);
 
   /*auto res = cudaDeviceSynchronize();
@@ -174,7 +174,7 @@ void dcswp(const int *d_A_outer, const int *d_A_inner, const double *d_A_values,
   // perform step backward
   kswp<<<blocks, THREADS_PER_BLOCK>>>(
       d_A_outer, d_A_inner, d_A_values, d_b, dim, d_sq_norms, d_intermediate,
-      ROWS_PER_THREAD, relaxation, d_output, d_affected, false, max_nnz_in_row);
+      ROWS_PER_THREAD, relaxation, d_output, false, max_nnz_in_row);
 
   /*res = cudaDeviceSynchronize();
   assert(res == 0);*/
