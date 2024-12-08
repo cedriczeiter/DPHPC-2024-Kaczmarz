@@ -368,8 +368,13 @@ KaczmarzSolverStatus kaczmarz_banded_cuda(const BandedLinearSystem& lse,
 
   // reshuffling / padding memory on the CPU
 
-  const unsigned thread_count = (dim - 1) / (2 * bandwidth + 1) + 1;
-  const unsigned dim_padded = thread_count * (2 * bandwidth + 1);
+  const unsigned width = 2;
+  const unsigned period = 1 + ((2 * bandwidth - 1) / width + 1);
+
+  // const unsigned thread_count = (dim - 1) / (2 * bandwidth + 1) + 1;
+  const unsigned thread_count = (dim - 1) / (width * period) + 1;
+
+  const unsigned dim_padded = thread_count * width * period;
   std::vector<double> x_padded(bandwidth + dim_padded + bandwidth, 0.0);
   std::copy(x.begin(), x.end(), x_padded.begin() + bandwidth);
   std::vector<double> A_data_padded(dim_padded * (2 * bandwidth + 1), 0.0);

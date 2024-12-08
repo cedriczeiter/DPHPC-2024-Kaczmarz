@@ -6,18 +6,23 @@
 __global__ void kaczmarz_banded_update(double *x, double *A_data,
                                        double *sq_norms, double *b,
                                        const int bandwidth) {
-  for (unsigned iter = 0; iter < 1'000'000; iter++) {
-    for (int row_i = 0; row_i < 2 * bandwidth + 1; row_i++) {
-      const int row_idx = threadIdx.x * (2 * bandwidth + 1) + row_i;
-      double dot = 0.0;
-      for (int i = 0; i < 2 * bandwidth + 1; i++) {
-        dot += A_data[(2 * bandwidth + 1) * row_idx + i] *
-               x[row_idx - bandwidth + i];
-      }
-      const double update_coeff = (b[row_idx] - dot) / sq_norms[row_idx];
-      for (int i = 0; i < 2 * bandwidth + 1; i++) {
-        x[row_idx - bandwidth + i] +=
-            update_coeff * A_data[(2 * bandwidth + 1) * row_idx + i];
+  const int width = 2;
+  const int period = 1 + ((2 * bandwidth - 1) / width + 1);
+  for (unsigned iter = 0; iter < 100'000; iter++) {
+    for (int segment_i = 0; segment_i < period; segment_i++) {
+      for (int row_i = 0; row_i < width; row_i++) {
+        const int row_idx =
+            threadIdx.x * period * width + segment_i * width + row_i;
+        double dot = 0.0;
+        for (int i = 0; i < 2 * bandwidth + 1; i++) {
+          dot += A_data[(2 * bandwidth + 1) * row_idx + i] *
+                 x[row_idx - bandwidth + i];
+        }
+        const double update_coeff = (b[row_idx] - dot) / sq_norms[row_idx];
+        for (int i = 0; i < 2 * bandwidth + 1; i++) {
+          x[row_idx - bandwidth + i] +=
+              update_coeff * A_data[(2 * bandwidth + 1) * row_idx + i];
+        }
       }
       __syncthreads();
     }
