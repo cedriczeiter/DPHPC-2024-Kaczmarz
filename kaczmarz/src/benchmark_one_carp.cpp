@@ -16,7 +16,7 @@
 
 using hrclock = std::chrono::high_resolution_clock;
 
-#define NRUNS 10
+#define NRUNS 1
 
 /**
  * The purpose of this file is to be easily able to manually benchmark a single
@@ -74,7 +74,7 @@ int main() {
             << " milliseconds \n \n -------------- \n \n"
             << std::endl;
 
-  double precision = 1;  // precision gets multiplied by 0.1 in each iteration
+  double precision = 1e-9;  // precision gets multiplied by 0.1 in each iteration
   for (int i = 0; i < NRUNS; i++) {
     //////////////////////////////////////////
     // Calculating the solution with CARP
@@ -84,8 +84,8 @@ int main() {
     const auto kaczmarz_start = hrclock::now();
     int nr_of_steps =
         0;  // just a placeholder, used in benchmark_one_carp_lambda.cpp
-    int relaxation =
-        1;  // just a placeholder, used in benchmark_one_carp_lambda.cpp
+    const double relaxation =
+        0.35;  //this relaxation param was found empirically by benchmark_one_carp_lambda_auto; there is no guarantee of convergence! if solver doesnt converge, change relaxation to 1/max_nnz_per_col
     const auto status = carp_gpu(sparse_lse, x_kaczmarz, max_iterations,
                                  precision, relaxation, nr_of_steps);
     const auto kaczmarz_end = hrclock::now();
