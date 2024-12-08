@@ -20,8 +20,7 @@ __global__ void kswp(const int *A_outer, const int *A_inner,
                      const double *A_values_shared, const double *b_local,
                      const unsigned dim, const double *sq_norms_local,
                      const double *x, const unsigned rows_per_thread,
-                     const double relaxation, double *output,
-                    bool forward) {
+                     const double relaxation, double *output, bool forward) {
   const unsigned tid = blockIdx.x * blockDim.x + threadIdx.x;
   if (tid * rows_per_thread < dim)  // only if thread has assigned rows (dim)
   {
@@ -47,8 +46,8 @@ __global__ void kswp(const int *A_outer, const int *A_inner,
 
             // calculate update
             const double update_coeff =
-                relaxation * ((b_local[row] - dot_product) /
-                              (sq_norms_local[row]));
+                relaxation *
+                ((b_local[row] - dot_product) / (sq_norms_local[row]));
             // printf("sq_norm: %f, update: %f\n", sq_norms_local[row],
             // update_coeff);
             //  save update for output
@@ -71,8 +70,8 @@ __global__ void kswp(const int *A_outer, const int *A_inner,
             }
             // calculate update
             const double update_coeff =
-                relaxation * ((b_local[row] - dot_product) /
-                              (sq_norms_local[row]));
+                relaxation *
+                ((b_local[row] - dot_product) / (sq_norms_local[row]));
             // save update for output
             for (unsigned i = a_outer_row; i < a_outer_row_next; i++) {
               atomicAdd(&output[A_inner[i]],
@@ -155,14 +154,12 @@ void dcswp(const int *d_A_outer, const int *d_A_inner, const double *d_A_values,
            const unsigned total_threads, double *d_output,
            double *d_intermediate, const unsigned blocks,
            const unsigned max_nnz_in_row) {
-
   // copy x vector to output vector
   copy_gpu(d_x, d_intermediate, dim);
   // perform step forward
   kswp<<<blocks, THREADS_PER_BLOCK>>>(d_A_outer, d_A_inner, d_A_values, d_b,
                                       dim, d_sq_norms, d_x, ROWS_PER_THREAD,
-                                      relaxation, d_intermediate,
-                                      true);
+                                      relaxation, d_intermediate, true);
 
   auto res = cudaDeviceSynchronize();
   assert(res == 0);

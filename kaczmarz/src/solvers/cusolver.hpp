@@ -6,7 +6,8 @@
 #include "linear_systems/types.hpp"
 
 /**
- * @brief Solves a sparse linear system using the native CUDA cuSolverSP library.
+ * @brief Solves a sparse linear system using the native CUDA cuSolverSP
+ * library.
  *
  * @param lse The sparse linear system to be solved.
  * @param x The vector to store the solution.
@@ -15,7 +16,7 @@
  * @return The status of the solver after completion.
  */
 KaczmarzSolverStatus cusolver(const SparseLinearSystem& lse, Vector& x,
-                                        const unsigned max_iterations,
-                                        const double precision);
+                              const unsigned max_iterations,
+                              const double precision);
 
 #endif  // CUDA_NATIVE_SOLVER_HPP

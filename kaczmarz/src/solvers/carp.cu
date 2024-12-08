@@ -53,7 +53,6 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
   CUDA_SAFE_CALL(cudaMemcpy(d_A_values, h_A_values, nnz * sizeof(double),
                             cudaMemcpyHostToDevice));
 
-
   // move b to device
   double *d_b;
   CUDA_SAFE_CALL(cudaMalloc((void **)&d_b, dim * sizeof(double)));
@@ -84,7 +83,8 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
   // init stuff
   double residual = 1.;  // init value, will be overwritten as soon as we check
                          // for convergence
-  dcswp(d_A_outer, d_A_inner, d_A_values, d_b, dim, d_sq_norms, d_x, relaxation, total_threads, d_r, d_intermediate, blocks, max_nnz_in_row);
+  dcswp(d_A_outer, d_A_inner, d_A_values, d_b, dim, d_sq_norms, d_x, relaxation,
+        total_threads, d_r, d_intermediate, blocks, max_nnz_in_row);
   copy_gpu(d_r, d_p, dim);
 
   for (int iter = 0; iter < max_iterations; iter++) {
@@ -94,7 +94,7 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
           get_residual(h_x, h_b, d_x, h_A_outer, h_A_inner, h_A_values, dim);
       // debugging output
       std::cout << "Iteration: " << iter << " out of " << max_iterations
-              << " , Residual/B_norm: " << residual / b_norm << std::endl;
+                << " , Residual/B_norm: " << residual / b_norm << std::endl;
       // check for convergence
       if (residual / b_norm < precision) {
         converged = true;
@@ -103,11 +103,10 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
       }
     }
 
-
     // the actual calculation begin here
     dcswp(d_A_outer, d_A_inner, d_A_values, d_zero, dim, d_sq_norms, d_p,
-          relaxation, total_threads, d_intermediate,
-          d_intermediate_two, blocks, max_nnz_in_row);
+          relaxation, total_threads, d_intermediate, d_intermediate_two, blocks,
+          max_nnz_in_row);
     add_gpu(d_p, d_intermediate, d_q, -1., dim);
     const double sq_norm_r_old = dot_product_gpu(d_r, d_r, d_intermediate, dim);
     const double dot_r_p = dot_product_gpu(d_p, d_q, d_intermediate, dim);
