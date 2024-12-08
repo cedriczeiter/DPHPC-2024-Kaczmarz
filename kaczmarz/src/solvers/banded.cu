@@ -5,10 +5,12 @@
  */
 __global__ void kaczmarz_banded_update(double *x, double *A_data,
                                        double *sq_norms, double *b,
-                                       const int bandwidth) {
-  for (unsigned iter = 0; iter < 1'000'000; iter++) {
-    for (int row_i = 0; row_i < 2 * bandwidth + 1; row_i++) {
-      const int row_idx = threadIdx.x * (2 * bandwidth + 1) + row_i;
+                                       int bandwidth, unsigned width) {
+  bandwidth = 2;
+  width = 5;
+  for (unsigned iter = 0; iter < 10'000; iter++) {
+    for (unsigned row_i = 0; row_i < width; row_i++) {
+      const int row_idx = threadIdx.x * 2 * width + row_i;
       double dot = 0.0;
       for (int i = 0; i < 2 * bandwidth + 1; i++) {
         dot += A_data[(2 * bandwidth + 1) * row_idx + i] *
@@ -19,13 +21,36 @@ __global__ void kaczmarz_banded_update(double *x, double *A_data,
         x[row_idx - bandwidth + i] +=
             update_coeff * A_data[(2 * bandwidth + 1) * row_idx + i];
       }
-      __syncthreads();
+      for (int i = 0; i < 2 * bandwidth + 1; i++) {
+        dot += A_data[(2 * bandwidth + 1) * row_idx + i] *
+               x[row_idx - bandwidth + i];
+      }
     }
+    __syncthreads();
+    for (unsigned row_i = 0; row_i < width; row_i++) {
+      const int row_idx = threadIdx.x * 2 * width + width + row_i;
+      double dot = 0.0;
+      for (int i = 0; i < 2 * bandwidth + 1; i++) {
+        dot += A_data[(2 * bandwidth + 1) * row_idx + i] *
+               x[row_idx - bandwidth + i];
+      }
+      const double update_coeff = (b[row_idx] - dot) / sq_norms[row_idx];
+      for (int i = 0; i < 2 * bandwidth + 1; i++) {
+        x[row_idx - bandwidth + i] +=
+            update_coeff * A_data[(2 * bandwidth + 1) * row_idx + i];
+      }
+      for (int i = 0; i < 2 * bandwidth + 1; i++) {
+        dot += A_data[(2 * bandwidth + 1) * row_idx + i] *
+               x[row_idx - bandwidth + i];
+      }
+    }
+    __syncthreads();
   }
 }
 
 void invoke_kaczmarz_banded_update(const unsigned bandwidth,
                                    const unsigned thread_count,
+                                   const unsigned width,
                                    const std::vector<double> &A_data_padded,
                                    std::vector<double> &x_padded,
                                    const std::vector<double> &sq_norms_padded,
@@ -43,7 +68,7 @@ void invoke_kaczmarz_banded_update(const unsigned bandwidth,
   double *sq_norms_gpu = gpu_malloc_and_copy(sq_norms_padded);
   double *b_gpu = gpu_malloc_and_copy(b_padded);
   kaczmarz_banded_update<<<1, thread_count>>>(x_gpu + bandwidth, A_data_gpu,
-                                              sq_norms_gpu, b_gpu, bandwidth);
+                                              sq_norms_gpu, b_gpu, bandwidth, width);
   cudaMemcpy(&x_padded[0], x_gpu, x_padded.size() * sizeof(double),
              cudaMemcpyDeviceToHost);
   cudaFree(x_gpu);
