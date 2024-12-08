@@ -103,6 +103,7 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
       }
     }
 
+
     // the actual calculation begin here
     dcswp(d_A_outer, d_A_inner, d_A_values, d_zero, dim, d_sq_norms, d_p,
           relaxation, total_threads, d_intermediate,

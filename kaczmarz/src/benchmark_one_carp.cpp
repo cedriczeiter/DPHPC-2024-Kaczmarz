@@ -16,7 +16,7 @@
 
 using hrclock = std::chrono::high_resolution_clock;
 
-#define NRUNS 1
+#define NRUNS 10
 
 /**
  * The purpose of this file is to be easily able to manually benchmark a single
@@ -37,7 +37,7 @@ int main() {
 
   // Read in the system from file
   std::ifstream lse_input_stream(
-      "../../generated_bvp_matrices/problem1_complexity6_degree1.txt");
+      "../../generated_bvp_matrices/problem1_complexity7_degree1.txt");
   const SparseLinearSystem sparse_lse =
       SparseLinearSystem::read_from_stream(lse_input_stream);
 
@@ -74,7 +74,7 @@ int main() {
             << " milliseconds \n \n -------------- \n \n"
             << std::endl;
 
-  double precision = 1e-9;  // precision gets multiplied by 0.1 in each iteration
+  double precision = 1;  // precision gets multiplied by 0.1 in each iteration
   for (int i = 0; i < NRUNS; i++) {
     //////////////////////////////////////////
     // Calculating the solution with CARP
@@ -108,18 +108,17 @@ int main() {
     //////////////////////////////////////////
 
     Vector x_iter = Vector::Zero(dim);
-    /*const auto iter_start = hrclock::now();
+    const auto iter_start = hrclock::now();
     const auto A = sparse_lse.A();
     const auto b = sparse_lse.b();
     Eigen::LeastSquaresConjugateGradient<SparseMatrix> lscg(A);
-    // lscg.preconditioner() = Eigen::IdentityPreconditioner;
     lscg.setTolerance(precision);
     lscg.setMaxIterations(max_iterations);
     x_iter = lscg.solve(b);
-    const auto iter_end = hrclock::now();*/
-    const auto iter_start = hrclock::now();
-    //cusolver(sparse_lse, x_iter, max_iterations, precision);
     const auto iter_end = hrclock::now();
+    /*const auto iter_start = hrclock::now();
+    cusolver(sparse_lse, x_iter, max_iterations, precision);
+    const auto iter_end = hrclock::now();*/
     const auto iter_time =
         std::chrono::duration_cast<std::chrono::milliseconds>(iter_end -
                                                               iter_start)

@@ -24,7 +24,6 @@ __global__ void kswp(const int *A_outer, const int *A_inner,
                     bool forward,
                      const unsigned max_nnz_in_row) {
   const unsigned tid = blockIdx.x * blockDim.x + threadIdx.x;
-  assert(0==1);
   if (tid * rows_per_thread < dim)  // only if thread has assigned rows (dim)
   {
     // perform sweep
@@ -158,6 +157,7 @@ void dcswp(const int *d_A_outer, const int *d_A_inner, const double *d_A_values,
            const unsigned total_threads, double *d_output,
            double *d_intermediate, const unsigned blocks,
            const unsigned max_nnz_in_row) {
+  //assert(0==1);
   // copy x vector to output vector
   copy_gpu(d_x, d_intermediate, dim);
   // perform step forward
