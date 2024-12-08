@@ -3,9 +3,10 @@
 
 #include <vector>
 
-void invoke_kaczmarz_banded_update(const unsigned bandwidth,
-                                   const unsigned thread_count,
-                                   const unsigned width,
+void invoke_kaczmarz_banded_update(unsigned bandwidth,
+                                   unsigned threads_per_block,
+                                   unsigned block_count,
+                                   unsigned width,
                                    const std::vector<double>& A_data_padded,
                                    std::vector<double>& x_padded,
                                    const std::vector<double>& sq_norms_padded,

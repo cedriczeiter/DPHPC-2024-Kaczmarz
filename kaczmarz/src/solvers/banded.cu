@@ -1,16 +1,24 @@
 #include "banded_cuda.hpp"
 
+#include <cooperative_groups.h>
+#include <stdio.h>
+
+namespace cg = cooperative_groups;
+
 /**
  * Expects x and A_data padded so that edge cases need not be dealt with.
  */
 __global__ void kaczmarz_banded_update(double *x, double *A_data,
                                        double *sq_norms, double *b,
-                                       int bandwidth, unsigned width) {
+                                       int bandwidth, unsigned width,
+                                       unsigned threads_per_block) {
   bandwidth = 2;
-  width = 5;
-  for (unsigned iter = 0; iter < 10'000; iter++) {
+  //width = 5;
+  cg::grid_group grid = cg::this_grid();
+  const unsigned thread_id = blockIdx.x * threads_per_block + threadIdx.x;
+  for (unsigned iter = 0; iter < 10'000'000; iter++) {
     for (unsigned row_i = 0; row_i < width; row_i++) {
-      const int row_idx = threadIdx.x * 2 * width + row_i;
+      const int row_idx = thread_id * 2 * width + row_i;
       double dot = 0.0;
       for (int i = 0; i < 2 * bandwidth + 1; i++) {
         dot += A_data[(2 * bandwidth + 1) * row_idx + i] *
@@ -26,9 +34,10 @@ __global__ void kaczmarz_banded_update(double *x, double *A_data,
                x[row_idx - bandwidth + i];
       }
     }
-    __syncthreads();
+    grid.sync();
+    //__syncthreads();
     for (unsigned row_i = 0; row_i < width; row_i++) {
-      const int row_idx = threadIdx.x * 2 * width + width + row_i;
+      const int row_idx = thread_id * 2 * width + width + row_i;
       double dot = 0.0;
       for (int i = 0; i < 2 * bandwidth + 1; i++) {
         dot += A_data[(2 * bandwidth + 1) * row_idx + i] *
@@ -44,12 +53,14 @@ __global__ void kaczmarz_banded_update(double *x, double *A_data,
                x[row_idx - bandwidth + i];
       }
     }
-    __syncthreads();
+    grid.sync();
+    //__syncthreads();
   }
 }
 
 void invoke_kaczmarz_banded_update(const unsigned bandwidth,
-                                   const unsigned thread_count,
+                                   const unsigned threads_per_block,
+                                   const unsigned block_count,
                                    const unsigned width,
                                    const std::vector<double> &A_data_padded,
                                    std::vector<double> &x_padded,
@@ -67,8 +78,37 @@ void invoke_kaczmarz_banded_update(const unsigned bandwidth,
   double *A_data_gpu = gpu_malloc_and_copy(A_data_padded);
   double *sq_norms_gpu = gpu_malloc_and_copy(sq_norms_padded);
   double *b_gpu = gpu_malloc_and_copy(b_padded);
-  kaczmarz_banded_update<<<1, thread_count>>>(x_gpu + bandwidth, A_data_gpu,
-                                              sq_norms_gpu, b_gpu, bandwidth, width);
+
+  //const dim3 grid_dim(block_count);
+  //const dim3 block_dim(threads_per_block);
+
+  double *x_gpu_arg = x_gpu + bandwidth;
+
+  // Kernel arguments
+  void *kernel_args[] = {
+      &x_gpu_arg,
+      &A_data_gpu,
+      &sq_norms_gpu,
+      &b_gpu,
+      (void*)&bandwidth,
+      (void*)&width,
+      (void*)&threads_per_block,
+  };
+
+  // Launch the cooperative kernel
+  cudaError_t err = cudaLaunchCooperativeKernel(
+      (void *)kaczmarz_banded_update, block_count, threads_per_block, kernel_args);
+
+  if (err != cudaSuccess) {
+    printf("Error launching kernel: %s\n", cudaGetErrorString(err));
+  }
+  cudaDeviceSynchronize();
+
+
+  /*
+  kaczmarz_banded_update<<<block_count, threads_per_block>>>(x_gpu + bandwidth, A_data_gpu,
+                                              sq_norms_gpu, b_gpu, bandwidth, width, threads_per_block);
+                                              */
   cudaMemcpy(&x_padded[0], x_gpu, x_padded.size() * sizeof(double),
              cudaMemcpyDeviceToHost);
   cudaFree(x_gpu);

@@ -370,8 +370,11 @@ KaczmarzSolverStatus kaczmarz_banded_cuda(const BandedLinearSystem& lse,
   // reshuffling / padding memory on the CPU
   
   const unsigned max_useful_thread_count = (dim - 1) / (2 * (2 * bandwidth + 1)) + 1;
-  const unsigned desired_thread_count = 600;
-  const unsigned thread_count = std::min(max_useful_thread_count, desired_thread_count);
+  const unsigned threads_per_block = 125;
+  const unsigned block_count = 16;
+  //const unsigned desired_threads_per_count = 600;
+  const unsigned thread_count = threads_per_block * block_count;//std::min(max_useful_thread_count, desired_thread_count);
+  assert(thread_count <= max_useful_thread_count);
   const unsigned width = (dim - 1) / (2 * thread_count) + 1;
   std::cout << "thread count: " << thread_count << std::endl;
   std::cout << "width: " << width << std::endl;
@@ -423,7 +426,7 @@ KaczmarzSolverStatus kaczmarz_banded_cuda(const BandedLinearSystem& lse,
   std::vector<double> b_padded(dim_padded, 0.0);
   std::copy(lse.b().begin(), lse.b().end(), b_padded.begin());
 
-  invoke_kaczmarz_banded_update(bandwidth, thread_count, width, A_data_padded,
+  invoke_kaczmarz_banded_update(bandwidth, threads_per_block, block_count, width, A_data_padded,
                                 x_padded, sq_norms_padded, b_padded);
 
   std::copy_n(x_padded.begin() + bandwidth, dim, x.begin());
