@@ -117,6 +117,7 @@ if (CMAKE_CUDA_COMPILER)
   add_executable(benchmark_one ${SOURCE_DIR}/benchmark_one.cpp)
   add_executable(benchmark_one_carp ${SOURCE_DIR}/benchmark_one_carp.cpp)
   add_executable(benchmark_one_carp_lambda ${SOURCE_DIR}/benchmark_one_carp_lambda.cpp)
+  add_executable(benchmarking_pde ${SOURCE_DIR}/benchmarking_pde.cpp)
 
   # Link the non-CUDA and CUDA libraries to the executables
   target_link_libraries(benchmark_convergence PRIVATE non_cuda_library cuda_library linear_systems)
@@ -125,6 +126,7 @@ if (CMAKE_CUDA_COMPILER)
   target_link_libraries(benchmark_one PRIVATE non_cuda_library cuda_library linear_systems)
   target_link_libraries(benchmark_one_carp PRIVATE non_cuda_library cuda_library linear_systems)
   target_link_libraries(benchmark_one_carp_lambda PRIVATE non_cuda_library cuda_library linear_systems)
+  target_link_libraries(benchmarking_pde PRIVATE non_cuda_library cuda_library linear_systems)
 
 else()
   message(STATUS "No CUDA compiler found, skipping CUDA targets")
@@ -139,5 +141,4 @@ CONFIGURE_FILE(${SOURCE_DIR}/plot.py ${PATH_TO_BUILD} plot.py COPYONLY)
 CONFIGURE_FILE(${SOURCE_DIR}/plot_convergence.py ${PATH_TO_BUILD} plot_convergence.py COPYONLY)
 CONFIGURE_FILE(${SOURCE_DIR}/plot_dense.py ${PATH_TO_BUILD} plot_dense.py COPYONLY)
 CONFIGURE_FILE(${SOURCE_DIR}/plot_sparse.py ${PATH_TO_BUILD} plot_sparse.py COPYONLY)
-
-
+CONFIGURE_FILE(${SOURCE_DIR}/plot_sparse_pde.py ${PATH_TO_BUILD} plot_sparse_pde.py COPYONLY)
