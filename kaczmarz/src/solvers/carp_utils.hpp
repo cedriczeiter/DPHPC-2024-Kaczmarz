@@ -4,7 +4,6 @@
 #include <cuda_runtime.h>
 #include <stdio.h>
 
-
 #define L_RESIDUAL 2000
 #define ROWS_PER_THREAD 1
 #define LOCAL_RUNS_PER_THREAD 1
