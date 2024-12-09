@@ -12,18 +12,13 @@
 #include "solvers/basic.hpp"
 #include "solvers/random.hpp"
 #include "solvers/carp.hpp"
-//#include "solvers/cuda_native.hpp"
 #include <Eigen/IterativeLinearSolvers>
 #include <Eigen/SparseLU>
 
 #define MAX_IT 1000000
-//#define BANDWIDTH 4
-//#define MAX_DIM 512
 #define PRECISION 1e-7
 #define NUM_THREADS 8
-//#define MIN_DIM 8
 #define NUM_IT 4
-//#define RANDOM_SEED 43
 #define MAX_PROBLEMS 3
 #define NR_OF_STEPS_CARP 0
 #define RELAXATION 1
@@ -158,54 +153,7 @@ double benchmark_banded_cuda_solver_sparse(const std::string& file_path,
     throw std::runtime_error("Failed to open matrix file: " + file_path);
   }
 
-  // unsigned nnz, rows, cols;
-  // lse_input_stream >> nnz >> rows >> cols;
-
-  // if (lse_input_stream.fail() || nnz == 0 || rows == 0 || cols == 0) {
-  //   std::cerr << "Error: Invalid file format or empty input." << std::endl;
-  //   return 1;
-  // }
-
-  // std::vector<Eigen::Triplet<double>> triplets_A;
-  // triplets_A.reserve(nnz);
-
-  // // Read triplets for the sparse matrix
-  // for (unsigned i = 0; i < nnz; i++) {
-  //   unsigned row, col;
-  //   double value;
-  //   lse_input_stream >> row >> col >> value;
-  //   if (row >= rows || col >= cols) {
-  //     std::cerr << "Error: Row or column index out of bounds in input."
-  //               << std::endl;
-  //     return 1;
-  //   }
-  //   triplets_A.emplace_back(row, col, value);
-  // }
-
-  // Eigen::SparseMatrix<double> matrix(rows, cols);
-  // matrix.setFromTriplets(triplets_A.begin(), triplets_A.end());
-
-  // // Read RHS vector
-  // Eigen::VectorXd rhs(rows);
-  // for (unsigned i = 0; i < rows; i++) {
-  //   if (!(lse_input_stream >> rhs[i])) {
-  //     std::cerr << "Error: Insufficient elements in RHS vector." << std::endl;
-  //     return 1;
-  //   }
-  // }
-
-  // lse_input_stream.close();
-
-  // // Create SparseLinearSystem
-  // SparseLinearSystem system{matrix, rhs};
-
-  // // Reorder using Reverse Cuthill-McKee
-  // double starting_time =
-  //     std::chrono::duration_cast<std::chrono::milliseconds>(
-  //         std::chrono::system_clock::now().time_since_epoch())
-  //         .count();
-  // SparseLinearSystem reordered_system = reorder_system_rcm(system);
-
+ 
   const SparseLinearSystem lse =
       SparseLinearSystem::read_from_stream(lse_input_stream);
 
@@ -378,6 +326,7 @@ double benchmark_cudadirect_sparse(const std::string& file_path, const int numIt
         Eigen::VectorXd::Zero(lse.column_count());
      auto start = std::chrono::high_resolution_clock::now();
 
+        //TO DO: ADD NATIVE CUDA SOLVER
         //KaczmarzSolverStatus status = native_cuda_solver(lse, x_kaczmarz_sparse, MAX_IT, PRECISION);
 
         // End timer
