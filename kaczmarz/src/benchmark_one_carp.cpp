@@ -12,6 +12,7 @@
 #include "solvers/asynchronous.hpp"
 #include "solvers/banded.hpp"
 #include "solvers/carp.hpp"
+#include "solvers/cusolver.hpp"
 
 using hrclock = std::chrono::high_resolution_clock;
 
@@ -36,7 +37,7 @@ int main() {
 
   // Read in the system from file
   std::ifstream lse_input_stream(
-      "../../generated_bvp_matrices/problem2_complexity5_degree1.txt");
+      "../../generated_bvp_matrices/problem1_complexity5_degree1.txt");
   const SparseLinearSystem sparse_lse =
       SparseLinearSystem::read_from_stream(lse_input_stream);
 
@@ -83,8 +84,11 @@ int main() {
     const auto kaczmarz_start = hrclock::now();
     int nr_of_steps =
         0;  // just a placeholder, used in benchmark_one_carp_lambda.cpp
-    int relaxation =
-        1;  // just a placeholder, used in benchmark_one_carp_lambda.cpp
+    const double relaxation =
+        0.35;  // this relaxation param was found empirically by
+               // benchmark_one_carp_lambda_auto; there is no guarantee of
+               // convergence! if solver doesnt converge, change relaxation to
+               // 1/max_nnz_per_col
     const auto status = carp_gpu(sparse_lse, x_kaczmarz, max_iterations,
                                  precision, relaxation, nr_of_steps);
     const auto kaczmarz_end = hrclock::now();
@@ -111,11 +115,13 @@ int main() {
     const auto A = sparse_lse.A();
     const auto b = sparse_lse.b();
     Eigen::LeastSquaresConjugateGradient<SparseMatrix> lscg(A);
-    // lscg.preconditioner() = Eigen::IdentityPreconditioner;
     lscg.setTolerance(precision);
     lscg.setMaxIterations(max_iterations);
     x_iter = lscg.solve(b);
     const auto iter_end = hrclock::now();
+    /*const auto iter_start = hrclock::now();
+    cusolver(sparse_lse, x_iter, max_iterations, precision);
+    const auto iter_end = hrclock::now();*/
     const auto iter_time =
         std::chrono::duration_cast<std::chrono::milliseconds>(iter_end -
                                                               iter_start)

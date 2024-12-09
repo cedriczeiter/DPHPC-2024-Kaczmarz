@@ -4,7 +4,7 @@
 #include <cuda_runtime.h>
 #include <stdio.h>
 
-#define L_RESIDUAL 1000
+#define L_RESIDUAL 2000
 #define ROWS_PER_THREAD 1
 #define LOCAL_RUNS_PER_THREAD 1
 #define THREADS_PER_BLOCK 256
@@ -14,7 +14,7 @@ void add_gpu(const double* d_a, const double* d_b, double* d_output,
 
 void dcswp(const int* d_A_outer, const int* d_A_inner, const double* d_A_values,
            const double* d_b, const unsigned dim, const double* d_sq_norms,
-           const double* d_x, const double relaxation, const int* d_affected,
+           const double* d_x, const double relaxation,
            const unsigned total_threads, double* d_output,
            double* d_intermediate, const unsigned blocks,
            const unsigned max_nnz_in_row);
