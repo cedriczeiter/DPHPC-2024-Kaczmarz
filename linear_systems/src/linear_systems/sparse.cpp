@@ -1,7 +1,7 @@
 #include "sparse.hpp"
 
-#include <Eigen/Sparse>
 #include <Eigen/IterativeLinearSolvers>
+#include <Eigen/Sparse>
 #include <Eigen/SparseQR>
 #include <iostream>
 #include <random>
@@ -14,14 +14,14 @@ Vector SparseLinearSystem::eigen_solve() const {
 }
 
 Vector SparseLinearSystem::eigen_BiCGSTAB() const {
-  Eigen::BiCGSTAB<SparseMatrix,  Eigen::IncompleteLUT<double>> solver;
+  Eigen::BiCGSTAB<SparseMatrix, Eigen::IncompleteLUT<double>> solver;
   solver.compute(this->_A);
   return solver.solve(this->_b);
 }
 
 Vector SparseLinearSystem::eigen_CG() const {
-    Eigen::ConjugateGradient<SparseMatrix, Eigen::Lower | Eigen::Upper> solver;
-    solver.compute(this->_A);
+  Eigen::ConjugateGradient<SparseMatrix, Eigen::Lower | Eigen::Upper> solver;
+  solver.compute(this->_A);
   return solver.solve(this->_b);
 }
 

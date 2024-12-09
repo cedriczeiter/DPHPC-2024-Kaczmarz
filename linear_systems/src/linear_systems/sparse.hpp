@@ -65,13 +65,15 @@ class SparseLinearSystem {
   Vector eigen_solve() const;
 
   /**
-   * @brief Solves the sparse linear system using Eigen's iterative method BiCGSTAB 
+   * @brief Solves the sparse linear system using Eigen's iterative method
+   * BiCGSTAB
    * @return Solution vector of the linear system of type Eigen::VectorXd.
    */
   Vector eigen_BiCGSTAB() const;
 
-    /**
-   * @brief Solves the sparse linear system using Eigen's iterative method Conjugate Gradient 
+  /**
+   * @brief Solves the sparse linear system using Eigen's iterative method
+   * Conjugate Gradient
    * @return Solution vector of the linear system of type Eigen::VectorXd.
    */
   Vector eigen_CG() const;

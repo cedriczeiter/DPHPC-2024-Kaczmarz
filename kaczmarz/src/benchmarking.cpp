@@ -12,7 +12,6 @@
 #include "solvers/basic.hpp"
 #include "solvers/random.hpp"
 
-
 #define MAX_IT 1000000
 #define BANDWIDTH 4
 #define MAX_DIM 512
@@ -101,8 +100,7 @@ double benchmark_asynchronouscuda_solver_sparse(const int dim,
     std::vector<int> iterations;
     const auto start = std::chrono::high_resolution_clock::now();
 
-    asynchronous_gpu(lse, x_kaczmarz_sparse, MAX_IT, PRECISION,
-                     NUM_THREADS);
+    asynchronous_gpu(lse, x_kaczmarz_sparse, MAX_IT, PRECISION, NUM_THREADS);
 
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
@@ -137,8 +135,7 @@ double benchmark_asynchronouscpu_solver_sparse(const int dim,
     std::vector<int> iterations;
     const auto start = std::chrono::high_resolution_clock::now();
 
-    asynchronous_cpu(lse, x_kaczmarz_sparse, MAX_IT, PRECISION,
-                     NUM_THREADS);
+    asynchronous_cpu(lse, x_kaczmarz_sparse, MAX_IT, PRECISION, NUM_THREADS);
 
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
@@ -150,31 +147,31 @@ double benchmark_asynchronouscpu_solver_sparse(const int dim,
   return avgTime;
 }
 
-/// @brief Benchmarks the asynchronous Kaczmarz algorithm run on 2 cpu threads on a
-/// sparse linear system.
+/// @brief Benchmarks the asynchronous Kaczmarz algorithm run on 2 cpu threads
+/// on a sparse linear system.
 /// @param dim Dimension of the system.
 /// @param numIterations Number of iterations for timing.
 /// @param stdDev Output parameter for the computed standard deviation.
 /// @param rng Random generator for system generation.
 /// @return Average time taken for solution.
 double benchmark_banded_2_cpu_threads_solver_sparse(const int dim,
-                                                const int numIterations,
-                                                double& stdDev,
-                                                std::mt19937& rng) {
+                                                    const int numIterations,
+                                                    double& stdDev,
+                                                    std::mt19937& rng) {
   std::vector<double> times;
   for (int i = 0; i < numIterations; ++i) {
-  const BandedLinearSystem lse =
-      BandedLinearSystem::generate_random_regular(rng, dim, BANDWIDTH);
+    const BandedLinearSystem lse =
+        BandedLinearSystem::generate_random_regular(rng, dim, BANDWIDTH);
 
     // Allocate memory to save kaczmarz solution
-  Vector x_kaczmarz = Vector::Zero(dim);
+    Vector x_kaczmarz = Vector::Zero(dim);
     std::vector<double> times_residuals;
     std::vector<double> residuals;
     std::vector<int> iterations;
     const auto start = std::chrono::high_resolution_clock::now();
 
-    const auto status =  kaczmarz_banded_2_cpu_threads(lse, x_kaczmarz, MAX_IT,
-    PRECISION);
+    const auto status =
+        kaczmarz_banded_2_cpu_threads(lse, x_kaczmarz, MAX_IT, PRECISION);
 
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
@@ -194,23 +191,22 @@ double benchmark_banded_2_cpu_threads_solver_sparse(const int dim,
 /// @param rng Random generator for system generation.
 /// @return Average time taken for solution.
 double benchmark_banded_cuda_solver_sparse(const int dim,
-                                                const int numIterations,
-                                                double& stdDev,
-                                                std::mt19937& rng) {
+                                           const int numIterations,
+                                           double& stdDev, std::mt19937& rng) {
   std::vector<double> times;
   for (int i = 0; i < numIterations; ++i) {
-  const BandedLinearSystem lse =
-      BandedLinearSystem::generate_random_regular(rng, dim, BANDWIDTH);
+    const BandedLinearSystem lse =
+        BandedLinearSystem::generate_random_regular(rng, dim, BANDWIDTH);
 
     // Allocate memory to save kaczmarz solution
-  Vector x_kaczmarz = Vector::Zero(dim);
+    Vector x_kaczmarz = Vector::Zero(dim);
     std::vector<double> times_residuals;
     std::vector<double> residuals;
     std::vector<int> iterations;
     const auto start = std::chrono::high_resolution_clock::now();
 
-    const auto status =  kaczmarz_banded_cuda(lse, x_kaczmarz, MAX_IT,
-    PRECISION);
+    const auto status =
+        kaczmarz_banded_cuda(lse, x_kaczmarz, MAX_IT, PRECISION);
 
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
@@ -242,8 +238,8 @@ double benchmark_normalsolver_dense(const int dim, const int numIterations,
     std::vector<int> iterations;
     const auto start = std::chrono::high_resolution_clock::now();
 
-    dense_kaczmarz(lse, &x_kaczmarz[0], MAX_IT, PRECISION,
-                   times_residuals, residuals, iterations, MAX_IT);
+    dense_kaczmarz(lse, &x_kaczmarz[0], MAX_IT, PRECISION, times_residuals,
+                   residuals, iterations, MAX_IT);
 
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
@@ -270,8 +266,8 @@ double benchmark_sparsesolver_sparse(const int dim, const int numIterations,
     std::vector<int> iterations;
     const auto start = std::chrono::high_resolution_clock::now();
 
-    sparse_kaczmarz(lse, x_kaczmarz_sparse, MAX_IT, PRECISION,
-                    times_residuals, residuals, iterations, 1000);
+    sparse_kaczmarz(lse, x_kaczmarz_sparse, MAX_IT, PRECISION, times_residuals,
+                    residuals, iterations, 1000);
 
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
@@ -396,7 +392,7 @@ int main() {
   // }
   // outFileND2.close();  // Close the file after writing
 
-//////////////////////////////////////////
+  //////////////////////////////////////////
   /// Cuda Banded Solver Sparse (Viktor)///
   //////////////////////////////////////////
 
@@ -407,15 +403,15 @@ int main() {
   // Loop over problem sizes, benchmark, and write to file
   for (int dim = MIN_DIM; dim <= MAX_DIM; dim *= 2) {
     double stdDev;
-    double avgTime = benchmark_banded_cuda_solver_sparse(
-        dim, numIterations, stdDev, rng);
+    double avgTime =
+        benchmark_banded_cuda_solver_sparse(dim, numIterations, stdDev, rng);
 
     // Write results to the file
     outFileBS1 << dim << "," << avgTime << "," << stdDev << "\n";
   }
   outFileBS1.close();  // Close the file after writing
 
-//////////////////////////////////////////
+  //////////////////////////////////////////
   /// CPU 2 threads Banded Solver Sparse (Viktor)///
   //////////////////////////////////////////
 
@@ -464,7 +460,8 @@ int main() {
   // // Loop over problem sizes, benchmark, and write to file
   // for (int dim = MIN_DIM; dim <= MAX_DIM; dim *= 2) {
   //   double stdDev;
-  //   double avgTime = benchmark_asynchronouscpu_solver_sparse(dim, numIterations,
+  //   double avgTime = benchmark_asynchronouscpu_solver_sparse(dim,
+  //   numIterations,
   //                                                            stdDev, rng);
 
   //   // Write results to the file
