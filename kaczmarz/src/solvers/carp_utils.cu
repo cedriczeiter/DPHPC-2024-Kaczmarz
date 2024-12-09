@@ -16,8 +16,7 @@
 
 // The function kswp is the main kernel function of the CARP solver that
 // performs calculations on the GPU
-__global__ void kswp(const int *A_outer, const int *A_inner,
-                     const double *A_values_shared, const double *b_local,
+__global__ void kswp(const double *b_local,
                      const unsigned dim, const double *sq_norms_local,
                      const double *x, const unsigned rows_per_thread,
                      const double relaxation, double *output, bool forward, const int* const* d_all_padded_inner, const double* const* d_all_padded_values) {
@@ -154,7 +153,7 @@ double dot_product_gpu(const double *d_a, const double *d_b, double *d_to,
 
 // Function to perform the sweep forward and backward (main function of the CARP
 // solver)
-void dcswp(const int* d_A_outer, const int* d_A_inner, const double* d_A_values,
+void dcswp(
            const double* d_b, const unsigned dim, const double* d_sq_norms,
            const double* d_x, const double relaxation,
            const unsigned total_threads, double* d_output,
@@ -163,7 +162,7 @@ void dcswp(const int* d_A_outer, const int* d_A_inner, const double* d_A_values,
   // copy x vector to output vector
   copy_gpu(d_x, d_intermediate, dim);
   // perform step forward
-  kswp<<<blocks, THREADS_PER_BLOCK>>>(d_A_outer, d_A_inner, d_A_values, d_b,
+  kswp<<<blocks, THREADS_PER_BLOCK>>>( d_b,
                                       dim, d_sq_norms, d_x, ROWS_PER_THREAD,
                                       relaxation, d_intermediate, true, d_all_padded_inner, d_all_padded_values);
 
@@ -174,7 +173,7 @@ void dcswp(const int* d_A_outer, const int* d_A_inner, const double* d_A_values,
   copy_gpu(d_intermediate, d_output, dim);
   // perform step backward
   kswp<<<blocks, THREADS_PER_BLOCK>>>(
-      d_A_outer, d_A_inner, d_A_values, d_b, dim, d_sq_norms, d_intermediate,
+       d_b, dim, d_sq_norms, d_intermediate,
       ROWS_PER_THREAD, relaxation, d_output, false, d_all_padded_inner, d_all_padded_values);
 
   res = cudaDeviceSynchronize();

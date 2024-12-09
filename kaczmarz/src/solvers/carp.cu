@@ -39,20 +39,6 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
   CUDA_SAFE_CALL(
       cudaMemcpy(d_x, h_x, dim * sizeof(double), cudaMemcpyHostToDevice));
 
-  // move A to device
-  int *d_A_outer;
-  int *d_A_inner;
-  double *d_A_values;
-  CUDA_SAFE_CALL(cudaMalloc((void **)&d_A_outer, (dim + 1) * sizeof(int)));
-  CUDA_SAFE_CALL(cudaMalloc((void **)&d_A_inner, nnz * sizeof(int)));
-  CUDA_SAFE_CALL(cudaMalloc((void **)&d_A_values, nnz * sizeof(double)));
-  CUDA_SAFE_CALL(cudaMemcpy(d_A_outer, h_A_outer, (dim + 1) * sizeof(int),
-                            cudaMemcpyHostToDevice));
-  CUDA_SAFE_CALL(cudaMemcpy(d_A_inner, h_A_inner, nnz * sizeof(int),
-                            cudaMemcpyHostToDevice));
-  CUDA_SAFE_CALL(cudaMemcpy(d_A_values, h_A_values, nnz * sizeof(double),
-                            cudaMemcpyHostToDevice));
-
   int* h_padded_A_inner[dim];
   double* h_padded_A_values[dim];
   for (int i = 0; i < dim; i++){
@@ -116,7 +102,7 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
   // init stuff
   double residual = 1.;  // init value, will be overwritten as soon as we check
                          // for convergence
-  dcswp(d_A_outer, d_A_inner, d_A_values, d_b, dim, d_sq_norms, d_x, relaxation,
+  dcswp(d_b, dim, d_sq_norms, d_x, relaxation,
         total_threads, d_r, d_intermediate, blocks, max_nnz_in_row, d_all_padded_inner, d_all_padded_values);
   copy_gpu(d_r, d_p, dim);
 
@@ -137,7 +123,7 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
     }
 
     // the actual calculation begin here
-    dcswp(d_A_outer, d_A_inner, d_A_values, d_zero, dim, d_sq_norms, d_p,
+    dcswp(d_zero, dim, d_sq_norms, d_p,
           relaxation, total_threads, d_intermediate, d_intermediate_two, blocks,
           max_nnz_in_row, d_all_padded_inner, d_all_padded_values);
     add_gpu(d_p, d_intermediate, d_q, -1., dim);
@@ -169,9 +155,6 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
   // free memory
   cudaFree(d_x);
   cudaFree(d_sq_norms);
-  cudaFree(d_A_outer);
-  cudaFree(d_A_inner);
-  cudaFree(d_A_values);
   cudaFree(d_b);
   cudaFree(d_p);
   cudaFree(d_r);
@@ -179,6 +162,8 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
   cudaFree(d_intermediate);
   cudaFree(d_intermediate_two);
   cudaFree(d_zero);
+  cudaFree(d_all_padded_inner);
+  cudaFree(d_all_padded_values);
   // check for convergence
   if (converged) {
     return KaczmarzSolverStatus::Converged;
