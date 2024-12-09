@@ -53,6 +53,39 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
   CUDA_SAFE_CALL(cudaMemcpy(d_A_values, h_A_values, nnz * sizeof(double),
                             cudaMemcpyHostToDevice));
 
+  int* h_padded_A_inner[dim];
+  double* h_padded_A_values[dim];
+  for (int i = 0; i < dim; i++){
+    h_padded_A_inner[i] = new int[max_nnz_in_row+1];
+    h_padded_A_values[i] = new double[max_nnz_in_row];
+    h_padded_A_inner[i][0] = h_A_outer[i+1] - h_A_outer[i];
+    for (int j = 0; j < h_padded_A_inner[i][0]; j++){
+      h_padded_A_inner[i][1+j] = h_A_inner[j+h_A_outer[i]];
+      h_padded_A_values[i][j] = h_A_values[j+h_A_outer[i]];
+    }
+  }
+
+  std::vector<int*> all_padded_inner;
+  std::vector<double*> all_padded_values;
+  for (int i = 0; i < dim; i++){
+    int* pointer_inner;
+    double* pointer_values;
+    CUDA_SAFE_CALL(cudaMalloc((void **)&pointer_inner, (max_nnz_in_row+1)*sizeof(int)));
+    CUDA_SAFE_CALL(cudaMemcpy(pointer_inner, h_padded_A_inner[i], (max_nnz_in_row+1)*sizeof(int), cudaMemcpyHostToDevice));
+    CUDA_SAFE_CALL(cudaMalloc((void **)&pointer_values, max_nnz_in_row*sizeof(double)));
+    CUDA_SAFE_CALL(cudaMemcpy(pointer_values, h_padded_A_values[i], (max_nnz_in_row)*sizeof(double), cudaMemcpyHostToDevice));
+    all_padded_inner.push_back(pointer_inner);
+    all_padded_values.push_back(pointer_values);
+  }
+
+  int** d_all_padded_inner;
+  CUDA_SAFE_CALL(cudaMalloc((void **)&d_all_padded_inner, dim*sizeof(int*)));
+  CUDA_SAFE_CALL(cudaMemcpy(d_all_padded_inner, all_padded_inner.data(), dim*sizeof(int*), cudaMemcpyHostToDevice));
+
+  double** d_all_padded_values;
+  CUDA_SAFE_CALL(cudaMalloc((void **)&d_all_padded_values, dim*sizeof(double*)));
+  CUDA_SAFE_CALL(cudaMemcpy(d_all_padded_values, all_padded_values.data(), dim*sizeof(double*), cudaMemcpyHostToDevice));
+
   // move b to device
   double *d_b;
   CUDA_SAFE_CALL(cudaMalloc((void **)&d_b, dim * sizeof(double)));
@@ -84,7 +117,7 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
   double residual = 1.;  // init value, will be overwritten as soon as we check
                          // for convergence
   dcswp(d_A_outer, d_A_inner, d_A_values, d_b, dim, d_sq_norms, d_x, relaxation,
-        total_threads, d_r, d_intermediate, blocks, max_nnz_in_row);
+        total_threads, d_r, d_intermediate, blocks, max_nnz_in_row, d_all_padded_inner, d_all_padded_values);
   copy_gpu(d_r, d_p, dim);
 
   for (int iter = 0; iter < max_iterations; iter++) {
@@ -106,7 +139,7 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
     // the actual calculation begin here
     dcswp(d_A_outer, d_A_inner, d_A_values, d_zero, dim, d_sq_norms, d_p,
           relaxation, total_threads, d_intermediate, d_intermediate_two, blocks,
-          max_nnz_in_row);
+          max_nnz_in_row, d_all_padded_inner, d_all_padded_values);
     add_gpu(d_p, d_intermediate, d_q, -1., dim);
     const double sq_norm_r_old = dot_product_gpu(d_r, d_r, d_intermediate, dim);
     const double dot_r_p = dot_product_gpu(d_p, d_q, d_intermediate, dim);

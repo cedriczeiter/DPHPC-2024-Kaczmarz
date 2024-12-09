@@ -17,7 +17,7 @@ void dcswp(const int* d_A_outer, const int* d_A_inner, const double* d_A_values,
            const double* d_x, const double relaxation,
            const unsigned total_threads, double* d_output,
            double* d_intermediate, const unsigned blocks,
-           const unsigned max_nnz_in_row);
+           const unsigned max_nnz_in_row, const int* const* d_all_padded_inner, const double* const* d_all_padded_values);
 
 void copy_gpu(const double* d_from, double* d_to, const unsigned dim);
 double dot_product_gpu(const double* d_a, const double* d_b, double* d_to,

@@ -20,7 +20,7 @@ __global__ void kswp(const int *A_outer, const int *A_inner,
                      const double *A_values_shared, const double *b_local,
                      const unsigned dim, const double *sq_norms_local,
                      const double *x, const unsigned rows_per_thread,
-                     const double relaxation, double *output, bool forward) {
+                     const double relaxation, double *output, bool forward, const int* const* d_all_padded_inner, const double* const* d_all_padded_values) {
   const unsigned tid = blockIdx.x * blockDim.x + threadIdx.x;
   if (tid * rows_per_thread < dim)  // only if thread has assigned rows (dim)
   {
@@ -28,20 +28,25 @@ __global__ void kswp(const int *A_outer, const int *A_inner,
     // INFO: for the carp-cg algorithm, only one run per thread should be used
     for (unsigned local_iter = 0; local_iter < LOCAL_RUNS_PER_THREAD;
          local_iter++) {
+      
       switch (forward) {
         case true:
           for (unsigned k = 0; k < rows_per_thread; k++) {
+
+            const unsigned row = tid * rows_per_thread + k;
+
+            const int* inner = d_all_padded_inner[row];
+            const double* values = d_all_padded_values[row];
+            const int values_in_row = inner[0];
+
             assert(rows_per_thread == 1);
             assert(k == 0);
-            const unsigned row = tid * rows_per_thread + k;
             // compute dot product row * x
             double dot_product = 0.;
 
-            const int a_outer_row = A_outer[row];
-            const int a_outer_row_next = A_outer[row + 1];
-            for (unsigned i = a_outer_row; i < a_outer_row_next; i++) {
-              const double x_value = x[A_inner[i]];
-              dot_product += A_values_shared[i] * x_value;
+            for (unsigned i = 0; i < values_in_row; i++) {
+              const double x_value = x[inner[i+1]];
+              dot_product += values[i] * x_value;
             }
 
             // calculate update
@@ -51,32 +56,33 @@ __global__ void kswp(const int *A_outer, const int *A_inner,
             // printf("sq_norm: %f, update: %f\n", sq_norms_local[row],
             // update_coeff);
             //  save update for output
-            for (unsigned i = a_outer_row; i < a_outer_row_next; i++) {
-              atomicAdd(&output[A_inner[i]], update_coeff * A_values_shared[i]);
+            for (unsigned i = 0; i < values_in_row; i++) {
+              atomicAdd(&output[inner[i+1]], update_coeff * values[i]);
             }
           }
           break;
         case false:
           for (int k = rows_per_thread - 1; k >= 0; k--) {
             const unsigned row = tid * rows_per_thread + k;
+
+            const int* inner = d_all_padded_inner[row];
+            const double* values = d_all_padded_values[row];
+            const int values_in_row = inner[0];
+
             // compute dot product row * x
             double dot_product = 0.;
 
-            const int a_outer_row = A_outer[row];
-            const int a_outer_row_next = A_outer[row + 1];
-            for (unsigned i = a_outer_row; i < a_outer_row_next; i++) {
-              const double x_value = x[A_inner[i]];
-              dot_product += A_values_shared[i] * x_value;
+            for (unsigned i = 0; i < values_in_row; i++) {
+              const double x_value = x[inner[i+1]];
+              dot_product += values[i] * x_value;
             }
             // calculate update
             const double update_coeff =
                 relaxation *
                 ((b_local[row] - dot_product) / (sq_norms_local[row]));
             // save update for output
-            for (unsigned i = a_outer_row; i < a_outer_row_next; i++) {
-              atomicAdd(&output[A_inner[i]],
-                        /*(1. /  (double)affected[A_inner[i]])*/ update_coeff *
-                            A_values_shared[i]);
+            for (unsigned i = 0; i < values_in_row; i++) {
+              atomicAdd(&output[inner[i+1]],update_coeff *values[i]);
             }
           }
       }
@@ -148,18 +154,18 @@ double dot_product_gpu(const double *d_a, const double *d_b, double *d_to,
 
 // Function to perform the sweep forward and backward (main function of the CARP
 // solver)
-void dcswp(const int *d_A_outer, const int *d_A_inner, const double *d_A_values,
-           const double *d_b, const unsigned dim, const double *d_sq_norms,
-           const double *d_x, const double relaxation,
-           const unsigned total_threads, double *d_output,
-           double *d_intermediate, const unsigned blocks,
-           const unsigned max_nnz_in_row) {
+void dcswp(const int* d_A_outer, const int* d_A_inner, const double* d_A_values,
+           const double* d_b, const unsigned dim, const double* d_sq_norms,
+           const double* d_x, const double relaxation,
+           const unsigned total_threads, double* d_output,
+           double* d_intermediate, const unsigned blocks,
+           const unsigned max_nnz_in_row, const int* const* d_all_padded_inner, const double* const* d_all_padded_values) {
   // copy x vector to output vector
   copy_gpu(d_x, d_intermediate, dim);
   // perform step forward
   kswp<<<blocks, THREADS_PER_BLOCK>>>(d_A_outer, d_A_inner, d_A_values, d_b,
                                       dim, d_sq_norms, d_x, ROWS_PER_THREAD,
-                                      relaxation, d_intermediate, true);
+                                      relaxation, d_intermediate, true, d_all_padded_inner, d_all_padded_values);
 
   auto res = cudaDeviceSynchronize();
   assert(res == 0);
@@ -169,7 +175,7 @@ void dcswp(const int *d_A_outer, const int *d_A_inner, const double *d_A_values,
   // perform step backward
   kswp<<<blocks, THREADS_PER_BLOCK>>>(
       d_A_outer, d_A_inner, d_A_values, d_b, dim, d_sq_norms, d_intermediate,
-      ROWS_PER_THREAD, relaxation, d_output, false);
+      ROWS_PER_THREAD, relaxation, d_output, false, d_all_padded_inner, d_all_padded_values);
 
   res = cudaDeviceSynchronize();
   assert(res == 0);
