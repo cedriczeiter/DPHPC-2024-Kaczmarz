@@ -23,11 +23,6 @@ __global__ void kswp(const double *b_local,
   const unsigned tid = blockIdx.x * blockDim.x + threadIdx.x;
   if (tid * rows_per_thread < dim)  // only if thread has assigned rows (dim)
   {
-    // perform sweep
-    // INFO: for the carp-cg algorithm, only one run per thread should be used
-    for (unsigned local_iter = 0; local_iter < LOCAL_RUNS_PER_THREAD;
-         local_iter++) {
-      
       switch (forward) {
         case true:
           for (unsigned k = 0; k < rows_per_thread && (tid*rows_per_thread + k) < dim; k++) {
@@ -52,8 +47,7 @@ __global__ void kswp(const double *b_local,
             const double update_coeff =
                 relaxation *
                 ((b_local[row] - dot_product) / values[0]);
-            // printf("sq_norm: %f, update: %f\n", sq_norms_local[row],
-            // update_coeff);
+
             //  save update for output
             for (unsigned i = 0; i < values_in_row; i++) {
               atomicAdd(&output[inner[i+1]], update_coeff * values[i+1]);
@@ -62,7 +56,7 @@ __global__ void kswp(const double *b_local,
           break;
         case false:
           for (int k = 0; k < rows_per_thread && (tid*rows_per_thread + k) < dim; k++) {
-            unsigned row = ((tid+1) * rows_per_thread) - k - 1;
+            unsigned row = ((tid+1) * rows_per_thread) - k - 1; //this is added to allow the algorithm to work even if the rows_per_thread does not cleanly divide the dimension of the matrix
             if (row >= dim){
               row -= rows_per_thread - (dim % rows_per_thread);
             }
@@ -89,7 +83,6 @@ __global__ void kswp(const double *b_local,
           }
       }
     }
-  }
 }
 
 __global__ void add(const double *a, const double *b, double *output,
@@ -97,7 +90,6 @@ __global__ void add(const double *a, const double *b, double *output,
   const unsigned tid = blockIdx.x * blockDim.x + threadIdx.x;
   if (tid < dim) {
     output[tid] = a[tid] + factor * b[tid];
-    // printf("Adding: %lf, %lf, %lf\n", a[tid], b[tid], output[tid]);
   }
 }
 
@@ -105,7 +97,6 @@ __global__ void copy(const double *from, double *to, const unsigned dim) {
   const unsigned tid = blockIdx.x * blockDim.x + threadIdx.x;
   if (tid < dim) {
     to[tid] = from[tid];
-    // printf("Copying: %lf, %lf\n", from[tid], to[tid]);
   }
 }
 
@@ -114,7 +105,6 @@ __global__ void square_vector(const double *a, const double *b, double *output,
   const unsigned tid = blockIdx.x * blockDim.x + threadIdx.x;
   if (tid < dim) {
     output[tid] = a[tid] * b[tid];
-    // printf("Squaring: %lf, %lf, %lf\n", a[tid], b[tid], output[tid]);
   }
 }
 
