@@ -4,7 +4,7 @@
 #include <cuda_runtime.h>
 #include <stdio.h>
 
-#define L_RESIDUAL 1
+#define L_RESIDUAL 2000
 #define ROWS_PER_THREAD 1 //IMPORTANT: THIS CAN NOT BE LARGER THAN THE DIMENSION OF THE MATRIX!!
 #define THREADS_PER_BLOCK 1024
 
