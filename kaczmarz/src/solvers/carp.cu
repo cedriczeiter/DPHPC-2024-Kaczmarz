@@ -107,8 +107,8 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
       residual =
           get_residual(h_x, h_b, d_x, h_A_outer, h_A_inner, h_A_values, dim);
       // debugging output
-      /*std::cout << "Iteration: " << iter << " out of " << max_iterations
-                << " , Residual/B_norm: " << residual / b_norm << std::endl;*/
+      std::cout << "Iteration: " << iter << " out of " << max_iterations
+                << " , Residual/B_norm: " << residual / b_norm << std::endl;
       // check for convergence
       if (residual / b_norm < precision) {
         converged = true;

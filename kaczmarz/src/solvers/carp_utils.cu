@@ -128,19 +128,21 @@ void copy_gpu(const double *d_from, double *d_to, const unsigned dim) {
 double dot_product_gpu(const double *d_a, const double *d_b, double *d_to,
                        const unsigned dim) {
   // Calculate the number of blocks needed
+
   const int blocks = (dim + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
   square_vector<<<blocks, THREADS_PER_BLOCK>>>(d_a, d_b, d_to, dim);
   auto res = cudaDeviceSynchronize();
   assert(res == 0);
 
-  double h_intermediate[dim];
-  cudaMemcpy(h_intermediate, d_to, dim * sizeof(double),
-             cudaMemcpyDeviceToHost);
+  double* h_intermediate = new double[dim];
+  CUDA_SAFE_CALL(cudaMemcpy(h_intermediate, d_to, dim * sizeof(double),
+             cudaMemcpyDeviceToHost));
   double dot = 0;
   for (unsigned i = 0; i < dim; i++) {
     double value = h_intermediate[i];
     dot += value;
   }
+  delete[] h_intermediate;
   return dot;
 }
 
