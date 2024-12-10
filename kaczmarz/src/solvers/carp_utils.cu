@@ -28,9 +28,6 @@ __global__ void kswp(const int *A_outer, const int *A_inner,
   if (tid * rows_per_thread < dim)  // only if thread has assigned rows (dim)
   {
     // perform sweep
-    // INFO: for the carp-cg algorithm, only one run per thread should be used
-    for (unsigned local_iter = 0; local_iter < LOCAL_RUNS_PER_THREAD;
-         local_iter++) {
       switch (forward) {
         case true:
           for (unsigned k = 0; k < rows_per_thread && (tid*rows_per_thread + k) < dim; k++) {
@@ -88,7 +85,6 @@ __global__ void kswp(const int *A_outer, const int *A_inner,
           }
       }
     }
-  }
 }
 
 __global__ void add(const double *a, const double *b, double *output,

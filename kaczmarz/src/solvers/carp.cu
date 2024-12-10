@@ -25,7 +25,7 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
     const double relaxation) {
   // define some variables
   bool converged = false;
-  const unsigned total_threads = dim / ROWS_PER_THREAD;
+  const unsigned total_threads = (dim / ROWS_PER_THREAD) + 1;
 
   // allocate move squared norms on device
   double *d_sq_norms;
