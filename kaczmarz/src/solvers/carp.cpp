@@ -7,10 +7,13 @@
 #include <cstdlib>
 #include <iostream>
 #include <random>
+#include <chrono>
 
 #include "basic.hpp"
 #include "carp_cuda.hpp"
 #include "common.hpp"
+
+using hrclock = std::chrono::high_resolution_clock;
 
 KaczmarzSolverStatus carp_gpu(const SparseLinearSystem& lse, Vector& x,
                               const unsigned max_iterations,
@@ -39,7 +42,7 @@ KaczmarzSolverStatus carp_gpu(const SparseLinearSystem& lse, Vector& x,
   const unsigned nnz = lse.A().nonZeros();
 
   // get squared norms of the rows of the matrix (precompute for performance)
-
+  const auto clock_start_eigen_non_it = hrclock::now();
   std::vector<double> h_sq_norms(dim);
   for (unsigned i = 0; i < dim; i++) {
     // get the row i of the matrix
@@ -50,6 +53,12 @@ KaczmarzSolverStatus carp_gpu(const SparseLinearSystem& lse, Vector& x,
       return KaczmarzSolverStatus::ZeroNormRow;  // check for zero norm rows
     }
   }
+  const auto clock_end_eigen_non_it = hrclock::now();
+  const auto time_eigen_non_it =
+      std::chrono::duration_cast<std::chrono::milliseconds>(
+          clock_end_eigen_non_it - clock_start_eigen_non_it)
+          .count();
+  std::cout << "Time Row Norms: " << time_eigen_non_it << std::endl;
 
   // get maximum nr of nnz in row
   int max_nnz_in_row = 0;
