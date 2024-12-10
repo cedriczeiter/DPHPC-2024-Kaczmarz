@@ -33,9 +33,8 @@ __global__ void kswp(const int *A_outer, const int *A_inner,
          local_iter++) {
       switch (forward) {
         case true:
-          for (unsigned k = 0; k < rows_per_thread; k++) {
-            assert(rows_per_thread == 1);
-            assert(k == 0);
+          for (unsigned k = 0; k < rows_per_thread && (tid*rows_per_thread + k) < dim; k++) {
+
             const unsigned row = tid * rows_per_thread + k;
             // compute dot product row * x
             double dot_product = 0.;
@@ -61,11 +60,15 @@ __global__ void kswp(const int *A_outer, const int *A_inner,
           }
           break;
         case false:
-          for (int k = rows_per_thread - 1; k >= 0; k--) {
-            const unsigned row = tid * rows_per_thread + k;
+          for (int k = 0; k < rows_per_thread && (tid*rows_per_thread + k) < dim; k++) {
+            unsigned row = ((tid+1) * rows_per_thread) - k - 1; //this is added to allow the algorithm to work even if the rows_per_thread does not cleanly divide the dimension of the matrix
+            if (row >= dim){
+              row -= rows_per_thread - (dim % rows_per_thread);
+            }
+            assert(row < dim);
+
             // compute dot product row * x
             double dot_product = 0.;
-
             const int a_outer_row = A_outer[row];
             const int a_outer_row_next = A_outer[row + 1];
             for (unsigned i = a_outer_row; i < a_outer_row_next; i++) {
