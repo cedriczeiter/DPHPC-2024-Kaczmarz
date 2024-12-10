@@ -17,7 +17,7 @@
 // The function kswp is the main kernel function of the CARP solver that
 // performs calculations on the GPU
 __global__ void kswp(const double *b_local,
-                     const unsigned dim, const double *sq_norms_local,
+                     const unsigned dim,
                      const double *x, const unsigned rows_per_thread,
                      const double relaxation, double *output, bool forward, const int* const* d_all_padded_inner, const double* const* d_all_padded_values) {
   const unsigned tid = blockIdx.x * blockDim.x + threadIdx.x;
@@ -45,18 +45,18 @@ __global__ void kswp(const double *b_local,
 
             for (unsigned i = 0; i < values_in_row; i++) {
               const double x_value = x[inner[i+1]];
-              dot_product += values[i] * x_value;
+              dot_product += values[i+1] * x_value;
             }
 
             // calculate update
             const double update_coeff =
                 relaxation *
-                ((b_local[row] - dot_product) / (sq_norms_local[row]));
+                ((b_local[row] - dot_product) / values[0]);
             // printf("sq_norm: %f, update: %f\n", sq_norms_local[row],
             // update_coeff);
             //  save update for output
             for (unsigned i = 0; i < values_in_row; i++) {
-              atomicAdd(&output[inner[i+1]], update_coeff * values[i]);
+              atomicAdd(&output[inner[i+1]], update_coeff * values[i+1]);
             }
           }
           break;
@@ -73,15 +73,15 @@ __global__ void kswp(const double *b_local,
 
             for (unsigned i = 0; i < values_in_row; i++) {
               const double x_value = x[inner[i+1]];
-              dot_product += values[i] * x_value;
+              dot_product += values[i+1] * x_value;
             }
             // calculate update
             const double update_coeff =
                 relaxation *
-                ((b_local[row] - dot_product) / (sq_norms_local[row]));
+                ((b_local[row] - dot_product) / values[0]);
             // save update for output
             for (unsigned i = 0; i < values_in_row; i++) {
-              atomicAdd(&output[inner[i+1]],update_coeff *values[i]);
+              atomicAdd(&output[inner[i+1]],update_coeff * values[i+1]);
             }
           }
       }
@@ -154,7 +154,7 @@ double dot_product_gpu(const double *d_a, const double *d_b, double *d_to,
 // Function to perform the sweep forward and backward (main function of the CARP
 // solver)
 void dcswp(
-           const double* d_b, const unsigned dim, const double* d_sq_norms,
+           const double* d_b, const unsigned dim,
            const double* d_x, const double relaxation,
            const unsigned total_threads, double* d_output,
            double* d_intermediate, const unsigned blocks,
@@ -163,7 +163,7 @@ void dcswp(
   copy_gpu(d_x, d_intermediate, dim);
   // perform step forward
   kswp<<<blocks, THREADS_PER_BLOCK>>>( d_b,
-                                      dim, d_sq_norms, d_x, ROWS_PER_THREAD,
+                                      dim, d_x, ROWS_PER_THREAD,
                                       relaxation, d_intermediate, true, d_all_padded_inner, d_all_padded_values);
 
   auto res = cudaDeviceSynchronize();
@@ -173,7 +173,7 @@ void dcswp(
   copy_gpu(d_intermediate, d_output, dim);
   // perform step backward
   kswp<<<blocks, THREADS_PER_BLOCK>>>(
-       d_b, dim, d_sq_norms, d_intermediate,
+       d_b, dim, d_intermediate,
       ROWS_PER_THREAD, relaxation, d_output, false, d_all_padded_inner, d_all_padded_values);
 
   res = cudaDeviceSynchronize();

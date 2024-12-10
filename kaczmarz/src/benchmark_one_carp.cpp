@@ -37,7 +37,7 @@ int main() {
 
   // Read in the system from file
   std::ifstream lse_input_stream(
-      "../../generated_bvp_matrices/problem1_complexity6_degree1.txt");
+      "../../generated_bvp_matrices/problem1_complexity3_degree1.txt");
   const SparseLinearSystem sparse_lse =
       SparseLinearSystem::read_from_stream(lse_input_stream);
 
@@ -62,8 +62,8 @@ int main() {
 
   const auto clock_start_eigen_non_it = hrclock::now();
   Eigen::SparseLU<Eigen::SparseMatrix<double>> solver;
-  solver.compute(A);
-  x_precise = solver.solve(b);
+  /*solver.compute(A);
+  x_precise = solver.solve(b);*/
   const auto clock_end_eigen_non_it = hrclock::now();
   const auto time_eigen_non_it =
       std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -74,7 +74,7 @@ int main() {
             << " milliseconds \n \n -------------- \n \n"
             << std::endl;
 
-  double precision = 1e-9;  // precision gets multiplied by 0.1 in each iteration
+  double precision = 0.1;  // precision gets multiplied by 0.1 in each iteration
   for (int i = 0; i < NRUNS; i++) {
     //////////////////////////////////////////
     // Calculating the solution with CARP
