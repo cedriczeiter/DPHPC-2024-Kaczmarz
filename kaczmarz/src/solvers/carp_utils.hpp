@@ -5,9 +5,8 @@
 #include <stdio.h>
 
 #define L_RESIDUAL 1
-#define ROWS_PER_THREAD 381 //IMPORTANT: THIS CAN NOT BE LARGER THAN THE DIMENSION OF THE MATRIX!!
-#define LOCAL_RUNS_PER_THREAD 1
-#define THREADS_PER_BLOCK 512
+#define ROWS_PER_THREAD 1 //IMPORTANT: THIS CAN NOT BE LARGER THAN THE DIMENSION OF THE MATRIX!!
+#define THREADS_PER_BLOCK 1024
 
 void add_gpu(const double* d_a, const double* d_b, double* d_output,
              const double factor, const unsigned dim);
