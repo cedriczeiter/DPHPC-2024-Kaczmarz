@@ -30,7 +30,7 @@ __global__ void kswp(const double *b_local,
       
       switch (forward) {
         case true:
-          for (unsigned k = 0; k < rows_per_thread; k++) {
+          for (unsigned k = 0; k < rows_per_thread && (tid*rows_per_thread + k) < dim; k++) {
 
             const unsigned row = tid * rows_per_thread + k;
 
@@ -38,8 +38,8 @@ __global__ void kswp(const double *b_local,
             const double* values = d_all_padded_values[row];
             const int values_in_row = inner[0];
 
-            assert(rows_per_thread == 1);
-            assert(k == 0);
+            //assert(rows_per_thread == 1);
+            //assert(k == 0);
             // compute dot product row * x
             double dot_product = 0.;
 
@@ -61,9 +61,12 @@ __global__ void kswp(const double *b_local,
           }
           break;
         case false:
-          for (int k = rows_per_thread - 1; k >= 0; k--) {
-            const unsigned row = tid * rows_per_thread + k;
-
+          for (int k = 0; k < rows_per_thread && (tid*rows_per_thread + k) < dim; k++) {
+            unsigned row = ((tid+1) * rows_per_thread) - k - 1;
+            if (row >= dim){
+              row -= rows_per_thread - (dim % rows_per_thread);
+            }
+            assert(row < dim);
             const int* inner = d_all_padded_inner[row];
             const double* values = d_all_padded_values[row];
             const int values_in_row = inner[0];
