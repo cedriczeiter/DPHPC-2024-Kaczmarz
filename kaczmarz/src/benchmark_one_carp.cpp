@@ -15,7 +15,7 @@
 
 using hrclock = std::chrono::high_resolution_clock;
 
-#define NRUNS 10
+#define NRUNS 1
 
 /**
  * The purpose of this file is to be easily able to manually benchmark a single
@@ -36,7 +36,7 @@ int main() {
 
   // Read in the system from file
   std::ifstream lse_input_stream(
-      "../../generated_bvp_matrices/problem2_complexity4_degree1.txt");
+      "../../generated_bvp_matrices/problem2_complexity6_degree1.txt");
   const SparseLinearSystem sparse_lse =
       SparseLinearSystem::read_from_stream(lse_input_stream);
 
@@ -73,7 +73,7 @@ int main() {
             << " milliseconds \n \n -------------- \n \n"
             << std::endl;
 
-  double precision = 1;  // precision gets multiplied by 0.1 in each iteration
+  double precision = 1e-7;  // precision gets multiplied by 0.1 in each iteration
   for (int i = 0; i < NRUNS; i++) {
     //////////////////////////////////////////
     // Calculating the solution with CARP
