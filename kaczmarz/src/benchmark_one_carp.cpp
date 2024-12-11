@@ -42,7 +42,7 @@ int main() {
 
   // Define Variables
   const unsigned dim = sparse_lse.row_count();
-  const unsigned max_iterations = std::numeric_limits<unsigned int>::max() - 1;
+  const unsigned max_iterations = 2500;//std::numeric_limits<unsigned int>::max() - 1;
 
   std::cout << "Dimension: \n" << dim << std::endl;
 
