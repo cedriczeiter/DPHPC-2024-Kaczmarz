@@ -2,6 +2,7 @@
 #include <curand_kernel.h>
 #include <unistd.h>
 
+
 #include <cassert>
 #include <cmath>
 #include <cstdlib>
@@ -20,14 +21,14 @@ __global__ void kswp(const unsigned *affected, const int *A_outer, const int *A_
                      const double *A_values_shared, const double *b_local,
                      const unsigned dim, const double *sq_norms_local,
                      const double *x, const unsigned rows_per_thread,
-                     const double relaxation, double *output, bool forward) {
+                     const double relaxation, double *output, bool forward, const unsigned max_entries_per_thread) {
   const unsigned tid = blockIdx.x * blockDim.x + threadIdx.x;
   if (tid * rows_per_thread < dim)  // only if thread has assigned rows (dim)
   {
-    if (tid == 0){
+    /*if (tid == 0){
       printf("Thread 0, entry 0: %f\n", x[0]);
-    }
-    double* x_local = (double*)malloc(sizeof(double)*dim);
+    }*/
+    double* x_local = (double*)malloc(sizeof(double)*max_entries_per_thread);
     for (int i = 0; i < dim; i++){
       x_local[i] = x[i];
     }
@@ -90,7 +91,7 @@ __global__ void kswp(const unsigned *affected, const int *A_outer, const int *A_
       //now we perform averaging
       for (int i = 0; i < dim; i++){
         if (std::abs(x_local[i] - x[i]) > 1e-15){
-          if (i == 0) printf("Affected: %f, value: %f\n", (double)affected[i], x_local[i]);
+          //if (i == 0) printf("Affected: %f, value: %f\n", (double)affected[i], x_local[i]);
           atomicAdd(&output[i], x_local[i]/(double)affected[i]);
         }
       }
@@ -256,13 +257,13 @@ void dcswp(const unsigned *d_affected, const int *d_A_outer, const int *d_A_inne
            const double *d_x, const double relaxation,
            const unsigned total_threads, double *d_output,
            double *d_intermediate, const unsigned blocks,
-           const unsigned max_nnz_in_row) {
+           const unsigned max_entries_per_thread) {
   // first output will go into intermediate vector, therefore set to zeor
   set_zero_gpu(d_intermediate, dim);
   // perform step forward
   kswp<<<blocks, THREADS_PER_BLOCK>>>(d_affected, d_A_outer, d_A_inner, d_A_values, d_b,
                                       dim, d_sq_norms, d_x, ROWS_PER_THREAD,
-                                      relaxation, d_intermediate, true);
+                                      relaxation, d_intermediate, true, max_entries_per_thread);
 
   auto res = cudaDeviceSynchronize();
   assert(res == 0);

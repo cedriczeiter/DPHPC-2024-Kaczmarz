@@ -5,7 +5,7 @@
 #include <stdio.h>
 
 #define L_RESIDUAL 1
-#define ROWS_PER_THREAD 50
+#define ROWS_PER_THREAD 10
 #define THREADS_PER_BLOCK 512
 
 void add_gpu(const double* d_a, const double* d_b, double* d_output,
@@ -16,7 +16,7 @@ void dcswp(const unsigned *d_affected, const int* d_A_outer, const int* d_A_inne
            const double* d_x, const double relaxation,
            const unsigned total_threads, double* d_output,
            double* d_intermediate, const unsigned blocks,
-           const unsigned max_nnz_in_row);
+           const unsigned max_entries_per_thread);
 
 void dcswp_zero(const int *d_A_outer, const int *d_A_inner, const double *d_A_values, const unsigned dim, const double *d_sq_norms,
            const double *d_x, const double relaxation,

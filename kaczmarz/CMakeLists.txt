@@ -41,6 +41,19 @@ FetchContent_MakeAvailable(googletest)
 # Print that Gtest now installed
 message(STATUS "Gtest installed")
 
+include(FetchContent)
+FetchContent_Declare(
+    stdgpu
+    GIT_REPOSITORY https://github.com/stotko/stdgpu.git
+    GIT_TAG        master
+)
+# Exclude unneeded parts from the build
+set(STDGPU_BUILD_EXAMPLES OFF CACHE INTERNAL "")
+set(STDGPU_BUILD_BENCHMARKS OFF CACHE INTERNAL "")
+set(STDGPU_BUILD_TESTS OFF CACHE INTERNAL "")
+FetchContent_MakeAvailable(stdgpu)
+message(STATUS "stdgpu installed")
+
 #################################
 ## Set variables
 #################################
@@ -111,7 +124,7 @@ if (CMAKE_CUDA_COMPILER)
   # Create CUDA library
   add_library(cuda_library STATIC ${CUDA_SOURCES})
   set_target_properties(cuda_library PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
-  target_link_libraries(cuda_library PRIVATE Eigen3::Eigen ${CUDA_LIBRARIES} cusparse cusolver)
+  target_link_libraries(cuda_library PRIVATE Eigen3::Eigen ${CUDA_LIBRARIES} cusparse cusolver stdgpu::stdgpu)
 
   # CUDA-enabled executables
   add_executable(benchmark_convergence ${SOURCE_DIR}/benchmarking_convergence.cpp)
