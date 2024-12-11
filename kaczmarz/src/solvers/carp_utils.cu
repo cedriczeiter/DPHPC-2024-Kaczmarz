@@ -104,6 +104,13 @@ __global__ void copy(const double *from, double *to, const unsigned dim) {
   }
 }
 
+__global__ void reduce(double *data, const unsigned dim) {
+  const unsigned tid = blockIdx.x * blockDim.x + threadIdx.x;
+  if (tid+ (dim+1)/2 < dim) {
+    data[tid] += data[tid + (dim+1)/2];
+  }
+}
+
 __global__ void square_vector(const double *a, const double *b, double *output,
                               const unsigned dim) {
   const unsigned tid = blockIdx.x * blockDim.x + threadIdx.x;
@@ -137,16 +144,15 @@ double dot_product_gpu(const double *d_a, const double *d_b, double *d_to,
   square_vector<<<blocks, THREADS_PER_BLOCK>>>(d_a, d_b, d_to, dim);
   auto res = cudaDeviceSynchronize();
   assert(res == 0);
-
-  double h_intermediate[dim];
-  cudaMemcpy(h_intermediate, d_to, dim * sizeof(double),
-             cudaMemcpyDeviceToHost);
-  double dot = 0;
-  for (unsigned i = 0; i < dim; i++) {
-    double value = h_intermediate[i];
-    dot += value;
+  unsigned current_dim = dim;
+  while (current_dim > 1){
+    const unsigned current_blocks = ((current_dim+1)/2 + THREADS_PER_BLOCK - 1) /THREADS_PER_BLOCK;
+    reduce<<<current_blocks, THREADS_PER_BLOCK>>>(d_to, current_dim);
+    current_dim = (current_dim+1)/2;
   }
-  return dot;
+  double dot_product;
+  CUDA_SAFE_CALL(cudaMemcpy(&dot_product, d_to, sizeof(double), cudaMemcpyDeviceToHost));
+  return dot_product;
 }
 
 // Function to perform the sweep forward and backward (main function of the CARP

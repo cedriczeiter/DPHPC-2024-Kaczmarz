@@ -102,6 +102,7 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
                          // for convergence
   dcswp(d_A_outer, d_A_inner, d_A_values, d_b, dim, d_sq_norms, d_x, relaxation,
         d_affected, total_threads, d_r, d_intermediate, blocks, max_nnz_in_row);
+  add_gpu(d_r, d_x, d_r, -1, dim);
   copy_gpu(d_r, d_p, dim);
 
   for (int iter = 0; iter < max_iterations; iter++) {
@@ -110,8 +111,8 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
       residual =
           get_residual(h_x, h_b, d_x, h_A_outer, h_A_inner, h_A_values, dim);
       // debugging output
-      /* std::cout << "Iteration: " << iter << " out of " << max_iterations
-              << " , Residual/B_norm: " << residual / b_norm << std::endl; */
+      /*std::cout << "Iteration: " << iter << " out of " << max_iterations
+              << " , Residual/B_norm: " << residual / b_norm << std::endl;*/
       // check for convergence
       if (residual / b_norm < precision) {
         converged = true;
@@ -126,7 +127,8 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
           d_intermediate_two, blocks, max_nnz_in_row);
     add_gpu(d_p, d_intermediate, d_q, -1., dim);
     const double sq_norm_r_old = dot_product_gpu(d_r, d_r, d_intermediate, dim);
-    const double dot_r_p = dot_product_gpu(d_p, d_q, d_intermediate, dim);
+    //std::cout << std::sqrt(sq_norm_r_old)/b_norm << " " << iter << std::endl;
+    const double dot_p_q = dot_product_gpu(d_p, d_q, d_intermediate, dim);
     /*if (dot_r_p < 1e-30) {  // if dot_r_p too small, algorithm is in flat
     region
                             // and cannot move further. Either we converged, or
@@ -135,7 +137,7 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
           get_residual(h_x, h_b, d_x, h_A_outer, h_A_inner, h_A_values, dim);
       break;
     }*/  //this does not work. It prevents the algorithm fom converging for PDE 2
-    const double alpha = sq_norm_r_old / dot_r_p;
+    const double alpha = sq_norm_r_old / dot_p_q;
     if (std::isinf(alpha) ||
         std::isnan(alpha)) {  // another safeguard to see if converged, nothing
                               // more to the algorithm can do
