@@ -201,42 +201,46 @@ SparseLinearSystem reorder_system_rcm(const SparseLinearSystem &system) {
   return reordered_system;
 }
 
-bool check_solution(const SparseLinearSystem &original, const SparseLinearSystem &reordered) {
-    Eigen::SparseLU<Eigen::SparseMatrix<double>> solver;
-    
-    // Solve the original system
-    solver.compute(original.A);
-    if (solver.info() != Eigen::Success) {
-        std::cerr << "Error: Decomposition failed for the original system." << std::endl;
-        return false;
-    }
-    Eigen::VectorXd x_original = solver.solve(original.b);
-    if (solver.info() != Eigen::Success) {
-        std::cerr << "Error: Solving failed for the original system." << std::endl;
-        return false;
-    }
+bool check_solution(const SparseLinearSystem &original,
+                    const SparseLinearSystem &reordered) {
+  Eigen::SparseLU<Eigen::SparseMatrix<double>> solver;
 
-    // Solve the reordered system
-    solver.compute(reordered.A);
-    if (solver.info() != Eigen::Success) {
-        std::cerr << "Error: Decomposition failed for the reordered system." << std::endl;
-        return false;
-    }
-    Eigen::VectorXd x_reordered = solver.solve(reordered.b);
-    if (solver.info() != Eigen::Success) {
-        std::cerr << "Error: Solving failed for the reordered system." << std::endl;
-        return false;
-    }
+  // Solve the original system
+  solver.compute(original.A);
+  if (solver.info() != Eigen::Success) {
+    std::cerr << "Error: Decomposition failed for the original system."
+              << std::endl;
+    return false;
+  }
+  Eigen::VectorXd x_original = solver.solve(original.b);
+  if (solver.info() != Eigen::Success) {
+    std::cerr << "Error: Solving failed for the original system." << std::endl;
+    return false;
+  }
 
-    // Compare the solutions
-    if (!x_original.isApprox(x_reordered, 1e-6)) {
-        double norm_diff = (x_original - x_reordered).norm();
-        std::cerr << "Error: Solutions do not match. Norm difference: " << norm_diff << std::endl;
-        return false;
-    }
+  // Solve the reordered system
+  solver.compute(reordered.A);
+  if (solver.info() != Eigen::Success) {
+    std::cerr << "Error: Decomposition failed for the reordered system."
+              << std::endl;
+    return false;
+  }
+  Eigen::VectorXd x_reordered = solver.solve(reordered.b);
+  if (solver.info() != Eigen::Success) {
+    std::cerr << "Error: Solving failed for the reordered system." << std::endl;
+    return false;
+  }
 
-    std::cout << "Solutions match." << std::endl;
-    return true;
+  // Compare the solutions
+  if (!x_original.isApprox(x_reordered, 1e-6)) {
+    double norm_diff = (x_original - x_reordered).norm();
+    std::cerr << "Error: Solutions do not match. Norm difference: " << norm_diff
+              << std::endl;
+    return false;
+  }
+
+  std::cout << "Solutions match." << std::endl;
+  return true;
 }
 
 int main() {
