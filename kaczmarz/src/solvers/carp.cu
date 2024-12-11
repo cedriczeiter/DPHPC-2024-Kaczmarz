@@ -59,6 +59,36 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
   CUDA_SAFE_CALL(
       cudaMemcpy(d_b, h_b, dim * sizeof(double), cudaMemcpyHostToDevice));
 
+  /*//we want to find a partitioning for our threads
+  std::vector<std::vector<unsigned>> which_rows_to_thread((dim + ROWS_PER_THREAD-1)/ROWS_PER_THREAD);
+  for (int i = 0; i < dim; i++){
+    const unsigned thread = i/ROWS_PER_THREAD;
+    which_rows_to_thread[thread].push_back(i);
+  }*/
+
+  //we find out which row is affected by which threads
+  std::vector<std::set<unsigned>> which_rows_affected_by_thread(dim); //we create a set for each row, each thread which affects this row gets added to the set
+  for (int i = 0; i < dim; i++){
+    const unsigned thread = i/ROWS_PER_THREAD;
+    for (int k = h_A_outer[i]; k < h_A_outer[i+1]; k++){
+      which_rows_affected_by_thread[h_A_inner[k]].insert(thread);
+    }
+  }
+
+  //copy number of threads affecting row over to array
+  unsigned *h_affected = new unsigned[dim];
+  for (int i = 0; i < dim; i++){
+    h_affected[i] = (which_rows_affected_by_thread[i].size()); 
+  }
+
+  //copy over to device
+  unsigned *d_affected;
+  CUDA_SAFE_CALL(cudaMalloc((void **)&d_affected, dim * sizeof(unsigned)));
+  CUDA_SAFE_CALL(cudaMemcpy(d_affected, h_affected, dim * sizeof(unsigned),
+                            cudaMemcpyHostToDevice));
+
+  delete[] h_affected;
+
   // move p, r, q and intermediate storage to device
   double *d_p;
   double *d_r;
@@ -83,9 +113,9 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
   // init stuff
   double residual = 1.;  // init value, will be overwritten as soon as we check
                          // for convergence
-  dcswp(d_A_outer, d_A_inner, d_A_values, d_b, dim, d_sq_norms, d_x, relaxation, total_threads, d_r, d_intermediate, blocks, max_nnz_in_row);
+  /*dcswp(d_affected, d_A_outer, d_A_inner, d_A_values, d_b, dim, d_sq_norms, d_x, relaxation, total_threads, d_r, d_intermediate, blocks, max_nnz_in_row);
   add_gpu(d_r, d_x, d_r, -1, dim);
-  copy_gpu(d_r, d_p, dim);
+  copy_gpu(d_r, d_p, dim);*/
 
   for (int iter = 0; iter < max_iterations; iter++) {
     // calculate residual every L_RESIDUAL iterations
@@ -93,8 +123,9 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
       residual =
           get_residual(h_x, h_b, d_x, h_A_outer, h_A_inner, h_A_values, dim);
       // debugging output
-      /*std::cout << "Iteration: " << iter << " out of " << max_iterations
-              << " , Residual/B_norm: " << residual / b_norm << std::endl;*/
+      std::cout << "Iteration: " << iter << " out of " << max_iterations
+              << " , Residual/B_norm: " << residual / b_norm << std::endl;
+      std::cout << "Entry 0: " << h_x[0] << std::endl;
       // check for convergence
       if (residual / b_norm < precision) {
         converged = true;
@@ -102,36 +133,10 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
         break;  // stop all the iterations
       }
     }
-
-    // the actual calculation begin here
-    dcswp_zero(d_A_outer, d_A_inner, d_A_values, dim, d_sq_norms, d_p,
+    dcswp(d_affected, d_A_outer, d_A_inner, d_A_values, d_b, dim, d_sq_norms, d_x,
           relaxation, total_threads, d_intermediate, d_intermediate_two, blocks,
           max_nnz_in_row);
-    add_gpu(d_p, d_intermediate, d_q, -1., dim);
-    const double sq_norm_r_old = dot_product_gpu(d_r, d_r, d_intermediate, dim);
-    //std::cout << std::sqrt(sq_norm_r_old)/b_norm << " " << iter << std::endl;
-    const double dot_p_q = dot_product_gpu(d_p, d_q, d_intermediate, dim);
-    /*if (dot_r_p < 1e-30) {  // if dot_r_p too small, algorithm is in flat
-    region
-                            // and cannot move further. Either we converged, or
-                            // we need to continue with a different algorithm
-      residual =
-          get_residual(h_x, h_b, d_x, h_A_outer, h_A_inner, h_A_values, dim);
-      break;
-    }*/  //this does not work. It prevents the algorithm fom converging for PDE 2
-    const double alpha = sq_norm_r_old / dot_p_q;
-    if (std::isinf(alpha) ||
-        std::isnan(alpha)) {  // another safeguard to see if converged, nothing
-                              // more to the algorithm can do
-      residual =
-          get_residual(h_x, h_b, d_x, h_A_outer, h_A_inner, h_A_values, dim);
-      break;
-    }
-    add_gpu(d_x, d_p, d_x, alpha, dim);
-    add_gpu(d_r, d_q, d_r, -alpha, dim);
-    const double beta =
-        dot_product_gpu(d_r, d_r, d_intermediate, dim) / sq_norm_r_old;
-    add_gpu(d_r, d_p, d_p, beta, dim);
+    copy_gpu(d_intermediate, d_x, dim);
   }
 
   // free memory
@@ -147,6 +152,7 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
   cudaFree(d_intermediate);
   cudaFree(d_intermediate_two);
   cudaFree(d_zero);
+  cudaFree(d_affected);
   // check for convergence
   if (converged) {
     return KaczmarzSolverStatus::Converged;

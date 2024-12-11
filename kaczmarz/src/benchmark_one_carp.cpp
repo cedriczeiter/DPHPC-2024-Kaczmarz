@@ -37,7 +37,7 @@ int main() {
 
   // Read in the system from file
   std::ifstream lse_input_stream(
-      "../../generated_bvp_matrices/problem1_complexity8_degree1.txt");
+      "../../generated_bvp_matrices/problem1_complexity1_degree1.txt");
   const SparseLinearSystem sparse_lse =
       SparseLinearSystem::read_from_stream(lse_input_stream);
 
@@ -85,7 +85,7 @@ int main() {
     int nr_of_steps =
         0;  // just a placeholder, used in benchmark_one_carp_lambda.cpp
     const double relaxation =
-        0.35;  // this relaxation param was found empirically by
+        1;  // this relaxation param was found empirically by
                // benchmark_one_carp_lambda_auto; there is no guarantee of
                // convergence! if solver doesnt converge, change relaxation to
                // 1/max_nnz_per_col
