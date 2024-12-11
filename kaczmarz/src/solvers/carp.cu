@@ -83,8 +83,7 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
   // init stuff
   double residual = 1.;  // init value, will be overwritten as soon as we check
                          // for convergence
-  dcswp(d_A_outer, d_A_inner, d_A_values, d_b, dim, d_sq_norms, d_x, relaxation,
-        d_affected, total_threads, d_r, d_intermediate, blocks, max_nnz_in_row);
+  dcswp(d_A_outer, d_A_inner, d_A_values, d_b, dim, d_sq_norms, d_x, relaxation, total_threads, d_r, d_intermediate, blocks, max_nnz_in_row);
   add_gpu(d_r, d_x, d_r, -1, dim);
   copy_gpu(d_r, d_p, dim);
 
@@ -105,7 +104,7 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
     }
 
     // the actual calculation begin here
-    dcswp(d_A_outer, d_A_inner, d_A_values, d_zero, dim, d_sq_norms, d_p,
+    dcswp_zero(d_A_outer, d_A_inner, d_A_values, dim, d_sq_norms, d_p,
           relaxation, total_threads, d_intermediate, d_intermediate_two, blocks,
           max_nnz_in_row);
     add_gpu(d_p, d_intermediate, d_q, -1., dim);

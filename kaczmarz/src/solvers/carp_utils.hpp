@@ -4,7 +4,7 @@
 #include <cuda_runtime.h>
 #include <stdio.h>
 
-#define L_RESIDUAL 2000
+#define L_RESIDUAL 1000
 #define ROWS_PER_THREAD 1
 #define THREADS_PER_BLOCK 512
 
@@ -16,6 +16,12 @@ void dcswp(const int* d_A_outer, const int* d_A_inner, const double* d_A_values,
            const double* d_x, const double relaxation,
            const unsigned total_threads, double* d_output,
            double* d_intermediate, const unsigned blocks,
+           const unsigned max_nnz_in_row);
+
+void dcswp_zero(const int *d_A_outer, const int *d_A_inner, const double *d_A_values, const unsigned dim, const double *d_sq_norms,
+           const double *d_x, const double relaxation,
+           const unsigned total_threads, double *d_output,
+           double *d_intermediate, const unsigned blocks,
            const unsigned max_nnz_in_row);
 
 void copy_gpu(const double* d_from, double* d_to, const unsigned dim);
