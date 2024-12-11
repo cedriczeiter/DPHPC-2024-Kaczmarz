@@ -53,23 +53,6 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
   CUDA_SAFE_CALL(cudaMemcpy(d_A_values, h_A_values, nnz * sizeof(double),
                             cudaMemcpyHostToDevice));
 
-  // we need to know which values in x are affected by which thread; thats what
-  // the below code is for
-  int *h_affected = new int[dim]();
-  for (unsigned row = 0; row < dim; row++) {
-    int h_A_outer_row = h_A_outer[row];
-    int h_A_outer_row_plus_one = h_A_outer[row + 1];
-    for (unsigned i = h_A_outer_row; i < h_A_outer_row_plus_one; i++) {
-      h_affected[h_A_inner[i]]++;
-    }
-  }
-
-  // move affects to device
-  int *d_affected;
-  CUDA_SAFE_CALL(cudaMalloc((void **)&d_affected, dim * sizeof(int)));
-  CUDA_SAFE_CALL(cudaMemcpy(d_affected, h_affected, dim * sizeof(int),
-                            cudaMemcpyHostToDevice));
-
   // move b to device
   double *d_b;
   CUDA_SAFE_CALL(cudaMalloc((void **)&d_b, dim * sizeof(double)));
@@ -123,8 +106,8 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
 
     // the actual calculation begin here
     dcswp(d_A_outer, d_A_inner, d_A_values, d_zero, dim, d_sq_norms, d_p,
-          relaxation, d_affected, total_threads, d_intermediate,
-          d_intermediate_two, blocks, max_nnz_in_row);
+          relaxation, total_threads, d_intermediate, d_intermediate_two, blocks,
+          max_nnz_in_row);
     add_gpu(d_p, d_intermediate, d_q, -1., dim);
     const double sq_norm_r_old = dot_product_gpu(d_r, d_r, d_intermediate, dim);
     //std::cout << std::sqrt(sq_norm_r_old)/b_norm << " " << iter << std::endl;
@@ -154,7 +137,6 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
 
   // free memory
   cudaFree(d_x);
-  cudaFree(d_affected);
   cudaFree(d_sq_norms);
   cudaFree(d_A_outer);
   cudaFree(d_A_inner);

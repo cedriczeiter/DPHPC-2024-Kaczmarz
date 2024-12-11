@@ -10,9 +10,9 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 20)
 
 # Enable all warnings and extra warnings
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -fopenmp -pthread -g")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -fopenmp -pthread")
 
-set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -G")
+set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -lcusparse")
 
 #################################
 ## Download dependencies
@@ -64,6 +64,7 @@ set(CUDA_SOURCES
   ${SOURCE_DIR}/solvers/carp.cu
   ${SOURCE_DIR}/solvers/carp.cpp
   ${SOURCE_DIR}/solvers/carp_utils.cu
+  ${SOURCE_DIR}/solvers/cusolver.cpp
 )
 
 ################################
@@ -104,11 +105,13 @@ if (CMAKE_CUDA_COMPILER)
   endif()
   # Allow many relevant CUDA architectures
   set(CUDA_ARCHITECTURES 60 61 70 75 80 86)
+
+  include_directories(${CUDA_INCLUDE_DIRS})
   
   # Create CUDA library
   add_library(cuda_library STATIC ${CUDA_SOURCES})
   set_target_properties(cuda_library PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
-  target_link_libraries(cuda_library PRIVATE Eigen3::Eigen)
+  target_link_libraries(cuda_library PRIVATE Eigen3::Eigen ${CUDA_LIBRARIES} cusparse cusolver)
 
   # CUDA-enabled executables
   add_executable(benchmark_convergence ${SOURCE_DIR}/benchmarking_convergence.cpp)
@@ -117,6 +120,7 @@ if (CMAKE_CUDA_COMPILER)
   add_executable(benchmark_one ${SOURCE_DIR}/benchmark_one.cpp)
   add_executable(benchmark_one_carp ${SOURCE_DIR}/benchmark_one_carp.cpp)
   add_executable(benchmark_one_carp_lambda ${SOURCE_DIR}/benchmark_one_carp_lambda.cpp)
+  add_executable(benchmarking_pde ${SOURCE_DIR}/benchmarking_pde.cpp)
 
   # Link the non-CUDA and CUDA libraries to the executables
   target_link_libraries(benchmark_convergence PRIVATE non_cuda_library cuda_library linear_systems)
@@ -125,6 +129,7 @@ if (CMAKE_CUDA_COMPILER)
   target_link_libraries(benchmark_one PRIVATE non_cuda_library cuda_library linear_systems)
   target_link_libraries(benchmark_one_carp PRIVATE non_cuda_library cuda_library linear_systems)
   target_link_libraries(benchmark_one_carp_lambda PRIVATE non_cuda_library cuda_library linear_systems)
+  target_link_libraries(benchmarking_pde PRIVATE non_cuda_library cuda_library linear_systems)
 
 else()
   message(STATUS "No CUDA compiler found, skipping CUDA targets")
@@ -139,5 +144,4 @@ CONFIGURE_FILE(${SOURCE_DIR}/plot.py ${PATH_TO_BUILD} plot.py COPYONLY)
 CONFIGURE_FILE(${SOURCE_DIR}/plot_convergence.py ${PATH_TO_BUILD} plot_convergence.py COPYONLY)
 CONFIGURE_FILE(${SOURCE_DIR}/plot_dense.py ${PATH_TO_BUILD} plot_dense.py COPYONLY)
 CONFIGURE_FILE(${SOURCE_DIR}/plot_sparse.py ${PATH_TO_BUILD} plot_sparse.py COPYONLY)
-
-
+CONFIGURE_FILE(${SOURCE_DIR}/plot_sparse_pde.py ${PATH_TO_BUILD} plot_sparse_pde.py COPYONLY)

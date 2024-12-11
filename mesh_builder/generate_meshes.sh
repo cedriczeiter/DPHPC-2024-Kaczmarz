@@ -38,4 +38,5 @@ do
             echo "Finished mesh generation for mesh nr ${i}"
         done
     done
+
 done
