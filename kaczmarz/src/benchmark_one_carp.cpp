@@ -16,7 +16,7 @@
 
 using hrclock = std::chrono::high_resolution_clock;
 
-#define NRUNS 1
+#define NRUNS 10
 
 /**
  * The purpose of this file is to be easily able to manually benchmark a single
@@ -74,7 +74,7 @@ int main() {
             << " milliseconds \n \n -------------- \n \n"
             << std::endl;
 
-  double precision = 1e-7;  // precision gets multiplied by 0.1 in each iteration
+  double precision = 1;  // precision gets multiplied by 0.1 in each iteration
   for (int i = 0; i < NRUNS; i++) {
     //////////////////////////////////////////
     // Calculating the solution with CARP
