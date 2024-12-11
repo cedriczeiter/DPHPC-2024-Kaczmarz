@@ -127,7 +127,7 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
           d_intermediate_two, blocks, max_nnz_in_row);
     add_gpu(d_p, d_intermediate, d_q, -1., dim);
     const double sq_norm_r_old = dot_product_gpu(d_r, d_r, d_intermediate, dim);
-    std::cout << std::sqrt(sq_norm_r_old)/b_norm << " " << iter << std::endl;
+    //std::cout << std::sqrt(sq_norm_r_old)/b_norm << " " << iter << std::endl;
     const double dot_p_q = dot_product_gpu(d_p, d_q, d_intermediate, dim);
     /*if (dot_r_p < 1e-30) {  // if dot_r_p too small, algorithm is in flat
     region
