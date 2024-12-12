@@ -86,5 +86,9 @@ KaczmarzSolverStatus carp_gpu(const SparseLinearSystem& lse, Vector& x,
   for (int i = 0; i < dim; i++){
     x[i] = (float)float_x[i];
   }
+
+  delete[] float_x;
+  delete[] float_b;
+  delete[] float_A_values;
   return KaczmarzSolverStatus::Converged;
 }

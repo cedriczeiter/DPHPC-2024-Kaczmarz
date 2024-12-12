@@ -6,9 +6,9 @@
 #include <stdio.h>
 
 #define L_RESIDUAL 50
-#define ROWS_PER_THREAD 150
+#define ROWS_PER_THREAD 100
 #define THREADS_PER_BLOCK 512
-#define RUNS_PER_THREAD 1
+#define RUNS_PER_THREAD 50
 
 void add_gpu(const float* d_a, const float* d_b, float* d_output,
              const float factor, const unsigned dim);

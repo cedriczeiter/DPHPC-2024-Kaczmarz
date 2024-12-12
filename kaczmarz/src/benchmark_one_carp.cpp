@@ -37,13 +37,13 @@ int main() {
 
   // Read in the system from file
   std::ifstream lse_input_stream(
-      "../../generated_bvp_matrices/problem1_complexity1_degree1.txt");
+      "../../generated_bvp_matrices/problem1/problem1_complexity6_degree1_banded.txt");
   const SparseLinearSystem sparse_lse =
       SparseLinearSystem::read_from_stream(lse_input_stream);
 
   // Define Variables
   const unsigned dim = sparse_lse.row_count();
-  const unsigned max_iterations = std::numeric_limits<unsigned int>::max() - 1;
+  const unsigned max_iterations = 1000;//std::numeric_limits<unsigned int>::max() - 1;
 
   std::cout << "Dimension: \n" << dim << std::endl;
 
