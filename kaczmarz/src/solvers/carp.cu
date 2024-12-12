@@ -18,46 +18,46 @@
 // TOTAL ROWS(dim)
 
 KaczmarzSolverStatus invoke_carp_solver_gpu(
-    const int *h_A_outer, const int *h_A_inner, const double *h_A_values,
-    const double *h_b, double *h_x, double *h_sq_norms, const unsigned dim,
-    const unsigned nnz, const unsigned max_iterations, const double precision,
-    const unsigned max_nnz_in_row, const double b_norm, int &nr_of_steps,
-    const double relaxation) {
+    const int *h_A_outer, const int *h_A_inner, const float *h_A_values,
+    const float *h_b, float *h_x, float *h_sq_norms, const unsigned dim,
+    const unsigned nnz, const unsigned max_iterations, const float precision,
+    const unsigned max_nnz_in_row, const float b_norm, int &nr_of_steps,
+    const float relaxation) {
   // define some variables
   bool converged = false;
   const unsigned total_threads = (dim + ROWS_PER_THREAD - 1) / ROWS_PER_THREAD;
 
   // allocate move squared norms on device
-  double *d_sq_norms;
-  CUDA_SAFE_CALL(cudaMalloc((void **)&d_sq_norms, dim * sizeof(double)));
-  CUDA_SAFE_CALL(cudaMemcpy(d_sq_norms, h_sq_norms, dim * sizeof(double),
+  float *d_sq_norms;
+  CUDA_SAFE_CALL(cudaMalloc((void **)&d_sq_norms, dim * sizeof(float)));
+  CUDA_SAFE_CALL(cudaMemcpy(d_sq_norms, h_sq_norms, dim * sizeof(float),
                             cudaMemcpyHostToDevice));
 
   // move x to device
-  double *d_x;
-  CUDA_SAFE_CALL(cudaMalloc((void **)&d_x, dim * sizeof(double)));
+  float *d_x;
+  CUDA_SAFE_CALL(cudaMalloc((void **)&d_x, dim * sizeof(float)));
   CUDA_SAFE_CALL(
-      cudaMemcpy(d_x, h_x, dim * sizeof(double), cudaMemcpyHostToDevice));
+      cudaMemcpy(d_x, h_x, dim * sizeof(float), cudaMemcpyHostToDevice));
 
   // move A to device
   int *d_A_outer;
   int *d_A_inner;
-  double *d_A_values;
+  float *d_A_values;
   CUDA_SAFE_CALL(cudaMalloc((void **)&d_A_outer, (dim + 1) * sizeof(int)));
   CUDA_SAFE_CALL(cudaMalloc((void **)&d_A_inner, nnz * sizeof(int)));
-  CUDA_SAFE_CALL(cudaMalloc((void **)&d_A_values, nnz * sizeof(double)));
+  CUDA_SAFE_CALL(cudaMalloc((void **)&d_A_values, nnz * sizeof(float)));
   CUDA_SAFE_CALL(cudaMemcpy(d_A_outer, h_A_outer, (dim + 1) * sizeof(int),
                             cudaMemcpyHostToDevice));
   CUDA_SAFE_CALL(cudaMemcpy(d_A_inner, h_A_inner, nnz * sizeof(int),
                             cudaMemcpyHostToDevice));
-  CUDA_SAFE_CALL(cudaMemcpy(d_A_values, h_A_values, nnz * sizeof(double),
+  CUDA_SAFE_CALL(cudaMemcpy(d_A_values, h_A_values, nnz * sizeof(float),
                             cudaMemcpyHostToDevice));
 
   // move b to device
-  double *d_b;
-  CUDA_SAFE_CALL(cudaMalloc((void **)&d_b, dim * sizeof(double)));
+  float *d_b;
+  CUDA_SAFE_CALL(cudaMalloc((void **)&d_b, dim * sizeof(float)));
   CUDA_SAFE_CALL(
-      cudaMemcpy(d_b, h_b, dim * sizeof(double), cudaMemcpyHostToDevice));
+      cudaMemcpy(d_b, h_b, dim * sizeof(float), cudaMemcpyHostToDevice));
 
   /*//we want to find a partitioning for our threads
   std::vector<std::vector<unsigned>> which_rows_to_thread((dim + ROWS_PER_THREAD-1)/ROWS_PER_THREAD);
@@ -99,21 +99,28 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
 
   std::cout << "Max Entry per thread: " << max_entries_per_thread << std::endl;
 
+
+  curandState *d_state;
+  cudaMalloc((void **)&d_state, total_threads * sizeof(curandState)); 
+
+  //init random number generators
+  setup_curand_gpu(d_state, 13, total_threads);
+
   // move p, r, q and intermediate storage to device
-  double *d_p;
-  double *d_r;
-  double *d_q;
-  double *d_intermediate;
-  double *d_intermediate_two;
-  double *d_zero;
-  CUDA_SAFE_CALL(cudaMalloc((void **)&d_p, dim * sizeof(double)));
-  CUDA_SAFE_CALL(cudaMalloc((void **)&d_r, dim * sizeof(double)));
-  CUDA_SAFE_CALL(cudaMalloc((void **)&d_q, dim * sizeof(double)));
-  CUDA_SAFE_CALL(cudaMalloc((void **)&d_intermediate, dim * sizeof(double)));
+  float *d_p;
+  float *d_r;
+  float *d_q;
+  float *d_intermediate;
+  float *d_intermediate_two;
+  float *d_zero;
+  CUDA_SAFE_CALL(cudaMalloc((void **)&d_p, dim * sizeof(float)));
+  CUDA_SAFE_CALL(cudaMalloc((void **)&d_r, dim * sizeof(float)));
+  CUDA_SAFE_CALL(cudaMalloc((void **)&d_q, dim * sizeof(float)));
+  CUDA_SAFE_CALL(cudaMalloc((void **)&d_intermediate, dim * sizeof(float)));
   CUDA_SAFE_CALL(
-      cudaMalloc((void **)&d_intermediate_two, dim * sizeof(double)));
-  CUDA_SAFE_CALL(cudaMalloc((void **)&d_zero, dim * sizeof(double)));
-  CUDA_SAFE_CALL(cudaMemset((void **)d_zero, 0, dim * sizeof(double)));
+      cudaMalloc((void **)&d_intermediate_two, dim * sizeof(float)));
+  CUDA_SAFE_CALL(cudaMalloc((void **)&d_zero, dim * sizeof(float)));
+  CUDA_SAFE_CALL(cudaMemset((void **)d_zero, 0, dim * sizeof(float)));
 
   // calculate nr of blocks and threads
   const int blocks =
@@ -121,11 +128,11 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
 
   // solve LSE:
   // init stuff
-  double residual = 1.;  // init value, will be overwritten as soon as we check
+  float residual = 1.;  // init value, will be overwritten as soon as we check
                          // for convergence
-  dcswp(d_affected, d_A_outer, d_A_inner, d_A_values, d_b, dim, d_sq_norms, d_x, relaxation, total_threads, d_intermediate, d_intermediate_two, blocks, max_nnz_in_row);
+  /*dcswp(d_affected, d_A_outer, d_A_inner, d_A_values, d_b, dim, d_sq_norms, d_x, relaxation, total_threads, d_intermediate, d_intermediate_two, blocks, max_nnz_in_row);
   add_gpu(d_intermediate, d_x, d_r, -1, dim);
-  copy_gpu(d_r, d_p, dim);
+  copy_gpu(d_r, d_p, dim);*/
 
   for (int iter = 0; iter < max_iterations; iter++) {
     // calculate residual every L_RESIDUAL iterations
@@ -143,17 +150,21 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
         break;  // stop all the iterations
       }
     }
-    dcswp(d_affected, d_A_outer, d_A_inner, d_A_values, d_zero, dim, d_sq_norms, d_p,
+    /*dcswp(d_affected, d_A_outer, d_A_inner, d_A_values, d_zero, dim, d_sq_norms, d_p,
           relaxation, total_threads, d_intermediate, d_intermediate_two, blocks,
           max_nnz_in_row);
     add_gpu(d_p, d_intermediate, d_q, -1, dim);
-    const double sq_norm_r = dot_product_gpu(d_r, d_r, d_intermediate, dim);
-    const double dot_p_q = dot_product_gpu(d_p, d_q, d_intermediate, dim);
-    const double alpha = sq_norm_r/dot_p_q;
+    const float sq_norm_r = dot_product_gpu(d_r, d_r, d_intermediate, dim);
+    const float dot_p_q = dot_product_gpu(d_p, d_q, d_intermediate, dim);
+    const float alpha = sq_norm_r/dot_p_q;
     add_gpu(d_x, d_p, d_x, alpha,  dim);
     add_gpu(d_r, d_q, d_r, -alpha, dim);
-    const double beta = dot_product_gpu(d_r, d_r, d_intermediate, dim)/sq_norm_r;
-    add_gpu(d_r, d_p, d_p, beta, dim);
+    const float beta = dot_product_gpu(d_r, d_r, d_intermediate, dim)/sq_norm_r;
+    add_gpu(d_r, d_p, d_p, beta, dim);*/
+    dcswp(d_affected, d_A_outer, d_A_inner, d_A_values, d_b, dim, d_sq_norms, d_x,
+          relaxation, total_threads, d_intermediate, d_intermediate_two, blocks,
+          d_state);
+    copy_gpu(d_intermediate, d_x, dim);
   }
 
   // free memory

@@ -29,7 +29,7 @@ KaczmarzSolverStatus carp_gpu(const SparseLinearSystem& lse, Vector& x,
   // get the right-hand side vector
   const double* b = lse.b().data();
 
-  const double b_norm = lse.b().norm();
+  const float b_norm = lse.b().norm();
 
   // get information about sparse matrix
   const unsigned rows = lse.row_count();
@@ -40,11 +40,11 @@ KaczmarzSolverStatus carp_gpu(const SparseLinearSystem& lse, Vector& x,
 
   // get squared norms of the rows of the matrix (precompute for performance)
 
-  std::vector<double> h_sq_norms(dim);
+  std::vector<float> h_sq_norms(dim);
   for (unsigned i = 0; i < dim; i++) {
     // get the row i of the matrix
     Eigen::SparseVector<double> A_row_i = lse.A().innerVector(i);
-    h_sq_norms[i] = A_row_i.dot(A_row_i);
+    h_sq_norms[i] = (float)A_row_i.dot(A_row_i);
 
     if (h_sq_norms[i] < 1e-7) {
       return KaczmarzSolverStatus::ZeroNormRow;  // check for zero norm rows
@@ -62,9 +62,29 @@ KaczmarzSolverStatus carp_gpu(const SparseLinearSystem& lse, Vector& x,
   }
   std::cout << "Max nnz in a row: " << max_nnz_in_row << std::endl;
 
+  float* float_x = new float[dim];
+  for (int i = 0; i < dim; i++){
+    float_x[i] = (float)x[i];
+  }
+
+  float* float_b = new float[dim];
+  for (int i = 0; i < dim; i++){
+    float_b[i] = (float)b[i];
+  }
+
+  float* float_A_values = new float[nnz];
+  for (int i = 0; i < nnz; i++){
+    float_A_values[i] = (float)A_values[i];
+  }
+
   // call carp solver for beginning
-  return invoke_carp_solver_gpu(A_outer, A_inner, A_values, b, x.data(),
+  invoke_carp_solver_gpu(A_outer, A_inner, float_A_values, float_b, float_x,
                                 h_sq_norms.data(), dim, nnz, max_iterations,
-                                precision, max_nnz_in_row, b_norm, nr_of_steps,
-                                relaxation);
+                                (float)precision, max_nnz_in_row, b_norm, nr_of_steps,
+                                (float)relaxation);
+  
+  for (int i = 0; i < dim; i++){
+    x[i] = (float)float_x[i];
+  }
+  return KaczmarzSolverStatus::Converged;
 }
