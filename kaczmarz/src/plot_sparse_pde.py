@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 
 # Load the CSV files and manually assign algorithm names
 data_eigeniterative = pd.read_csv("results_eigeniterative_sparse_pde.csv")
-data_eigeniterative["Algorithm"] = "Eigen iterative"
+data_eigeniterative["Algorithm"] = "Eigen iterative Conjugate Gradient"
 
 #data_bandedcuda = pd.read_csv("results_banded_cuda_sparse_pde.csv")
 #data_bandedcuda["Algorithm"] = "Banded CUDA"
