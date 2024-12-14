@@ -400,9 +400,10 @@ void make_file_cuda_banded(const unsigned int min_problem,
                   << complexity << " DEGREE " << degree
                   << " is being worked on now!" << std::endl;
         std::string file_path = "../../generated_bvp_matrices/problem" +
+                                std::to_string(problem_i) + "/problem" +
                                 std::to_string(problem_i) + "_complexity" +
                                 std::to_string(complexity) + "_degree" +
-                                std::to_string(degree) + ".txt";
+                                std::to_string(degree) + "_banded.txt";
         double stdDev;
         try {
           double avgTime = benchmark_banded_cuda_solver_sparse(
@@ -445,9 +446,10 @@ void make_file_cpu_banded(const unsigned int min_problem,
                   << complexity << " DEGREE " << degree
                   << " is being worked on now!" << std::endl;
         std::string file_path = "../../generated_bvp_matrices/problem" +
+                                std::to_string(problem_i) + "/problem" +
                                 std::to_string(problem_i) + "_complexity" +
                                 std::to_string(complexity) + "_degree" +
-                                std::to_string(degree) + ".txt";
+                                std::to_string(degree) + "_banded.txt";
         double stdDev;
         try {
           double avgTime = benchmark_banded_2_cpu_threads_solver_sparse(
@@ -490,6 +492,7 @@ void make_file_cuda_carp(const unsigned int min_problem,
                   << complexity << " DEGREE " << degree
                   << " is being worked on now!" << std::endl;
         std::string file_path = "../../generated_bvp_matrices/problem" +
+                                std::to_string(problem_i) + "/problem" +
                                 std::to_string(problem_i) + "_complexity" +
                                 std::to_string(complexity) + "_degree" +
                                 std::to_string(degree) + ".txt";
@@ -536,6 +539,7 @@ void make_file_normal_solver(const unsigned int min_problem,
                   << " COMPLEXITY " << complexity << " DEGREE " << degree
                   << " is being worked on now!" << std::endl;
         std::string file_path = "../../generated_bvp_matrices/problem" +
+                                std::to_string(problem_i) + "/problem" +
                                 std::to_string(problem_i) + "_complexity" +
                                 std::to_string(complexity) + "_degree" +
                                 std::to_string(degree) + ".txt";
@@ -580,6 +584,7 @@ void make_file_eigen_solver(const unsigned int min_problem,
                   << complexity << " DEGREE " << degree
                   << " is being worked on now!" << std::endl;
         std::string file_path = "../../generated_bvp_matrices/problem" +
+                                std::to_string(problem_i) + "/problem" +
                                 std::to_string(problem_i) + "_complexity" +
                                 std::to_string(complexity) + "_degree" +
                                 std::to_string(degree) + ".txt";
@@ -625,6 +630,7 @@ void make_file_eigen_iterative(const unsigned int min_problem,
                   << complexity << " DEGREE " << degree
                   << " is being worked on now!" << std::endl;
         std::string file_path = "../../generated_bvp_matrices/problem" +
+                                std::to_string(problem_i) + "/problem" +
                                 std::to_string(problem_i) + "_complexity" +
                                 std::to_string(complexity) + "_degree" +
                                 std::to_string(degree) + ".txt";
@@ -670,6 +676,7 @@ void make_file_cuda_direct(const unsigned int min_problem,
                   << complexity << " DEGREE " << degree
                   << " is being worked on now!" << std::endl;
         std::string file_path = "../../generated_bvp_matrices/problem" +
+                                std::to_string(problem_i) + "/problem" +
                                 std::to_string(problem_i) + "_complexity" +
                                 std::to_string(complexity) + "_degree" +
                                 std::to_string(degree) + ".txt";
