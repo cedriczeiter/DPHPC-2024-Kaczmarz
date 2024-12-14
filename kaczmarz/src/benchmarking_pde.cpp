@@ -43,8 +43,6 @@ BandedLinearSystem convert_to_banded(const SparseLinearSystem& sparse_system,
   // Extract dimension
   unsigned dim = sparse_system.A().rows();
 
-  // Ensure the matrix is square
-
   // Prepare storage for banded matrix data
   std::vector<double> banded_data;
   banded_data.reserve(dim * (2 * bandwidth + 1) - bandwidth * (bandwidth + 1));
