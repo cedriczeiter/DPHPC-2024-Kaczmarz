@@ -152,11 +152,11 @@ class BandedLinearSystem {
    */
   Vector _b;
 
+ public:
   BandedLinearSystem(const unsigned dim, const unsigned bandwidth,
                      const std::vector<double> &A_data, const Vector b)
       : _dim(dim), _bandwidth(bandwidth), _A_data(A_data), _b(b) {}
 
- public:
   /**
    * Returns the set bandwidth of the banded matrix that is coefficient matrix
    * of this LSE.

@@ -13,6 +13,7 @@
 #include "solvers/banded.hpp"
 #include "solvers/basic.hpp"
 #include "solvers/carp.hpp"
+#include "solvers/cusolver.hpp"
 #include "solvers/random.hpp"
 
 #define MAX_IT 1000000
@@ -22,6 +23,44 @@
 #define MAX_PROBLEMS 3
 #define NR_OF_STEPS_CARP 0
 #define RELAXATION 1
+
+int compute_bandwidth(const Eigen::SparseMatrix<double>& A) {
+  int bandwidth = 0;
+
+  // Traverse each row (or column) of the sparse matrix
+  for (int i = 0; i < A.outerSize(); ++i) {
+    for (Eigen::SparseMatrix<double>::InnerIterator it(A, i); it; ++it) {
+      int row = it.row();  // Row index of the current nonzero entry
+      int col = it.col();  // Column index of the current nonzero entry
+      bandwidth = std::max(bandwidth, std::abs(row - col));
+    }
+  }
+
+  return bandwidth;
+}
+
+BandedLinearSystem convert_to_banded(const SparseLinearSystem& sparse_system,
+                                     unsigned bandwidth) {
+  // Extract dimension
+  unsigned dim = sparse_system.A().rows();
+
+  // Ensure the matrix is square
+
+  // Prepare storage for banded matrix data
+  std::vector<double> banded_data;
+  banded_data.reserve(dim * (2 * bandwidth + 1) - bandwidth * (bandwidth + 1));
+
+  // Fill the banded data
+  for (int i = 0; i < (int)dim; ++i) {
+    for (int j = std::max(0, i - (int)bandwidth);
+         j <= std::min((int)dim - 1, i + (int)bandwidth); ++j) {
+      banded_data.push_back(sparse_system.A().coeff(i, j));
+    }
+  }
+
+  // Initialize the BandedLinearSystem
+  return BandedLinearSystem(dim, bandwidth, banded_data, sparse_system.b());
+}
 
 /// @brief Computes the average and standard deviation of a vector of times.
 /// @param times A vector of times recorded for benchmarking in seconds.
@@ -112,6 +151,8 @@ double benchmark_banded_2_cpu_threads_solver_sparse(
   const SparseLinearSystem lse =
       SparseLinearSystem::read_from_stream(lse_input_stream);
 
+  unsigned int bandwidth = compute_bandwidth(lse.A());
+  BandedLinearSystem banded_lse = convert_to_banded(lse, bandwidth);
   // still need to convert the SparseLinearSystem to BandedLinearSystem
 
   for (int i = 0; i < numIterations; ++i) {
@@ -122,8 +163,8 @@ double benchmark_banded_2_cpu_threads_solver_sparse(
     std::vector<int> iterations;
     const auto start = std::chrono::high_resolution_clock::now();
 
-    // const auto status =  kaczmarz_banded_2_cpu_threads(lse, x_kaczmarz,
-    // MAX_IT, PRECISION);
+    const auto status = kaczmarz_banded_2_cpu_threads(banded_lse, x_kaczmarz,
+                                                      MAX_IT, PRECISION);
 
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
@@ -153,7 +194,8 @@ double benchmark_banded_cuda_solver_sparse(const std::string& file_path,
 
   const SparseLinearSystem lse =
       SparseLinearSystem::read_from_stream(lse_input_stream);
-
+  unsigned int bandwidth = compute_bandwidth(lse.A());
+  BandedLinearSystem banded_lse = convert_to_banded(lse, bandwidth);
   // const BandedLinearSystem banded_lse(lse.row_count(),(unsigned int)
   // compute_bandwidth(lse.A()),
   //               lse.A(), lse.b());
@@ -163,13 +205,14 @@ double benchmark_banded_cuda_solver_sparse(const std::string& file_path,
   for (int i = 0; i < numIterations; ++i) {
     // Allocate memory to save kaczmarz solution
     Vector x_kaczmarz = Vector::Zero(lse.column_count());
+
     std::vector<double> times_residuals;
     std::vector<double> residuals;
     std::vector<int> iterations;
     const auto start = std::chrono::high_resolution_clock::now();
 
-    // const auto status =  kaczmarz_banded_cuda(banded_lse, x_kaczmarz, MAX_IT,
-    // PRECISION);
+    const auto status =
+        kaczmarz_banded_cuda(banded_lse, x_kaczmarz, MAX_IT, PRECISION);
 
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
@@ -320,9 +363,8 @@ double benchmark_cudadirect_sparse(const std::string& file_path,
         Eigen::VectorXd::Zero(lse.column_count());
     auto start = std::chrono::high_resolution_clock::now();
 
-    // TO DO: ADD NATIVE CUDA SOLVER
-    // KaczmarzSolverStatus status = native_cuda_solver(lse, x_kaczmarz_sparse,
-    // MAX_IT, PRECISION);
+    KaczmarzSolverStatus status =
+        cusolver(lse, x_kaczmarz_sparse, MAX_IT, PRECISION);
 
     // End timer
     auto end = std::chrono::high_resolution_clock::now();
@@ -651,13 +693,13 @@ void make_file_cuda_direct(const unsigned int min_problem,
 }
 
 int main() {
-  // make_file_cuda_banded(1,MAX_PROBLEMS,1,6,1,3,NUM_IT);
-  // make_file_cpu_banded(1,MAX_PROBLEMS,1,6,1,3,NUM_IT);
-  make_file_cuda_carp(1, MAX_PROBLEMS, 1, 6, 1, 3, NUM_IT);
-  make_file_normal_solver(1, MAX_PROBLEMS, 1, 3, 1, 3, NUM_IT);
-  make_file_eigen_solver(1, MAX_PROBLEMS, 1, 6, 1, 3, NUM_IT);
-  make_file_eigen_iterative(1, MAX_PROBLEMS, 1, 6, 1, 3, NUM_IT);
-  // make_file_cuda_direct(1,MAX_PROBLEMS,1,6,1,3,NUM_IT);
+  make_file_cuda_banded(1, MAX_PROBLEMS, 1, 6, 1, 1, NUM_IT);
+  make_file_cpu_banded(1, MAX_PROBLEMS, 1, 6, 1, 1, NUM_IT);
+  make_file_cuda_carp(1, MAX_PROBLEMS, 1, 6, 1, 1, NUM_IT);
+  make_file_normal_solver(1, MAX_PROBLEMS, 1, 3, 1, 1, NUM_IT);
+  make_file_eigen_solver(1, MAX_PROBLEMS, 1, 6, 1, 1, NUM_IT);
+  make_file_eigen_iterative(1, MAX_PROBLEMS, 1, 6, 1, 1, NUM_IT);
+  make_file_cuda_direct(1, MAX_PROBLEMS, 1, 6, 1, 1, NUM_IT);
 
   return 0;
 }
