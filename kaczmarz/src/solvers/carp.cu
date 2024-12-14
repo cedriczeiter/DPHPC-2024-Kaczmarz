@@ -25,7 +25,8 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
     const double relaxation) {
   // define some variables
   bool converged = false;
-  const unsigned total_threads = (dim / ROWS_PER_THREAD) + 1;
+  const unsigned total_threads =
+      (dim + (ROWS_PER_THREAD - 1)) / ROWS_PER_THREAD;
 
   // allocate move squared norms on device
   double *d_sq_norms;
@@ -83,7 +84,8 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
   // init stuff
   double residual = 1.;  // init value, will be overwritten as soon as we check
                          // for convergence
-  dcswp(d_A_outer, d_A_inner, d_A_values, d_b, dim, d_sq_norms, d_x, relaxation, total_threads, d_r, d_intermediate, blocks, max_nnz_in_row);
+  dcswp(d_A_outer, d_A_inner, d_A_values, d_b, dim, d_sq_norms, d_x, relaxation,
+        total_threads, d_r, d_intermediate, blocks, max_nnz_in_row);
   add_gpu(d_r, d_x, d_r, -1, dim);
   copy_gpu(d_r, d_p, dim);
 
@@ -105,11 +107,11 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
 
     // the actual calculation begin here
     dcswp_zero(d_A_outer, d_A_inner, d_A_values, dim, d_sq_norms, d_p,
-          relaxation, total_threads, d_intermediate, d_intermediate_two, blocks,
-          max_nnz_in_row);
+               relaxation, total_threads, d_intermediate, d_intermediate_two,
+               blocks, max_nnz_in_row);
     add_gpu(d_p, d_intermediate, d_q, -1., dim);
     const double sq_norm_r_old = dot_product_gpu(d_r, d_r, d_intermediate, dim);
-    //std::cout << std::sqrt(sq_norm_r_old)/b_norm << " " << iter << std::endl;
+    // std::cout << std::sqrt(sq_norm_r_old)/b_norm << " " << iter << std::endl;
     const double dot_p_q = dot_product_gpu(d_p, d_q, d_intermediate, dim);
     /*if (dot_r_p < 1e-30) {  // if dot_r_p too small, algorithm is in flat
     region
