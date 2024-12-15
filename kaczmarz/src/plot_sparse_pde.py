@@ -5,6 +5,9 @@ import matplotlib.pyplot as plt
 data_eigeniterative = pd.read_csv("results_eigeniterative_sparse_pde.csv")
 data_eigeniterative["Algorithm"] = "Eigen iterative Conjugate Gradient"
 
+data_seqcg = pd.read_csv("results_sparsesolver_sparse_cg_pde.csv")
+data_seqcg["Algorithm"] = "Sparse CG"
+
 data_eigeniterative2 = pd.read_csv("results_eigeniterative_2_sparse_pde.csv")
 data_eigeniterative2["Algorithm"] = "Eigen iterative BiCGSTAB"
 
@@ -35,6 +38,7 @@ data = pd.concat([
     data_seqnormal,
     data_eigendirect,
     data_cudadirect,
+    data_seqcg,
     data_carp])
 
 # Get unique problems and degrees
