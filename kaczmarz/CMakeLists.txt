@@ -52,6 +52,7 @@ set(NON_CUDA_SOURCES
   ${SOURCE_DIR}/solvers/basic.cpp
   ${SOURCE_DIR}/solvers/common.cpp
   ${SOURCE_DIR}/solvers/random.cpp
+  ${SOURCE_DIR}/solvers/sparse_cg.cpp
 )
 
 # All files that have something that needs cuda inside in here
@@ -116,22 +117,20 @@ if (CMAKE_CUDA_COMPILER)
   # CUDA-enabled executables
   add_executable(benchmark_convergence ${SOURCE_DIR}/benchmarking_convergence.cpp)
   add_executable(benchmark_executable ${SOURCE_DIR}/benchmarking.cpp)
-  #add_executable(kaczmarz_example ${SOURCE_DIR}/kaczmarz_example.cpp)
+  add_executable(kaczmarz_example ${SOURCE_DIR}/kaczmarz_example.cpp)
   add_executable(benchmark_one ${SOURCE_DIR}/benchmark_one.cpp)
   add_executable(benchmark_one_carp ${SOURCE_DIR}/benchmark_one_carp.cpp)
   add_executable(benchmark_one_carp_lambda ${SOURCE_DIR}/benchmark_one_carp_lambda.cpp)
   add_executable(benchmarking_pde ${SOURCE_DIR}/benchmarking_pde.cpp)
-  add_executable(sparse_cg ${SOURCE_DIR}/sparse_cg.cpp)
 
   # Link the non-CUDA and CUDA libraries to the executables
   target_link_libraries(benchmark_convergence PRIVATE non_cuda_library cuda_library linear_systems)
   target_link_libraries(benchmark_executable PRIVATE non_cuda_library cuda_library linear_systems)
-  #target_link_libraries(kaczmarz_example PRIVATE non_cuda_library cuda_library linear_systems)
+  target_link_libraries(kaczmarz_example PRIVATE non_cuda_library cuda_library linear_systems)
   target_link_libraries(benchmark_one PRIVATE non_cuda_library cuda_library linear_systems)
   target_link_libraries(benchmark_one_carp PRIVATE non_cuda_library cuda_library linear_systems)
   target_link_libraries(benchmark_one_carp_lambda PRIVATE non_cuda_library cuda_library linear_systems)
   target_link_libraries(benchmarking_pde PRIVATE non_cuda_library cuda_library linear_systems)
-  target_link_libraries(sparse_cg PRIVATE non_cuda_library)
 
 else()
   message(STATUS "No CUDA compiler found, skipping CUDA targets")

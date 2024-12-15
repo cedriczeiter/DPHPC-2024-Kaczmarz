@@ -13,6 +13,7 @@
 #include "solvers/banded.hpp"
 #include "solvers/carp.hpp"
 #include "solvers/cusolver.hpp"
+#include "solvers/sparse_cg.hpp"
 
 using hrclock = std::chrono::high_resolution_clock;
 
@@ -37,7 +38,7 @@ int main() {
 
   // Read in the system from file
   std::ifstream lse_input_stream(
-      "../../generated_bvp_matrices/problem1_complexity5_degree1.txt");
+      "../../generated_bvp_matrices/problem1_complexity7_degree1.txt");
   const SparseLinearSystem sparse_lse =
       SparseLinearSystem::read_from_stream(lse_input_stream);
 
@@ -112,12 +113,7 @@ int main() {
 
     Vector x_iter = Vector::Zero(dim);
     const auto iter_start = hrclock::now();
-    const auto A = sparse_lse.A();
-    const auto b = sparse_lse.b();
-    Eigen::LeastSquaresConjugateGradient<SparseMatrix> lscg(A);
-    lscg.setTolerance(precision);
-    lscg.setMaxIterations(max_iterations);
-    x_iter = lscg.solve(b);
+    sparse_cg(sparse_lse, x_iter, precision, max_iterations);
     const auto iter_end = hrclock::now();
     /*const auto iter_start = hrclock::now();
     cusolver(sparse_lse, x_iter, max_iterations, precision);
