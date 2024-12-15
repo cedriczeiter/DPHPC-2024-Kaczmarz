@@ -296,9 +296,15 @@ double benchmark_EigenBiCGSTAB_sparse(const std::string& file_path,
   const SparseLinearSystem lse =
       SparseLinearSystem::read_from_stream(lse_input_stream);
   for (int i = 0; i < numIterations; ++i) {
+    const auto A = lse.A();
+    const auto b = lse.b();
+    Eigen::BiCGSTAB<SparseMatrix> solver(A);
+    // lscg.preconditioner() = Eigen::IdentityPreconditioner;
+    solver.setTolerance(PRECISION);
+    solver.setMaxIterations(MAX_IT);
     const auto start = std::chrono::high_resolution_clock::now();
 
-    Vector x_kaczmarz_sparse = lse.eigen_BiCGSTAB();
+    Vector x_kaczmarz_sparse = solver.solve(b);
 
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
@@ -686,6 +692,58 @@ void make_file_eigen_iterative(const unsigned int min_problem,
   std::cout << "EIGEN ITERATIVE IS DONE NOW" << std::endl;
 }
 
+void make_file_eigen_iterative_better(const unsigned int min_problem,
+                               const unsigned int max_problem,
+                               const unsigned int min_complexity,
+                               const unsigned int max_complexity,
+                               const unsigned int min_degree,
+                               const unsigned int max_degree,
+                               const unsigned int iterations) {
+  // Open the file for output
+  std::ofstream outFile("results_eigeniterative_2_sparse_pde.csv");
+  outFile
+      << "File,Problem,Complexity,Degree,AvgTime,StdDev,Dim\n";  // Write the header
+                                                             // for the CSV file
+
+  for (unsigned int problem_i = min_problem; problem_i <= max_problem;
+       ++problem_i) {
+    // Loop over problem sizes, benchmark, and write to file
+    for (unsigned int complexity = min_complexity; complexity <= max_complexity;
+         ++complexity) {
+      for (unsigned int degree = min_degree; degree <= max_degree; ++degree) {
+        std::cout << "EIGEN ITERATIVE BiCGSTAB PROBLEM " << problem_i << " COMPLEXITY "
+                  << complexity << " DEGREE " << degree
+                  << " is being worked on now!" << std::endl;
+        std::string file_path = "../../generated_bvp_matrices/problem" +
+                                std::to_string(problem_i) + "/problem" +
+                                std::to_string(problem_i) + "_complexity" +
+                                std::to_string(complexity) + "_degree" +
+                                std::to_string(degree) + ".txt";
+        double stdDev;
+        try {
+          double avgTime =
+              benchmark_EigenBiCGSTAB_sparse(file_path, iterations, stdDev);
+
+            unsigned nnz, rows, cols;
+            std::ifstream lse_input_stream(file_path);
+            if (!lse_input_stream) {
+              throw std::runtime_error("Failed to open matrix file: " + file_path);
+            }
+            lse_input_stream >> nnz >> rows >> cols;
+          // Write results to the file
+          outFile << file_path << "," << problem_i << "," << complexity << ","
+                  << degree << "," << avgTime << "," << stdDev << "," << rows << "\n";
+        } catch (const std::exception& e) {
+          std::cerr << "Error processing file " << file_path << ": " << e.what()
+                    << std::endl;
+        }
+      }
+    }
+  }
+  outFile.close();  // Close the file after writing
+  std::cout << "EIGEN ITERATIVE IS DONE NOW" << std::endl;
+}
+
 void make_file_cuda_direct(const unsigned int min_problem,
                            const unsigned int max_problem,
                            const unsigned int min_complexity,
@@ -743,6 +801,7 @@ int main() {
   make_file_eigen_solver(1, MAX_PROBLEMS, 1, 6, 1, 1, NUM_IT);
   make_file_cuda_direct(1, MAX_PROBLEMS, 1, 6, 1, 1, NUM_IT);
   make_file_eigen_iterative(1, MAX_PROBLEMS, 1, 6, 1, 1, NUM_IT);
+  make_file_eigen_iterative_better(1, MAX_PROBLEMS, 1, 6, 1, 1, NUM_IT);
   make_file_cuda_banded(1, MAX_PROBLEMS, 1, 6, 1, 1, NUM_IT);
   make_file_cpu_banded(1, MAX_PROBLEMS, 1, 6, 1, 1, NUM_IT);
   make_file_normal_solver(1, MAX_PROBLEMS, 1, 3, 1, 1, NUM_IT);

@@ -1,0 +1,119 @@
+#include <Eigen/IterativeLinearSolvers>
+#include <Eigen/Sparse>
+#include <Eigen/SparseLU>
+#include <chrono>
+#include <climits>
+#include <fstream>
+#include <iostream>
+#include <random>
+
+#include "linear_systems/sparse.hpp"
+#include "linear_systems/types.hpp"
+#include "solvers/asynchronous.hpp"
+#include "solvers/banded.hpp"
+#include "solvers/carp.hpp"
+#include "solvers/cusolver.hpp"
+#include "solvers/basic.hpp"
+
+using hrclock = std::chrono::high_resolution_clock;
+
+#define NRUNS 10
+
+/// Beware: For serious timed testing, we need to put up the L_RESIDUAL in
+/// carp_utils.hpp up to maybe like 1000
+/// And maybe we need to put L_RESIDUAL to 1 for the convergence tracking
+
+
+int main() {
+  // Open a single CSV file to write all results
+  std::ofstream outFile("convergence_results.csv");
+  if (!outFile) {
+    std::cerr << "Error: Could not open results file for writing." << std::endl;
+    return -1;
+  }
+
+  // Write the header for the CSV file
+  outFile << "Problem,Complexity,Degree,Precision,CarpTime,NormalTime\n";
+
+  // Iterate through all problems, complexities, and degrees
+  for (int problem = 1; problem <= 3; ++problem) {
+    for (int complexity = 1; complexity <= 4; ++complexity) {
+      for (int degree = 1; degree <= 1; ++degree) {
+        // Construct the file path dynamically
+        std::ostringstream file_path;
+        file_path << "../../generated_bvp_matrices/problem" << problem
+                  << "_complexity" << complexity << "_degree" << degree
+                  << ".txt";
+
+        std::cout << "Processing file: " << file_path.str() << std::endl;
+
+        // Read in the system from the generated file
+        std::ifstream lse_input_stream(file_path.str());
+        if (!lse_input_stream) {
+          std::cerr << "Error: Could not open file " << file_path.str()
+                    << std::endl;
+          continue; // Skip this file and move to the next one
+        }
+
+        const SparseLinearSystem sparse_lse =
+            SparseLinearSystem::read_from_stream(lse_input_stream);
+
+        // Define Variables
+        const unsigned dim = sparse_lse.row_count();
+        const unsigned max_iterations = std::numeric_limits<unsigned int>::max() - 1;
+
+        std::cout << "Dimension: " << dim << std::endl;
+
+        double precision = 1; // Initial precision
+        for (int i = 0; i < NRUNS; ++i) {
+          //////////////////////////////////////////
+          // Calculating the solution with CARP
+          //////////////////////////////////////////
+          Vector x_kaczmarz = Vector::Zero(dim);
+
+          const auto kaczmarz_start = hrclock::now();
+          int nr_of_steps = 0;
+          const double relaxation = 0.35;
+          const auto status = carp_gpu(sparse_lse, x_kaczmarz, max_iterations,
+                                       precision, relaxation, nr_of_steps);
+          const auto kaczmarz_end = hrclock::now();
+          const auto carp_time =
+              std::chrono::duration_cast<std::chrono::milliseconds>(
+                  kaczmarz_end - kaczmarz_start)
+                  .count();
+
+          //////////////////////////////////////////
+          // Calculating the solution with Sparse Kaczmarz
+          //////////////////////////////////////////
+          Vector x_iter = Vector::Zero(dim);
+          std::vector<double> times_residuals;
+          std::vector<double> residuals;
+          std::vector<int> iterations;
+          const auto iter_start = hrclock::now();
+          sparse_kaczmarz(sparse_lse, x_iter, max_iterations, precision,
+                          times_residuals, residuals, iterations, 1);
+          const auto iter_end = hrclock::now();
+          const auto normal_time =
+              std::chrono::duration_cast<std::chrono::milliseconds>(
+                  iter_end - iter_start)
+                  .count();
+
+          //////////////////////////////////////////
+          // Write Results to the Single CSV File
+          //////////////////////////////////////////
+          outFile << problem << "," << complexity << "," << degree << ","
+                  << precision << "," << carp_time << "," << normal_time
+                  << "\n";
+
+          precision *= 0.1; // Decrease precision for the next iteration
+        }
+
+        std::cout << "Finished processing file: " << file_path.str() << std::endl;
+      }
+    }
+  }
+
+  std::cout << "All problems processed successfully!" << std::endl;
+
+  return 0;
+}

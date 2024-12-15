@@ -5,6 +5,9 @@ import matplotlib.pyplot as plt
 data_eigeniterative = pd.read_csv("results_eigeniterative_sparse_pde.csv")
 data_eigeniterative["Algorithm"] = "Eigen iterative Conjugate Gradient"
 
+data_eigeniterative2 = pd.read_csv("results_eigeniterative_2_sparse_pde.csv")
+data_eigeniterative2["Algorithm"] = "Eigen iterative BiCGSTAB"
+
 data_bandedcuda = pd.read_csv("results_banded_cuda_sparse_pde.csv")
 data_bandedcuda["Algorithm"] = "Banded CUDA"
 
@@ -26,6 +29,7 @@ data_carp["Algorithm"] = "CARP CUDA"
 # Combine the datasets into a single DataFrame
 data = pd.concat([
     data_eigeniterative,
+    data_eigeniterative2,
     data_bandedcuda,
     data_bandedcpu,
     data_seqnormal,

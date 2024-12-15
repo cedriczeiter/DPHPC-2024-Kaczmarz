@@ -121,6 +121,7 @@ if (CMAKE_CUDA_COMPILER)
   add_executable(benchmark_one_carp ${SOURCE_DIR}/benchmark_one_carp.cpp)
   add_executable(benchmark_one_carp_lambda ${SOURCE_DIR}/benchmark_one_carp_lambda.cpp)
   add_executable(benchmarking_pde ${SOURCE_DIR}/benchmarking_pde.cpp)
+  add_executable(show_convergence ${SOURCE_DIR}/show_convergence.cpp)
 
   # Link the non-CUDA and CUDA libraries to the executables
   target_link_libraries(benchmark_convergence PRIVATE non_cuda_library cuda_library linear_systems)
@@ -130,6 +131,7 @@ if (CMAKE_CUDA_COMPILER)
   target_link_libraries(benchmark_one_carp PRIVATE non_cuda_library cuda_library linear_systems)
   target_link_libraries(benchmark_one_carp_lambda PRIVATE non_cuda_library cuda_library linear_systems)
   target_link_libraries(benchmarking_pde PRIVATE non_cuda_library cuda_library linear_systems)
+  target_link_libraries(show_convergence PRIVATE non_cuda_library cuda_library linear_systems)
 
 else()
   message(STATUS "No CUDA compiler found, skipping CUDA targets")
