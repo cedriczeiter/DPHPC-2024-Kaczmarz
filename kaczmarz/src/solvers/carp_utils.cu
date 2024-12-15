@@ -25,61 +25,134 @@ __global__ void kswp(const int *A_outer, const int *A_inner,
   if (tid * rows_per_thread < dim)  // only if thread has assigned rows (dim)
   {
     // perform sweep
-    // INFO: for the carp-cg algorithm, only one run per thread should be used
-    for (unsigned local_iter = 0; local_iter < LOCAL_RUNS_PER_THREAD;
-         local_iter++) {
-      switch (forward) {
-        case true:
-          for (unsigned k = 0; k < rows_per_thread; k++) {
-            assert(rows_per_thread == 1);
-            assert(k == 0);
-            const unsigned row = tid * rows_per_thread + k;
-            // compute dot product row * x
-            double dot_product = 0.;
+    switch (forward) {
+      case true:
+        for (unsigned k = 0;
+             k < rows_per_thread && (tid * rows_per_thread + k) < dim; k++) {
+          const unsigned row = tid * rows_per_thread + k;
+          // compute dot product row * x
+          double dot_product = 0.;
 
-            const int a_outer_row = A_outer[row];
-            const int a_outer_row_next = A_outer[row + 1];
-            for (unsigned i = a_outer_row; i < a_outer_row_next; i++) {
-              const double x_value = x[A_inner[i]];
-              dot_product += A_values_shared[i] * x_value;
-            }
-
-            // calculate update
-            const double update_coeff =
-                relaxation *
-                ((b_local[row] - dot_product) / (sq_norms_local[row]));
-            // printf("sq_norm: %f, update: %f\n", sq_norms_local[row],
-            // update_coeff);
-            //  save update for output
-            for (unsigned i = a_outer_row; i < a_outer_row_next; i++) {
-              atomicAdd(&output[A_inner[i]], update_coeff * A_values_shared[i]);
-            }
+          const int a_outer_row = A_outer[row];
+          const int a_outer_row_next = A_outer[row + 1];
+          for (unsigned i = a_outer_row; i < a_outer_row_next; i++) {
+            const double x_value = x[A_inner[i]];
+            dot_product += A_values_shared[i] * x_value;
           }
-          break;
-        case false:
-          for (int k = rows_per_thread - 1; k >= 0; k--) {
-            const unsigned row = tid * rows_per_thread + k;
-            // compute dot product row * x
-            double dot_product = 0.;
 
-            const int a_outer_row = A_outer[row];
-            const int a_outer_row_next = A_outer[row + 1];
-            for (unsigned i = a_outer_row; i < a_outer_row_next; i++) {
-              const double x_value = x[A_inner[i]];
-              dot_product += A_values_shared[i] * x_value;
-            }
-            // calculate update
-            const double update_coeff =
-                relaxation *
-                ((b_local[row] - dot_product) / (sq_norms_local[row]));
-            // save update for output
-            for (unsigned i = a_outer_row; i < a_outer_row_next; i++) {
-              atomicAdd(&output[A_inner[i]],
-                        /*(1. /  (double)affected[A_inner[i]])*/ update_coeff *
-                            A_values_shared[i]);
-            }
+          // calculate update
+          const double update_coeff =
+              relaxation *
+              ((b_local[row] - dot_product) / (sq_norms_local[row]));
+          // printf("sq_norm: %f, update: %f\n", sq_norms_local[row],
+          // update_coeff);
+          //  save update for output
+          for (unsigned i = a_outer_row; i < a_outer_row_next; i++) {
+            atomicAdd(&output[A_inner[i]], update_coeff * A_values_shared[i]);
           }
-      }
+        }
+        break;
+      case false:
+        for (int k = 0;
+             k < rows_per_thread && (tid * rows_per_thread + k) < dim; k++) {
+          unsigned row = ((tid + 1) * rows_per_thread) - k -
+                         1;  // this is added to allow the algorithm to work
+                             // even if the rows_per_thread does not cleanly
+                             // divide the dimension of the matrix
+          if (row >= dim) {
+            row -= rows_per_thread - (dim % rows_per_thread);
+          }
+          assert(row < dim);
+
+          // compute dot product row * x
+          double dot_product = 0.;
+          const int a_outer_row = A_outer[row];
+          const int a_outer_row_next = A_outer[row + 1];
+          for (unsigned i = a_outer_row; i < a_outer_row_next; i++) {
+            const double x_value = x[A_inner[i]];
+            dot_product += A_values_shared[i] * x_value;
+          }
+          // calculate update
+          const double update_coeff =
+              relaxation *
+              ((b_local[row] - dot_product) / (sq_norms_local[row]));
+          // save update for output
+          for (unsigned i = a_outer_row; i < a_outer_row_next; i++) {
+            atomicAdd(&output[A_inner[i]],
+                      /*(1. /  (double)affected[A_inner[i]])*/ update_coeff *
+                          A_values_shared[i]);
+          }
+        }
+    }
+  }
+}
+
+__global__ void kswp_zero(const int *A_outer, const int *A_inner,
+                          const double *A_values_shared, const unsigned dim,
+                          const double *sq_norms_local, const double *x,
+                          const unsigned rows_per_thread,
+                          const double relaxation, double *output,
+                          bool forward) {
+  const unsigned tid = blockIdx.x * blockDim.x + threadIdx.x;
+  if (tid * rows_per_thread < dim)  // only if thread has assigned rows (dim)
+  {
+    // perform sweep
+    switch (forward) {
+      case true:
+        for (unsigned k = 0;
+             k < rows_per_thread && (tid * rows_per_thread + k) < dim; k++) {
+          const unsigned row = tid * rows_per_thread + k;
+          // compute dot product row * x
+          double dot_product = 0.;
+
+          const int a_outer_row = A_outer[row];
+          const int a_outer_row_next = A_outer[row + 1];
+          for (unsigned i = a_outer_row; i < a_outer_row_next; i++) {
+            const double x_value = x[A_inner[i]];
+            dot_product += A_values_shared[i] * x_value;
+          }
+
+          // calculate update
+          const double update_coeff =
+              relaxation * (-dot_product / sq_norms_local[row]);
+          // printf("sq_norm: %f, update: %f\n", sq_norms_local[row],
+          // update_coeff);
+          //  save update for output
+          for (unsigned i = a_outer_row; i < a_outer_row_next; i++) {
+            atomicAdd(&output[A_inner[i]], update_coeff * A_values_shared[i]);
+          }
+        }
+        break;
+      case false:
+        for (int k = 0;
+             k < rows_per_thread && (tid * rows_per_thread + k) < dim; k++) {
+          unsigned row = ((tid + 1) * rows_per_thread) - k -
+                         1;  // this is added to allow the algorithm to work
+                             // even if the rows_per_thread does not cleanly
+                             // divide the dimension of the matrix
+          if (row >= dim) {
+            row -= rows_per_thread - (dim % rows_per_thread);
+          }
+          assert(row < dim);
+
+          // compute dot product row * x
+          double dot_product = 0.;
+          const int a_outer_row = A_outer[row];
+          const int a_outer_row_next = A_outer[row + 1];
+          for (unsigned i = a_outer_row; i < a_outer_row_next; i++) {
+            const double x_value = x[A_inner[i]];
+            dot_product += A_values_shared[i] * x_value;
+          }
+          // calculate update
+          const double update_coeff =
+              relaxation * (-dot_product / (sq_norms_local[row]));
+          // save update for output
+          for (unsigned i = a_outer_row; i < a_outer_row_next; i++) {
+            atomicAdd(&output[A_inner[i]],
+                      /*(1. /  (double)affected[A_inner[i]])*/ update_coeff *
+                          A_values_shared[i]);
+          }
+        }
     }
   }
 }
@@ -98,6 +171,13 @@ __global__ void copy(const double *from, double *to, const unsigned dim) {
   if (tid < dim) {
     to[tid] = from[tid];
     // printf("Copying: %lf, %lf\n", from[tid], to[tid]);
+  }
+}
+
+__global__ void reduce(double *data, const unsigned dim) {
+  const unsigned tid = blockIdx.x * blockDim.x + threadIdx.x;
+  if (tid + (dim + 1) / 2 < dim) {
+    data[tid] += data[tid + (dim + 1) / 2];
   }
 }
 
@@ -134,16 +214,17 @@ double dot_product_gpu(const double *d_a, const double *d_b, double *d_to,
   square_vector<<<blocks, THREADS_PER_BLOCK>>>(d_a, d_b, d_to, dim);
   auto res = cudaDeviceSynchronize();
   assert(res == 0);
-
-  double h_intermediate[dim];
-  cudaMemcpy(h_intermediate, d_to, dim * sizeof(double),
-             cudaMemcpyDeviceToHost);
-  double dot = 0;
-  for (unsigned i = 0; i < dim; i++) {
-    double value = h_intermediate[i];
-    dot += value;
+  unsigned current_dim = dim;
+  while (current_dim > 1) {
+    const unsigned current_blocks =
+        ((current_dim + 1) / 2 + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
+    reduce<<<current_blocks, THREADS_PER_BLOCK>>>(d_to, current_dim);
+    current_dim = (current_dim + 1) / 2;
   }
-  return dot;
+  double dot_product;
+  CUDA_SAFE_CALL(
+      cudaMemcpy(&dot_product, d_to, sizeof(double), cudaMemcpyDeviceToHost));
+  return dot_product;
 }
 
 // Function to perform the sweep forward and backward (main function of the CARP
@@ -169,6 +250,33 @@ void dcswp(const int *d_A_outer, const int *d_A_inner, const double *d_A_values,
   // perform step backward
   kswp<<<blocks, THREADS_PER_BLOCK>>>(
       d_A_outer, d_A_inner, d_A_values, d_b, dim, d_sq_norms, d_intermediate,
+      ROWS_PER_THREAD, relaxation, d_output, false);
+
+  res = cudaDeviceSynchronize();
+  assert(res == 0);
+}
+
+void dcswp_zero(const int *d_A_outer, const int *d_A_inner,
+                const double *d_A_values, const unsigned dim,
+                const double *d_sq_norms, const double *d_x,
+                const double relaxation, const unsigned total_threads,
+                double *d_output, double *d_intermediate, const unsigned blocks,
+                const unsigned max_nnz_in_row) {
+  // copy x vector to output vector
+  copy_gpu(d_x, d_intermediate, dim);
+  // perform step forward
+  kswp_zero<<<blocks, THREADS_PER_BLOCK>>>(
+      d_A_outer, d_A_inner, d_A_values, dim, d_sq_norms, d_x, ROWS_PER_THREAD,
+      relaxation, d_intermediate, true);
+
+  auto res = cudaDeviceSynchronize();
+  assert(res == 0);
+
+  // copy intermediate vector over to output vector
+  copy_gpu(d_intermediate, d_output, dim);
+  // perform step backward
+  kswp_zero<<<blocks, THREADS_PER_BLOCK>>>(
+      d_A_outer, d_A_inner, d_A_values, dim, d_sq_norms, d_intermediate,
       ROWS_PER_THREAD, relaxation, d_output, false);
 
   res = cudaDeviceSynchronize();

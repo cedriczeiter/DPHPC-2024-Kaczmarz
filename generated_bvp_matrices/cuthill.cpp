@@ -244,7 +244,7 @@ bool check_solution(const SparseLinearSystem &original,
 }
 
 int main() {
-  std::string input_filename = "../problem1/problem1_complexity1_degree1.txt";
+  std::string input_filename = "../problem3_complexity6_degree3.txt";
   std::ifstream in_stream(input_filename);
   if (!in_stream.is_open()) {
     std::cerr << "Error: Could not open input file." << std::endl;
