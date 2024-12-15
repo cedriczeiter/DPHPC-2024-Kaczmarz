@@ -18,7 +18,7 @@
 using hrclock = std::chrono::high_resolution_clock;
 
 #define NRUNS 10           // Number of precision steps
-#define NUM_REPETITIONS 5  // Number of repetitions per precision
+#define NUM_REPETITIONS 4  // Number of repetitions per precision
 
 int main() {
   // Open a single CSV file to write all results
@@ -33,7 +33,7 @@ int main() {
 
   // Iterate through all problems, complexities, and degrees
   for (int problem = 1; problem <= 3; ++problem) {
-    for (int complexity = 1; complexity <= 4; ++complexity) {
+    for (int complexity = 1; complexity <= 3; ++complexity) {
       for (int degree = 1; degree <= 1; ++degree) {
         // Construct the file path dynamically
         std::ostringstream file_path;
