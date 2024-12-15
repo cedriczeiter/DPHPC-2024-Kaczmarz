@@ -7,7 +7,9 @@
 #include <iostream>
 #include <random>
 
-#define L_RESIDUAL 1
+#ifndef L_RESIDUAL
+    #define L_RESIDUAL 1
+#endif
 
 #include "linear_systems/sparse.hpp"
 #include "linear_systems/types.hpp"
@@ -52,7 +54,7 @@ int main() {
                 file_path << "../../generated_bvp_matrices/problem" << problem << "/problem" << problem
                           << "_complexity" << complexity << "_degree" << degree
                           << ".txt";
-                
+
                 std::cout << "Processing file: " << file_path.str() << std::endl;
 
                 // Read in the system from the generated file
