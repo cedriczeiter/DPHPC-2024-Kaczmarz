@@ -5,11 +5,11 @@ import matplotlib.pyplot as plt
 data_eigeniterative = pd.read_csv("results_eigeniterative_sparse_pde.csv")
 data_eigeniterative["Algorithm"] = "Eigen iterative Conjugate Gradient"
 
-#data_bandedcuda = pd.read_csv("results_banded_cuda_sparse_pde.csv")
-#data_bandedcuda["Algorithm"] = "Banded CUDA"
+data_bandedcuda = pd.read_csv("results_banded_cuda_sparse_pde.csv")
+data_bandedcuda["Algorithm"] = "Banded CUDA"
 
-#data_bandedcpu = pd.read_csv("results_banded_cpu_2_threads_sparse_pde.csv")
-#data_bandedcpu["Algorithm"] = "Banded CPU"
+data_bandedcpu = pd.read_csv("results_banded_cpu_2_threads_sparse_pde.csv")
+data_bandedcpu["Algorithm"] = "Banded CPU"
 
 data_seqnormal = pd.read_csv("results_sparsesolver_sparse_pde.csv")
 data_seqnormal["Algorithm"] = "Base algorithm"
@@ -17,8 +17,8 @@ data_seqnormal["Algorithm"] = "Base algorithm"
 data_eigendirect = pd.read_csv("results_eigensolver_sparse_pde.csv")
 data_eigendirect["Algorithm"] = "Eigen Direct"
 
-#data_cudadirect = pd.read_csv("results_cudadirect_sparse_pde.csv")
-#data_cudadirect["Algorithm"] = "CUDA Direct"
+data_cudadirect = pd.read_csv("results_cudadirect_sparse_pde.csv")
+data_cudadirect["Algorithm"] = "CUDA Direct"
 
 data_carp = pd.read_csv("results_carp_cuda_sparse_pde.csv")
 data_carp["Algorithm"] = "CARP CUDA"
@@ -26,11 +26,11 @@ data_carp["Algorithm"] = "CARP CUDA"
 # Combine the datasets into a single DataFrame
 data = pd.concat([
     data_eigeniterative,
-    #data_bandedcuda,
-    #data_bandedcpu,
+    data_bandedcuda,
+    data_bandedcpu,
     data_seqnormal,
     data_eigendirect,
-    #data_cudadirect,
+    data_cudadirect,
     data_carp])
 
 # Get unique problems and degrees
@@ -66,6 +66,7 @@ for problem in problems:
         # Add grid and legend
         plt.grid(True)
         plt.yscale('log')
+        plt.xscale('log')
         plt.legend(loc="center left", bbox_to_anchor=(1, 0.5))
 
         # Adjust layout to avoid cropping the legend
