@@ -13,6 +13,7 @@
 #include "solvers/banded.hpp"
 #include "solvers/carp.hpp"
 #include "solvers/cusolver.hpp"
+#include "solvers/sparse_cg.hpp"
 
 using hrclock = std::chrono::high_resolution_clock;
 

@@ -52,6 +52,7 @@ set(NON_CUDA_SOURCES
   ${SOURCE_DIR}/solvers/basic.cpp
   ${SOURCE_DIR}/solvers/common.cpp
   ${SOURCE_DIR}/solvers/random.cpp
+  ${SOURCE_DIR}/solvers/sparse_cg.cpp
 )
 
 # All files that have something that needs cuda inside in here
