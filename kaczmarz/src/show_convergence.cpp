@@ -43,7 +43,7 @@ int main() {
 
     // Iterate through all problems, complexities, and degrees
     for (int problem = 1; problem <= 3; ++problem) {
-        for (int complexity = 1; complexity <= 3; ++complexity) {
+        for (int complexity = 1; complexity <= 4; ++complexity) {
             for (int degree = 1; degree <= 1; ++degree) {
                 // Construct the file path dynamically
                 std::ostringstream file_path;
