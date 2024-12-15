@@ -5,7 +5,7 @@
 #include <stdio.h>
 
 #ifndef L_RESIDUAL
-    #define L_RESIDUAL 2000  // Default value
+#define L_RESIDUAL 2000  // Default value
 #endif
 
 #define ROWS_PER_THREAD 1

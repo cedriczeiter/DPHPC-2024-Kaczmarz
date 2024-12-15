@@ -390,8 +390,9 @@ void make_file_cuda_banded(const unsigned int min_problem,
   // Open the file for output
   std::ofstream outFile("results_banded_cuda_sparse_pde.csv");
   outFile
-      << "File,Problem,Complexity,Degree,AvgTime,StdDev,Dim\n";  // Write the header
-                                                             // for the CSV file
+      << "File,Problem,Complexity,Degree,AvgTime,StdDev,Dim\n";  // Write the
+                                                                 // header for
+                                                                 // the CSV file
 
   for (unsigned int problem_i = min_problem; problem_i <= max_problem;
        ++problem_i) {
@@ -412,15 +413,17 @@ void make_file_cuda_banded(const unsigned int min_problem,
           double avgTime = benchmark_banded_cuda_solver_sparse(
               file_path, iterations, stdDev);
 
-            unsigned nnz, rows, cols;
-            std::ifstream lse_input_stream(file_path);
-            if (!lse_input_stream) {
-              throw std::runtime_error("Failed to open matrix file: " + file_path);
-            }
-            lse_input_stream >> nnz >> rows >> cols;
+          unsigned nnz, rows, cols;
+          std::ifstream lse_input_stream(file_path);
+          if (!lse_input_stream) {
+            throw std::runtime_error("Failed to open matrix file: " +
+                                     file_path);
+          }
+          lse_input_stream >> nnz >> rows >> cols;
           // Write results to the file
           outFile << file_path << "," << problem_i << "," << complexity << ","
-                  << degree << "," << avgTime << "," << stdDev << "," << rows << "\n";
+                  << degree << "," << avgTime << "," << stdDev << "," << rows
+                  << "\n";
         } catch (const std::exception& e) {
           std::cerr << "Error processing file " << file_path << ": " << e.what()
                     << std::endl;
@@ -442,8 +445,9 @@ void make_file_cpu_banded(const unsigned int min_problem,
   // Open the file for output
   std::ofstream outFile("results_banded_cpu_2_threads_sparse_pde.csv");
   outFile
-      << "File,Problem,Complexity,Degree,AvgTime,StdDev,Dim\n";  // Write the header
-                                                             // for the CSV file
+      << "File,Problem,Complexity,Degree,AvgTime,StdDev,Dim\n";  // Write the
+                                                                 // header for
+                                                                 // the CSV file
 
   for (unsigned int problem_i = min_problem; problem_i <= max_problem;
        ++problem_i) {
@@ -464,15 +468,17 @@ void make_file_cpu_banded(const unsigned int min_problem,
           double avgTime = benchmark_banded_2_cpu_threads_solver_sparse(
               file_path, iterations, stdDev);
 
-            unsigned nnz, rows, cols;
-            std::ifstream lse_input_stream(file_path);
-            if (!lse_input_stream) {
-              throw std::runtime_error("Failed to open matrix file: " + file_path);
-            }
-            lse_input_stream >> nnz >> rows >> cols;
+          unsigned nnz, rows, cols;
+          std::ifstream lse_input_stream(file_path);
+          if (!lse_input_stream) {
+            throw std::runtime_error("Failed to open matrix file: " +
+                                     file_path);
+          }
+          lse_input_stream >> nnz >> rows >> cols;
           // Write results to the file
           outFile << file_path << "," << problem_i << "," << complexity << ","
-                  << degree << "," << avgTime << "," << stdDev << "," << rows << "\n";
+                  << degree << "," << avgTime << "," << stdDev << "," << rows
+                  << "\n";
         } catch (const std::exception& e) {
           std::cerr << "Error processing file " << file_path << ": " << e.what()
                     << std::endl;
@@ -494,8 +500,9 @@ void make_file_cuda_carp(const unsigned int min_problem,
   // Open the file for output
   std::ofstream outFile("results_carp_cuda_sparse_pde.csv");
   outFile
-      << "File,Problem,Complexity,Degree,AvgTime,StdDev,Dim\n";  // Write the header
-                                                             // for the CSV file
+      << "File,Problem,Complexity,Degree,AvgTime,StdDev,Dim\n";  // Write the
+                                                                 // header for
+                                                                 // the CSV file
 
   for (unsigned int problem_i = min_problem; problem_i <= max_problem;
        ++problem_i) {
@@ -516,15 +523,17 @@ void make_file_cuda_carp(const unsigned int min_problem,
           double avgTime =
               benchmark_carpcuda_solver_sparse(file_path, iterations, stdDev);
 
-            unsigned nnz, rows, cols;
-            std::ifstream lse_input_stream(file_path);
-            if (!lse_input_stream) {
-              throw std::runtime_error("Failed to open matrix file: " + file_path);
-            }
-            lse_input_stream >> nnz >> rows >> cols;
+          unsigned nnz, rows, cols;
+          std::ifstream lse_input_stream(file_path);
+          if (!lse_input_stream) {
+            throw std::runtime_error("Failed to open matrix file: " +
+                                     file_path);
+          }
+          lse_input_stream >> nnz >> rows >> cols;
           // Write results to the file
           outFile << file_path << "," << problem_i << "," << complexity << ","
-                  << degree << "," << avgTime << "," << stdDev << "," << rows << "\n";
+                  << degree << "," << avgTime << "," << stdDev << "," << rows
+                  << "\n";
         } catch (const std::exception& e) {
           std::cerr << "Error processing file " << file_path << ": " << e.what()
                     << std::endl;
@@ -547,8 +556,9 @@ void make_file_normal_solver(const unsigned int min_problem,
   // Open the file for output
   std::ofstream outFile("results_sparsesolver_sparse_pde.csv");
   outFile
-      << "File,Problem,Complexity,Degree,AvgTime,StdDev,Dim\n";  // Write the header
-                                                             // for the CSV file
+      << "File,Problem,Complexity,Degree,AvgTime,StdDev,Dim\n";  // Write the
+                                                                 // header for
+                                                                 // the CSV file
 
   for (unsigned int problem_i = min_problem; problem_i <= max_problem;
        ++problem_i) {
@@ -569,15 +579,17 @@ void make_file_normal_solver(const unsigned int min_problem,
           double avgTime =
               benchmark_sparsesolver_sparse(file_path, iterations, stdDev);
 
-            unsigned nnz, rows, cols;
-            std::ifstream lse_input_stream(file_path);
-            if (!lse_input_stream) {
-              throw std::runtime_error("Failed to open matrix file: " + file_path);
-            }
-            lse_input_stream >> nnz >> rows >> cols;
+          unsigned nnz, rows, cols;
+          std::ifstream lse_input_stream(file_path);
+          if (!lse_input_stream) {
+            throw std::runtime_error("Failed to open matrix file: " +
+                                     file_path);
+          }
+          lse_input_stream >> nnz >> rows >> cols;
           // Write results to the file
           outFile << file_path << "," << problem_i << "," << complexity << ","
-                  << degree << "," << avgTime << "," << stdDev << "," << rows << "\n";
+                  << degree << "," << avgTime << "," << stdDev << "," << rows
+                  << "\n";
         } catch (const std::exception& e) {
           std::cerr << "Error processing file " << file_path << ": " << e.what()
                     << std::endl;
@@ -599,8 +611,9 @@ void make_file_eigen_solver(const unsigned int min_problem,
   // Open the file for output
   std::ofstream outFile("results_eigensolver_sparse_pde.csv");
   outFile
-      << "File,Problem,Complexity,Degree,AvgTime,StdDev,Dim\n";  // Write the header
-                                                             // for the CSV file
+      << "File,Problem,Complexity,Degree,AvgTime,StdDev,Dim\n";  // Write the
+                                                                 // header for
+                                                                 // the CSV file
   for (unsigned int problem_i = min_problem; problem_i <= max_problem;
        ++problem_i) {
     // Loop over problem sizes, benchmark, and write to file
@@ -620,15 +633,17 @@ void make_file_eigen_solver(const unsigned int min_problem,
           double avgTime =
               benchmark_EigenSolver_sparse(file_path, iterations, stdDev);
 
-            unsigned nnz, rows, cols;
-            std::ifstream lse_input_stream(file_path);
-            if (!lse_input_stream) {
-              throw std::runtime_error("Failed to open matrix file: " + file_path);
-            }
-            lse_input_stream >> nnz >> rows >> cols;
+          unsigned nnz, rows, cols;
+          std::ifstream lse_input_stream(file_path);
+          if (!lse_input_stream) {
+            throw std::runtime_error("Failed to open matrix file: " +
+                                     file_path);
+          }
+          lse_input_stream >> nnz >> rows >> cols;
           // Write results to the file
           outFile << file_path << "," << problem_i << "," << complexity << ","
-                  << degree << "," << avgTime << "," << stdDev << "," << rows << "\n";
+                  << degree << "," << avgTime << "," << stdDev << "," << rows
+                  << "\n";
         } catch (const std::exception& e) {
           std::cerr << "Error processing file " << file_path << ": " << e.what()
                     << std::endl;
@@ -650,8 +665,9 @@ void make_file_eigen_iterative(const unsigned int min_problem,
   // Open the file for output
   std::ofstream outFile("results_eigeniterative_sparse_pde.csv");
   outFile
-      << "File,Problem,Complexity,Degree,AvgTime,StdDev,Dim\n";  // Write the header
-                                                             // for the CSV file
+      << "File,Problem,Complexity,Degree,AvgTime,StdDev,Dim\n";  // Write the
+                                                                 // header for
+                                                                 // the CSV file
 
   for (unsigned int problem_i = min_problem; problem_i <= max_problem;
        ++problem_i) {
@@ -672,15 +688,17 @@ void make_file_eigen_iterative(const unsigned int min_problem,
           double avgTime =
               benchmark_EigenCG_sparse(file_path, iterations, stdDev);
 
-            unsigned nnz, rows, cols;
-            std::ifstream lse_input_stream(file_path);
-            if (!lse_input_stream) {
-              throw std::runtime_error("Failed to open matrix file: " + file_path);
-            }
-            lse_input_stream >> nnz >> rows >> cols;
+          unsigned nnz, rows, cols;
+          std::ifstream lse_input_stream(file_path);
+          if (!lse_input_stream) {
+            throw std::runtime_error("Failed to open matrix file: " +
+                                     file_path);
+          }
+          lse_input_stream >> nnz >> rows >> cols;
           // Write results to the file
           outFile << file_path << "," << problem_i << "," << complexity << ","
-                  << degree << "," << avgTime << "," << stdDev << "," << rows << "\n";
+                  << degree << "," << avgTime << "," << stdDev << "," << rows
+                  << "\n";
         } catch (const std::exception& e) {
           std::cerr << "Error processing file " << file_path << ": " << e.what()
                     << std::endl;
@@ -693,17 +711,18 @@ void make_file_eigen_iterative(const unsigned int min_problem,
 }
 
 void make_file_eigen_iterative_better(const unsigned int min_problem,
-                               const unsigned int max_problem,
-                               const unsigned int min_complexity,
-                               const unsigned int max_complexity,
-                               const unsigned int min_degree,
-                               const unsigned int max_degree,
-                               const unsigned int iterations) {
+                                      const unsigned int max_problem,
+                                      const unsigned int min_complexity,
+                                      const unsigned int max_complexity,
+                                      const unsigned int min_degree,
+                                      const unsigned int max_degree,
+                                      const unsigned int iterations) {
   // Open the file for output
   std::ofstream outFile("results_eigeniterative_2_sparse_pde.csv");
   outFile
-      << "File,Problem,Complexity,Degree,AvgTime,StdDev,Dim\n";  // Write the header
-                                                             // for the CSV file
+      << "File,Problem,Complexity,Degree,AvgTime,StdDev,Dim\n";  // Write the
+                                                                 // header for
+                                                                 // the CSV file
 
   for (unsigned int problem_i = min_problem; problem_i <= max_problem;
        ++problem_i) {
@@ -711,8 +730,8 @@ void make_file_eigen_iterative_better(const unsigned int min_problem,
     for (unsigned int complexity = min_complexity; complexity <= max_complexity;
          ++complexity) {
       for (unsigned int degree = min_degree; degree <= max_degree; ++degree) {
-        std::cout << "EIGEN ITERATIVE BiCGSTAB PROBLEM " << problem_i << " COMPLEXITY "
-                  << complexity << " DEGREE " << degree
+        std::cout << "EIGEN ITERATIVE BiCGSTAB PROBLEM " << problem_i
+                  << " COMPLEXITY " << complexity << " DEGREE " << degree
                   << " is being worked on now!" << std::endl;
         std::string file_path = "../../generated_bvp_matrices/problem" +
                                 std::to_string(problem_i) + "/problem" +
@@ -724,15 +743,17 @@ void make_file_eigen_iterative_better(const unsigned int min_problem,
           double avgTime =
               benchmark_EigenBiCGSTAB_sparse(file_path, iterations, stdDev);
 
-            unsigned nnz, rows, cols;
-            std::ifstream lse_input_stream(file_path);
-            if (!lse_input_stream) {
-              throw std::runtime_error("Failed to open matrix file: " + file_path);
-            }
-            lse_input_stream >> nnz >> rows >> cols;
+          unsigned nnz, rows, cols;
+          std::ifstream lse_input_stream(file_path);
+          if (!lse_input_stream) {
+            throw std::runtime_error("Failed to open matrix file: " +
+                                     file_path);
+          }
+          lse_input_stream >> nnz >> rows >> cols;
           // Write results to the file
           outFile << file_path << "," << problem_i << "," << complexity << ","
-                  << degree << "," << avgTime << "," << stdDev << "," << rows << "\n";
+                  << degree << "," << avgTime << "," << stdDev << "," << rows
+                  << "\n";
         } catch (const std::exception& e) {
           std::cerr << "Error processing file " << file_path << ": " << e.what()
                     << std::endl;
@@ -754,8 +775,9 @@ void make_file_cuda_direct(const unsigned int min_problem,
   // Open the file for output
   std::ofstream outFile("results_cudadirect_sparse_pde.csv");
   outFile
-      << "File,Problem,Complexity,Degree,AvgTime,StdDev,Dim\n";  // Write the header
-                                                             // for the CSV file
+      << "File,Problem,Complexity,Degree,AvgTime,StdDev,Dim\n";  // Write the
+                                                                 // header for
+                                                                 // the CSV file
 
   for (unsigned int problem_i = min_problem; problem_i <= max_problem;
        ++problem_i) {
@@ -776,15 +798,17 @@ void make_file_cuda_direct(const unsigned int min_problem,
           double avgTime =
               benchmark_cudadirect_sparse(file_path, iterations, stdDev);
 
-            unsigned nnz, rows, cols;
-            std::ifstream lse_input_stream(file_path);
-            if (!lse_input_stream) {
-              throw std::runtime_error("Failed to open matrix file: " + file_path);
-            }
-            lse_input_stream >> nnz >> rows >> cols;
+          unsigned nnz, rows, cols;
+          std::ifstream lse_input_stream(file_path);
+          if (!lse_input_stream) {
+            throw std::runtime_error("Failed to open matrix file: " +
+                                     file_path);
+          }
+          lse_input_stream >> nnz >> rows >> cols;
           // Write results to the file
           outFile << file_path << "," << problem_i << "," << complexity << ","
-                  << degree << "," << avgTime << "," << stdDev << "," << rows << "\n";
+                  << degree << "," << avgTime << "," << stdDev << "," << rows
+                  << "\n";
         } catch (const std::exception& e) {
           std::cerr << "Error processing file " << file_path << ": " << e.what()
                     << std::endl;
