@@ -7,10 +7,6 @@
 #include <iostream>
 #include <random>
 
-#ifndef L_RESIDUAL
-    #define L_RESIDUAL 1
-#endif
-
 #include "linear_systems/sparse.hpp"
 #include "linear_systems/types.hpp"
 #include "solvers/asynchronous.hpp"
