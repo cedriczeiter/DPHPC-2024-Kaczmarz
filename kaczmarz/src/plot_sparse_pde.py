@@ -50,7 +50,7 @@ for problem in problems:
         for algorithm in filtered_data["Algorithm"].unique():
             algorithm_data = filtered_data[filtered_data["Algorithm"] == algorithm]
             plt.errorbar(
-                algorithm_data["Complexity"],
+                algorithm_data["Dim"],
                 algorithm_data["AvgTime"],
                 yerr=algorithm_data["StdDev"],
                 fmt='o-',
@@ -59,7 +59,7 @@ for problem in problems:
             )
         
         # Set labels and title
-        plt.xlabel("Complexity")
+        plt.xlabel("Dimension")
         plt.ylabel("Average Time (s)")
         plt.title(f"Performance for Problem #{problem}, Degree {degree}")
 
