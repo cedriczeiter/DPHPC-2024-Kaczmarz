@@ -32,6 +32,9 @@ for _, row in unique_combinations.iterrows():
     
     # Set logarithmic scale for the x-axis (precision)
     plt.xscale("log")
+
+    # Reverse the x-axis
+    plt.gca().invert_xaxis()
     
     # Add labels, title, and legend
     plt.xlabel("Precision (log scale)")
