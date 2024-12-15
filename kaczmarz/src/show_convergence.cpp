@@ -17,12 +17,8 @@
 
 using hrclock = std::chrono::high_resolution_clock;
 
-#define NRUNS 10
-
-/// Beware: For serious timed testing, we need to put up the L_RESIDUAL in
-/// carp_utils.hpp up to maybe like 1000
-/// And maybe we need to put L_RESIDUAL to 1 for the convergence tracking
-
+#define NRUNS 10           // Number of precision steps
+#define NUM_REPETITIONS 5  // Number of repetitions per precision
 
 int main() {
   // Open a single CSV file to write all results
@@ -33,7 +29,7 @@ int main() {
   }
 
   // Write the header for the CSV file
-  outFile << "Problem,Complexity,Degree,Precision,CarpTime,NormalTime\n";
+  outFile << "Problem,Complexity,Degree,Precision,AvgCarpTime,AvgNormalTime\n";
 
   // Iterate through all problems, complexities, and degrees
   for (int problem = 1; problem <= 3; ++problem) {
@@ -65,47 +61,66 @@ int main() {
         std::cout << "Dimension: " << dim << std::endl;
 
         double precision = 1; // Initial precision
-        for (int i = 0; i < NRUNS; ++i) {
+        for (int precision_level = 0; precision_level < NRUNS; ++precision_level) {
           //////////////////////////////////////////
-          // Calculating the solution with CARP
+          // Averaging Over NUM_REPETITIONS Runs Per Precision
           //////////////////////////////////////////
-          Vector x_kaczmarz = Vector::Zero(dim);
+          double total_carp_time = 0.0;
+          double total_normal_time = 0.0;
 
-          const auto kaczmarz_start = hrclock::now();
-          int nr_of_steps = 0;
-          const double relaxation = 0.35;
-          const auto status = carp_gpu(sparse_lse, x_kaczmarz, max_iterations,
-                                       precision, relaxation, nr_of_steps);
-          const auto kaczmarz_end = hrclock::now();
-          const auto carp_time =
-              std::chrono::duration_cast<std::chrono::milliseconds>(
-                  kaczmarz_end - kaczmarz_start)
-                  .count();
+          for (int repetition = 0; repetition < NUM_REPETITIONS; ++repetition) {
+            //////////////////////////////////////////
+            // Calculating the solution with CARP
+            //////////////////////////////////////////
+            Vector x_kaczmarz = Vector::Zero(dim);
+
+            const auto kaczmarz_start = hrclock::now();
+            int nr_of_steps = 0;
+            const double relaxation = 0.35;
+            const auto status = carp_gpu(sparse_lse, x_kaczmarz, max_iterations,
+                                         precision, relaxation, nr_of_steps);
+            const auto kaczmarz_end = hrclock::now();
+            const auto kaczmarz_time =
+                std::chrono::duration_cast<std::chrono::milliseconds>(
+                    kaczmarz_end - kaczmarz_start)
+                    .count();
+
+            total_carp_time += kaczmarz_time;
+
+            //////////////////////////////////////////
+            // Calculating the solution with Sparse Kaczmarz
+            //////////////////////////////////////////
+            Vector x_iter = Vector::Zero(dim);
+            std::vector<double> times_residuals;
+            std::vector<double> residuals;
+            std::vector<int> iterations;
+            const auto iter_start = hrclock::now();
+            sparse_kaczmarz(sparse_lse, x_iter, max_iterations, precision,
+                            times_residuals, residuals, iterations, 1);
+            const auto iter_end = hrclock::now();
+            const auto normal_time =
+                std::chrono::duration_cast<std::chrono::milliseconds>(
+                    iter_end - iter_start)
+                    .count();
+
+            total_normal_time += normal_time;
+          }
 
           //////////////////////////////////////////
-          // Calculating the solution with Sparse Kaczmarz
+          // Calculate Average and Write Results
           //////////////////////////////////////////
-          Vector x_iter = Vector::Zero(dim);
-          std::vector<double> times_residuals;
-          std::vector<double> residuals;
-          std::vector<int> iterations;
-          const auto iter_start = hrclock::now();
-          sparse_kaczmarz(sparse_lse, x_iter, max_iterations, precision,
-                          times_residuals, residuals, iterations, 1);
-          const auto iter_end = hrclock::now();
-          const auto normal_time =
-              std::chrono::duration_cast<std::chrono::milliseconds>(
-                  iter_end - iter_start)
-                  .count();
+          double avg_carp_time = total_carp_time / NUM_REPETITIONS;
+          double avg_normal_time = total_normal_time / NUM_REPETITIONS;
 
-          //////////////////////////////////////////
-          // Write Results to the Single CSV File
-          //////////////////////////////////////////
           outFile << problem << "," << complexity << "," << degree << ","
-                  << precision << "," << carp_time << "," << normal_time
+                  << precision << "," << avg_carp_time << "," << avg_normal_time
                   << "\n";
 
-          precision *= 0.1; // Decrease precision for the next iteration
+          std::cout << "Precision: " << precision << " - Avg Carp Time: "
+                    << avg_carp_time << " - Avg Normal Time: " << avg_normal_time
+                    << std::endl;
+
+          precision *= 0.1; // Decrease precision for the next level
         }
 
         std::cout << "Finished processing file: " << file_path.str() << std::endl;
