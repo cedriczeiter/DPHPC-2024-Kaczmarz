@@ -25,10 +25,11 @@ for _, row in unique_combinations.iterrows():
     # Sort by precision for consistent plotting
     subset = subset.sort_values(by="Precision")
     
-    # Plot
+    # Plot with error bars
     plt.figure(figsize=(10, 6))
-    plt.plot(subset['Precision'], subset['AvgCarpTime'], 'o-r', label="Carp")
-    plt.plot(subset['Precision'], subset['AvgNormalTime'], 'o-y', label="Sparse Kaczmarz")
+    plt.errorbar(subset['Precision'], subset['AvgCarpTime'], yerr=subset['StdDevCarpTime'], fmt='o-r', label="Carp")
+    plt.errorbar(subset['Precision'], subset['AvgNormalTime'], yerr=subset['StdDevNormalTime'], fmt='o-y', label="Sparse Kaczmarz")
+    
     
     # Set logarithmic scale for the x-axis (precision)
     plt.xscale("log")
