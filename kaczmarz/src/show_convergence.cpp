@@ -45,14 +45,14 @@ int main() {
 
     // Iterate through all problems, complexities, and degrees
     for (int problem = 1; problem <= 3; ++problem) {
-        for (int complexity = 1; complexity <= 4; ++complexity) {
-            for (int degree = 1; degree <= 2; ++degree) {
+        for (int complexity = 1; complexity <= 3; ++complexity) {
+            for (int degree = 1; degree <= 1; ++degree) {
                 // Construct the file path dynamically
                 std::ostringstream file_path;
-                file_path << "../../generated_bvp_matrices/problem" << problem << "/problem" << problem;
+                file_path << "../../generated_bvp_matrices/problem" << problem << "/problem" << problem
                           << "_complexity" << complexity << "_degree" << degree
                           << ".txt";
-
+                
                 std::cout << "Processing file: " << file_path.str() << std::endl;
 
                 // Read in the system from the generated file
