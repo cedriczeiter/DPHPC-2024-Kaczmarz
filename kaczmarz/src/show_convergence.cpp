@@ -49,7 +49,7 @@ int main() {
             for (int degree = 1; degree <= 2; ++degree) {
                 // Construct the file path dynamically
                 std::ostringstream file_path;
-                file_path << "../../generated_bvp_matrices/problem" << problem
+                file_path << "../../generated_bvp_matrices/problem" << problem << "/problem" << problem;
                           << "_complexity" << complexity << "_degree" << degree
                           << ".txt";
 
