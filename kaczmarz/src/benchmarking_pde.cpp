@@ -15,6 +15,7 @@
 #include "solvers/carp.hpp"
 #include "solvers/cusolver.hpp"
 #include "solvers/random.hpp"
+#include "solvers/sparse_cg.hpp"
 
 #define MAX_IT 1000000
 #define PRECISION 1e-7
@@ -242,6 +243,34 @@ double benchmark_sparsesolver_sparse(const std::string& file_path,
 
     sparse_kaczmarz(lse, x_kaczmarz_sparse, MAX_IT, PRECISION, times_residuals,
                     residuals, iterations, 1000);
+
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed = end - start;
+    times.push_back(elapsed.count());
+  }
+
+  double avgTime = 0;
+  compute_statistics(times, avgTime, stdDev);
+  return avgTime;
+}
+
+/// @brief Benchmarks the sparse cg Kaczmarz algorithm.
+double benchmark_sparsesolver_cg(const std::string& file_path,
+                                 const int numIterations, double& stdDev) {
+  std::vector<double> times;
+  // Read the precomputed matrix from the file
+  std::ifstream lse_input_stream(file_path);
+  if (!lse_input_stream) {
+    throw std::runtime_error("Failed to open matrix file: " + file_path);
+  }
+  const SparseLinearSystem lse =
+      SparseLinearSystem::read_from_stream(lse_input_stream);
+  for (int i = 0; i < numIterations; ++i) {
+    Eigen::VectorXd x_kaczmarz_sparse =
+        Eigen::VectorXd::Zero(lse.column_count());
+    const auto start = std::chrono::high_resolution_clock::now();
+
+    sparse_cg(lse, x_kaczmarz_sparse, PRECISION, MAX_IT);
 
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
@@ -601,6 +630,61 @@ void make_file_normal_solver(const unsigned int min_problem,
   std::cout << "NORMAL SEQUENTIAL SOLVER IS DONE NOW" << std::endl;
 }
 
+void make_file_sparse_cg(const unsigned int min_problem,
+                         const unsigned int max_problem,
+                         const unsigned int min_complexity,
+                         const unsigned int max_complexity,
+                         const unsigned int min_degree,
+                         const unsigned int max_degree,
+                         const unsigned int iterations) {
+  // Open the file for output
+  std::ofstream outFile("results_sparsesolver_sparse_cg_pde.csv");
+  outFile
+      << "File,Problem,Complexity,Degree,AvgTime,StdDev,Dim\n";  // Write the
+                                                                 // header for
+                                                                 // the CSV file
+
+  for (unsigned int problem_i = min_problem; problem_i <= max_problem;
+       ++problem_i) {
+    // Loop over problem sizes, benchmark, and write to file
+    for (unsigned int complexity = min_complexity; complexity <= max_complexity;
+         ++complexity) {
+      for (unsigned int degree = min_degree; degree <= max_degree; ++degree) {
+        std::cout << "SEQUENTIAL SOLVER CG PROBLEM " << problem_i
+                  << " COMPLEXITY " << complexity << " DEGREE " << degree
+                  << " is being worked on now!" << std::endl;
+        std::string file_path = "../../generated_bvp_matrices/problem" +
+                                std::to_string(problem_i) + "/problem" +
+                                std::to_string(problem_i) + "_complexity" +
+                                std::to_string(complexity) + "_degree" +
+                                std::to_string(degree) + ".txt";
+        double stdDev;
+        try {
+          double avgTime =
+              benchmark_sparsesolver_cg(file_path, iterations, stdDev);
+
+          unsigned nnz, rows, cols;
+          std::ifstream lse_input_stream(file_path);
+          if (!lse_input_stream) {
+            throw std::runtime_error("Failed to open matrix file: " +
+                                     file_path);
+          }
+          lse_input_stream >> nnz >> rows >> cols;
+          // Write results to the file
+          outFile << file_path << "," << problem_i << "," << complexity << ","
+                  << degree << "," << avgTime << "," << stdDev << "," << rows
+                  << "\n";
+        } catch (const std::exception& e) {
+          std::cerr << "Error processing file " << file_path << ": " << e.what()
+                    << std::endl;
+        }
+      }
+    }
+  }
+  outFile.close();  // Close the file after writing
+  std::cout << "NORMAL SEQUENTIAL SOLVER IS DONE NOW" << std::endl;
+}
+
 void make_file_eigen_solver(const unsigned int min_problem,
                             const unsigned int max_problem,
                             const unsigned int min_complexity,
@@ -762,7 +846,7 @@ void make_file_eigen_iterative_better(const unsigned int min_problem,
     }
   }
   outFile.close();  // Close the file after writing
-  std::cout << "EIGEN ITERATIVE IS DONE NOW" << std::endl;
+  std::cout << "EIGEN ITERATIVE BiCGSTAB IS DONE NOW" << std::endl;
 }
 
 void make_file_cuda_direct(const unsigned int min_problem,
@@ -826,9 +910,10 @@ int main() {
   make_file_cuda_direct(1, MAX_PROBLEMS, 1, 6, 1, 1, NUM_IT);
   make_file_eigen_iterative(1, MAX_PROBLEMS, 1, 6, 1, 1, NUM_IT);
   make_file_eigen_iterative_better(1, MAX_PROBLEMS, 1, 6, 1, 1, NUM_IT);
+  make_file_normal_solver(1, MAX_PROBLEMS, 1, 3, 1, 1, NUM_IT);
+  make_file_sparse_cg(1, MAX_PROBLEMS, 1, 3, 1, 1, NUM_IT);
   make_file_cuda_banded(1, MAX_PROBLEMS, 1, 6, 1, 1, NUM_IT);
   make_file_cpu_banded(1, MAX_PROBLEMS, 1, 6, 1, 1, NUM_IT);
-  make_file_normal_solver(1, MAX_PROBLEMS, 1, 3, 1, 1, NUM_IT);
 
   return 0;
 }
