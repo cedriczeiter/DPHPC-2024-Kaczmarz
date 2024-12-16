@@ -18,8 +18,8 @@
 #include "solvers/sparse_cg.hpp"
 
 #define MAX_IT 4294967294
-#define PRECISION 1e-9
-#define NUM_IT 10
+#define PRECISION 1e-7
+#define NUM_IT 4
 #define MAX_PROBLEMS 3
 #define NR_OF_STEPS_CARP 0
 #define RELAXATION 1
