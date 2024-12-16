@@ -18,8 +18,8 @@
 #include "solvers/sparse_cg.hpp"
 
 #define MAX_IT 1000000
-#define PRECISION 1e-7
-#define NUM_IT 4
+#define PRECISION 1e-9
+#define NUM_IT 10
 #define MAX_PROBLEMS 3
 #define NR_OF_STEPS_CARP 0
 #define RELAXATION 0.35
@@ -190,7 +190,6 @@ double benchmark_banded_2_cpu_threads_solver_sparse(
 double benchmark_banded_cuda_solver_sparse(const std::string& file_path,
                                            const int numIterations,
                                            double& stdDev) {
-  std::cout << "WE ARE IN BENCHMARKING FUNCTION";
   std::vector<double> times;
   // Read the precomputed matrix from the file
   std::ifstream lse_input_stream(file_path);
@@ -201,9 +200,9 @@ double benchmark_banded_cuda_solver_sparse(const std::string& file_path,
   const SparseLinearSystem lse =
       SparseLinearSystem::read_from_stream(lse_input_stream);
   unsigned int bandwidth = compute_bandwidth(lse.A());
-  std::cout << "STARTING CONVERSION TO BANDED";
+  std::cout << "STARTING CONVERSION TO BANDED" << std::endl;
   BandedLinearSystem banded_lse = convert_to_banded(lse, bandwidth);
-  std::cout << "FINISHED CONVERSION TO BANDED";
+  std::cout << "FINISHED CONVERSION TO BANDED" << std::endl;
   // const BandedLinearSystem banded_lse(lse.row_count(),(unsigned int)
   // compute_bandwidth(lse.A()),
   //               lse.A(), lse.b());
@@ -445,9 +444,7 @@ void make_file_cuda_banded(const unsigned int min_problem,
                                 std::to_string(complexity) + "_degree" +
                                 std::to_string(degree) + "_banded.txt";
         double stdDev;
-        std::cout << "WE ARE IN THIS FUNCTION";
         try {
-            std::cout << "WE ARE IN HERE FUNCTION";
           double avgTime = benchmark_banded_cuda_solver_sparse(
               file_path, iterations, stdDev);
 
@@ -914,18 +911,15 @@ void make_file_cuda_direct(const unsigned int min_problem,
 }
 
 int main() {
-    std::cout << "WE ARE IN MAIN FUNCTION";
-  make_file_cuda_banded(1, MAX_PROBLEMS, 1, 6, 1, 1, NUM_IT);
-  make_file_cpu_banded(1, MAX_PROBLEMS, 1, 6, 1, 1, NUM_IT);
   make_file_cuda_carp(1, MAX_PROBLEMS, 1, 6, 1, 1, NUM_IT);
   make_file_eigen_solver(1, MAX_PROBLEMS, 1, 6, 1, 1, NUM_IT);
   make_file_cuda_direct(1, MAX_PROBLEMS, 1, 6, 1, 1, NUM_IT);
   make_file_eigen_iterative(1, MAX_PROBLEMS, 1, 6, 1, 1, NUM_IT);
   make_file_eigen_iterative_better(1, MAX_PROBLEMS, 1, 6, 1, 1, NUM_IT);
-  make_file_normal_solver(1, MAX_PROBLEMS, 1, 3, 1, 1, NUM_IT);
+  make_file_normal_solver(1, MAX_PROBLEMS, 1, 4, 1, 1, NUM_IT);
   make_file_sparse_cg(1, MAX_PROBLEMS, 1, 6, 1, 1, NUM_IT);
-  // make_file_cuda_banded(1, MAX_PROBLEMS, 1, 6, 1, 1, NUM_IT);
-  // make_file_cpu_banded(1, MAX_PROBLEMS, 1, 6, 1, 1, NUM_IT);
+  make_file_cuda_banded(1, MAX_PROBLEMS, 1, 3, 1, 1, NUM_IT);
+  make_file_cpu_banded(1, MAX_PROBLEMS, 1, 3, 1, 1, NUM_IT);
 
   return 0;
 }
