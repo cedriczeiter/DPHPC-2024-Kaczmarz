@@ -120,6 +120,7 @@ double benchmark_carpcuda_solver_sparse(const std::string& file_path,
                                          // benchmark_one_carp_lambda.cpp
     int relaxation = RELAXATION;         // just a placeholder, used in
                                          // benchmark_one_carp_lambda.cpp
+    std::cout << "MAX IT2 "<< MAX_IT << "ITERATIONS2 " << numIterations << std::endl;
     const auto start = std::chrono::high_resolution_clock::now();
 
     // const auto status =
@@ -562,6 +563,7 @@ void make_file_cuda_carp(const unsigned int min_problem,
                                 std::to_string(degree) + ".txt";
         double stdDev;
         try {
+          std::cout << "MAX IT1 "<< MAX_IT << "ITERATIONS1 " << iterations << std::endl;
           double avgTime =
               benchmark_carpcuda_solver_sparse(file_path, iterations, stdDev);
 
@@ -918,15 +920,15 @@ void make_file_cuda_direct(const unsigned int min_problem,
 }
 
 int main() {
-  make_file_cuda_carp(1, MAX_PROBLEMS, 1, 6, 1, 1, NUM_IT);
-  make_file_eigen_solver(1, MAX_PROBLEMS, 1, 6, 1, 1, NUM_IT);
-  make_file_cuda_direct(1, MAX_PROBLEMS, 1, 5, 1, 1, NUM_IT);
-  make_file_eigen_iterative(1, MAX_PROBLEMS, 1, 6, 1, 1, NUM_IT);
-  make_file_eigen_iterative_better(1, MAX_PROBLEMS, 1, 6, 1, 1, NUM_IT);
-  make_file_normal_solver(1, MAX_PROBLEMS, 1, 4, 1, 1, NUM_IT);
-  make_file_sparse_cg(1, MAX_PROBLEMS, 1, 6, 1, 1, NUM_IT);
-  make_file_cuda_banded(1, MAX_PROBLEMS, 1, 3, 1, 1, NUM_IT);
-  make_file_cpu_banded(1, MAX_PROBLEMS, 1, 3, 1, 1, NUM_IT);
+  make_file_cuda_carp(1, MAX_PROBLEMS, 1, 2, 1, 1, NUM_IT);
+  // make_file_eigen_solver(1, MAX_PROBLEMS, 1, 6, 1, 1, NUM_IT);
+  // make_file_cuda_direct(1, MAX_PROBLEMS, 1, 5, 1, 1, NUM_IT);
+  // make_file_eigen_iterative(1, MAX_PROBLEMS, 1, 6, 1, 1, NUM_IT);
+  // make_file_eigen_iterative_better(1, MAX_PROBLEMS, 1, 6, 1, 1, NUM_IT);
+  // make_file_normal_solver(1, MAX_PROBLEMS, 1, 4, 1, 1, NUM_IT);
+  // make_file_sparse_cg(1, MAX_PROBLEMS, 1, 6, 1, 1, NUM_IT);
+  // make_file_cuda_banded(1, MAX_PROBLEMS, 1, 3, 1, 1, NUM_IT);
+  // make_file_cpu_banded(1, MAX_PROBLEMS, 1, 3, 1, 1, NUM_IT);
 
   return 0;
 }
