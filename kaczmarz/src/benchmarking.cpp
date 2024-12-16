@@ -13,7 +13,7 @@
 #include "solvers/random.hpp"
 
 #define MAX_IT 50000
-#define BANDWIDTH 4
+#define BANDWIDTH 2
 #define MAX_DIM 30000
 #define PRECISION 1e-20
 #define NUM_THREADS 8
