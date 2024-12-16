@@ -19,7 +19,7 @@
 
 #define MAX_IT (std::numeric_limits<unsigned int>::max()-1)
 #define PRECISION 1e-7
-#define NUM_IT 4
+#define NUM_IT 1
 #define MAX_PROBLEMS 3
 #define NR_OF_STEPS_CARP 0
 #define RELAXATION 1
@@ -120,7 +120,7 @@ double benchmark_carpcuda_solver_sparse(const std::string& file_path,
                                          // benchmark_one_carp_lambda.cpp
     int relaxation = RELAXATION;         // just a placeholder, used in
                                          // benchmark_one_carp_lambda.cpp
-    std::cout << "MAX IT2 "<< MAX_IT << "ITERATIONS2 " << numIterations << std::endl;
+    std::cout << "MAX IT "<< MAX_IT << " ITERATIONS " << numIterations << std::endl;
     const auto start = std::chrono::high_resolution_clock::now();
 
     // const auto status =
@@ -208,9 +208,7 @@ double benchmark_banded_cuda_solver_sparse(const std::string& file_path,
   const SparseLinearSystem lse =
       SparseLinearSystem::read_from_stream(lse_input_stream);
   unsigned int bandwidth = compute_bandwidth(lse.A());
-  std::cout << "STARTING CONVERSION TO BANDED" << std::endl;
   BandedLinearSystem banded_lse = convert_to_banded(lse, bandwidth);
-  std::cout << "FINISHED CONVERSION TO BANDED" << std::endl;
   // const BandedLinearSystem banded_lse(lse.row_count(),(unsigned int)
   // compute_bandwidth(lse.A()),
   //               lse.A(), lse.b());
@@ -563,7 +561,6 @@ void make_file_cuda_carp(const unsigned int min_problem,
                                 std::to_string(degree) + ".txt";
         double stdDev;
         try {
-          std::cout << "MAX IT1 "<< MAX_IT << "ITERATIONS1 " << iterations << std::endl;
           double avgTime =
               benchmark_carpcuda_solver_sparse(file_path, iterations, stdDev);
 
