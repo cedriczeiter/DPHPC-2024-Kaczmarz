@@ -259,16 +259,16 @@ double benchmark_sparsesolver_sparse(const int dim, const int numIterations,
     const BandedLinearSystem lse =
         BandedLinearSystem::generate_random_regular(rng, dim, BANDWIDTH);
 
-
     Vector x_kaczmarz_sparse = Vector::Zero(dim);
     std::vector<double> times_residuals;
     std::vector<double> residuals;
     std::vector<int> iterations;
     const auto start = std::chrono::high_resolution_clock::now();
 
-    //sparse_kaczmarz(lse, x_kaczmarz_sparse, MAX_IT, PRECISION, times_residuals,
-    //                residuals, iterations, 1000);
-    kaczmarz_banded_serial(lse,x_kaczmarz_sparse ,MAX_IT, PRECISION);
+    // sparse_kaczmarz(lse, x_kaczmarz_sparse, MAX_IT, PRECISION,
+    // times_residuals,
+    //                 residuals, iterations, 1000);
+    kaczmarz_banded_serial(lse, x_kaczmarz_sparse, MAX_IT, PRECISION);
 
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;

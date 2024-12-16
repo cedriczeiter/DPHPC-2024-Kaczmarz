@@ -54,9 +54,10 @@ BandedLinearSystem convert_to_banded(const SparseLinearSystem& sparse_system,
 
   // Fill the banded data using InnerIterator
   for (int k = 0; k < A_compressed.outerSize(); ++k) {
-    for (Eigen::SparseMatrix<double>::InnerIterator it(A_compressed, k); it; ++it) {
-      int i = it.row();  // Row index
-      int j = it.col();  // Column index
+    for (Eigen::SparseMatrix<double>::InnerIterator it(A_compressed, k); it;
+         ++it) {
+      int i = it.row();                         // Row index
+      int j = it.col();                         // Column index
       if (std::abs(i - j) <= (int)bandwidth) {  // Check if within bandwidth
         banded_data.push_back(it.value());
       }
