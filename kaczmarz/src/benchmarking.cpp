@@ -13,11 +13,11 @@
 #include "solvers/random.hpp"
 
 #define MAX_IT 50000
-#define BANDWIDTH 4
+#define BANDWIDTH 2
 #define MAX_DIM 30000
 #define PRECISION 1e-20
 #define NUM_THREADS 8
-#define MIN_DIM 8
+#define MIN_DIM 64
 #define NUM_IT 4
 #define RANDOM_SEED 43
 
@@ -404,6 +404,7 @@ int main() {
   // Loop over problem sizes, benchmark, and write to file
   for (int dim = MIN_DIM; dim <= MAX_DIM; dim *= 2) {
     double stdDev;
+    std::cout << "NOW WORKING BANDED CUDA SOLVER, DIM " << dim << std::endl;
     double avgTime =
         benchmark_banded_cuda_solver_sparse(dim, numIterations, stdDev, rng);
 
@@ -423,6 +424,7 @@ int main() {
   // Loop over problem sizes, benchmark, and write to file
   for (int dim = MIN_DIM; dim <= MAX_DIM; dim *= 2) {
     double stdDev;
+    std::cout << "NOW WORKING ON CPU PARALLEL SOLVER, DIM " << dim << std::endl;
     double avgTime = benchmark_banded_2_cpu_threads_solver_sparse(
         dim, numIterations, stdDev, rng);
 
@@ -481,6 +483,7 @@ int main() {
   // Loop over problem sizes, benchmark, and write to file
   for (int dim = MIN_DIM; dim <= MAX_DIM; dim *= 2) {
     double stdDev;
+    std::cout << "NOW WORKING ON NORMAL SEQ SOLVER, DIM " << dim << std::endl;
     double avgTime =
         benchmark_sparsesolver_sparse(dim, numIterations, stdDev, rng);
 

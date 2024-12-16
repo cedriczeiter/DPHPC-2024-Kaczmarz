@@ -33,6 +33,7 @@ for _, row in unique_combinations.iterrows():
     
     # Set logarithmic scale for the x-axis (precision)
     plt.xscale("log")
+    plt.yscale('log')
 
     # Reverse the x-axis
     plt.gca().invert_xaxis()
