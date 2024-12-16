@@ -17,7 +17,7 @@
 #define MAX_DIM 30000
 #define PRECISION 1e-20
 #define NUM_THREADS 8
-#define MIN_DIM 8
+#define MIN_DIM 64
 #define NUM_IT 4
 #define RANDOM_SEED 43
 
