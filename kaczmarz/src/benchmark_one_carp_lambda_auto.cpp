@@ -31,10 +31,10 @@ int main() {
   std::string file_path = "../../generated_bvp_matrices";
 
   double end_relaxation = 0.7;
-  double step_relaxation = 0.1;
+  double step_relaxation = 0.05;
 
   const unsigned max_iterations =
-      250'000;  // set such that it doesnt take tooo long
+      40000;  // set such that it doesnt take tooo long
 
   // Files are in file_path inside of three problem folders called problem1,
   // problem2, problem3
@@ -43,9 +43,11 @@ int main() {
   std::filesystem::recursive_directory_iterator files(path);
 
   for (const auto &entry : files) {
-    // file ends by txt and begins with problem
+    // file ends by txt and begins with problem and does not end by banded.txt
     if (entry.path().extension() == ".txt" &&
-        entry.path().filename().string().substr(0, 7) == "problem") {
+        entry.path().filename().string().substr(0, 7) == "problem"
+        && entry.path().filename().string().substr(entry.path().filename().string().size() - 10) != "banded.txt")
+        {
       std::cout << "----------------------------------- \n" << std::endl;
       std::cout << "in file: " << entry.path() << std::endl;
 
