@@ -190,6 +190,7 @@ double benchmark_banded_2_cpu_threads_solver_sparse(
 double benchmark_banded_cuda_solver_sparse(const std::string& file_path,
                                            const int numIterations,
                                            double& stdDev) {
+  std::cout << "WE ARE IN BENCHMARKING FUNCTION";
   std::vector<double> times;
   // Read the precomputed matrix from the file
   std::ifstream lse_input_stream(file_path);
