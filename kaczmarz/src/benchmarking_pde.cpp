@@ -937,9 +937,9 @@ int main() {
     Eigen::VectorXd x_kaczmarz_sparse =
         Eigen::VectorXd::Zero(lse.column_count());
 
-    int nr_of_steps = NR_OF_STEPS_CARP;  // just a placeholder, used in
+    int nr_of_steps = 0;  // just a placeholder, used in
                                          // benchmark_one_carp_lambda.cpp
-    int relaxation = RELAXATION;         // just a placeholder, used in
+    int relaxation = 0.35;         // just a placeholder, used in
                                          // benchmark_one_carp_lambda.cpp
     std::cout << "MAX IT "<< MAX_IT << std::endl;
     const auto start = std::chrono::high_resolution_clock::now();
