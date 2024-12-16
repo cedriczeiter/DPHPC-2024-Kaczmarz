@@ -22,7 +22,7 @@
 #define NUM_IT 10
 #define MAX_PROBLEMS 3
 #define NR_OF_STEPS_CARP 0
-#define RELAXATION 0.35
+#define RELAXATION 1
 
 int compute_bandwidth(const Eigen::SparseMatrix<double>& A) {
   int bandwidth = 0;
