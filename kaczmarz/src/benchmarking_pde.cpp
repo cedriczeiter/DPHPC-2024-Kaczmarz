@@ -18,11 +18,11 @@
 #include "solvers/sparse_cg.hpp"
 
 #define MAX_IT 1000000
-#define PRECISION 1e-7
-#define NUM_IT 4
+#define PRECISION 1e-9
+#define NUM_IT 10
 #define MAX_PROBLEMS 3
 #define NR_OF_STEPS_CARP 0
-#define RELAXATION 1
+#define RELAXATION 0.35
 
 int compute_bandwidth(const Eigen::SparseMatrix<double>& A) {
   int bandwidth = 0;
@@ -44,15 +44,23 @@ BandedLinearSystem convert_to_banded(const SparseLinearSystem& sparse_system,
   // Extract dimension
   unsigned dim = sparse_system.A().rows();
 
+  // Ensure the sparse matrix is compressed
+  Eigen::SparseMatrix<double> A_compressed = sparse_system.A();
+  A_compressed.makeCompressed();
+
   // Prepare storage for banded matrix data
   std::vector<double> banded_data;
   banded_data.reserve(dim * (2 * bandwidth + 1) - bandwidth * (bandwidth + 1));
 
-  // Fill the banded data
-  for (int i = 0; i < (int)dim; ++i) {
-    for (int j = std::max(0, i - (int)bandwidth);
-         j <= std::min((int)dim - 1, i + (int)bandwidth); ++j) {
-      banded_data.push_back(sparse_system.A().coeff(i, j));
+  // Fill the banded data using InnerIterator
+  for (int k = 0; k < A_compressed.outerSize(); ++k) {
+    for (Eigen::SparseMatrix<double>::InnerIterator it(A_compressed, k); it;
+         ++it) {
+      int i = it.row();                         // Row index
+      int j = it.col();                         // Column index
+      if (std::abs(i - j) <= (int)bandwidth) {  // Check if within bandwidth
+        banded_data.push_back(it.value());
+      }
     }
   }
 
@@ -193,7 +201,9 @@ double benchmark_banded_cuda_solver_sparse(const std::string& file_path,
   const SparseLinearSystem lse =
       SparseLinearSystem::read_from_stream(lse_input_stream);
   unsigned int bandwidth = compute_bandwidth(lse.A());
+  std::cout << "STARTING CONVERSION TO BANDED" << std::endl;
   BandedLinearSystem banded_lse = convert_to_banded(lse, bandwidth);
+  std::cout << "FINISHED CONVERSION TO BANDED" << std::endl;
   // const BandedLinearSystem banded_lse(lse.row_count(),(unsigned int)
   // compute_bandwidth(lse.A()),
   //               lse.A(), lse.b());
@@ -204,9 +214,6 @@ double benchmark_banded_cuda_solver_sparse(const std::string& file_path,
     // Allocate memory to save kaczmarz solution
     Vector x_kaczmarz = Vector::Zero(lse.column_count());
 
-    std::vector<double> times_residuals;
-    std::vector<double> residuals;
-    std::vector<int> iterations;
     const auto start = std::chrono::high_resolution_clock::now();
 
     const auto status =
@@ -910,10 +917,10 @@ int main() {
   make_file_cuda_direct(1, MAX_PROBLEMS, 1, 6, 1, 1, NUM_IT);
   make_file_eigen_iterative(1, MAX_PROBLEMS, 1, 6, 1, 1, NUM_IT);
   make_file_eigen_iterative_better(1, MAX_PROBLEMS, 1, 6, 1, 1, NUM_IT);
-  make_file_normal_solver(1, MAX_PROBLEMS, 1, 3, 1, 1, NUM_IT);
-  make_file_sparse_cg(1, MAX_PROBLEMS, 1, 3, 1, 1, NUM_IT);
-  make_file_cuda_banded(1, MAX_PROBLEMS, 1, 6, 1, 1, NUM_IT);
-  make_file_cpu_banded(1, MAX_PROBLEMS, 1, 6, 1, 1, NUM_IT);
+  make_file_normal_solver(1, MAX_PROBLEMS, 1, 4, 1, 1, NUM_IT);
+  make_file_sparse_cg(1, MAX_PROBLEMS, 1, 6, 1, 1, NUM_IT);
+  make_file_cuda_banded(1, MAX_PROBLEMS, 1, 3, 1, 1, NUM_IT);
+  make_file_cpu_banded(1, MAX_PROBLEMS, 1, 3, 1, 1, NUM_IT);
 
   return 0;
 }
