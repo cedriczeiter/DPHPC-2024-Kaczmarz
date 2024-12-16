@@ -18,11 +18,11 @@
 #include "solvers/sparse_cg.hpp"
 
 #define MAX_IT (std::numeric_limits<unsigned int>::max()-1)
-#define PRECISION 1e-7
-#define NUM_IT 1
+#define PRECISION 1e-9
+#define NUM_IT 10
 #define MAX_PROBLEMS 3
 #define NR_OF_STEPS_CARP 0
-#define RELAXATION 1
+#define RELAXATION 0.35
 
 int compute_bandwidth(const Eigen::SparseMatrix<double>& A) {
   int bandwidth = 0;
@@ -118,7 +118,7 @@ double benchmark_carpcuda_solver_sparse(const std::string& file_path,
     std::vector<int> iterations;
     int nr_of_steps = NR_OF_STEPS_CARP;  // just a placeholder, used in
                                          // benchmark_one_carp_lambda.cpp
-    int relaxation = RELAXATION;         // just a placeholder, used in
+    double relaxation = RELAXATION;         // just a placeholder, used in
                                          // benchmark_one_carp_lambda.cpp
     std::cout << "MAX IT "<< MAX_IT << std::endl;
     const auto start = std::chrono::high_resolution_clock::now();
@@ -917,52 +917,7 @@ void make_file_cuda_direct(const unsigned int min_problem,
 }
 
 int main() {
-  unsigned int numIterations= 1;
-          std::string file_path = "../../generated_bvp_matrices/problem" +
-                                std::to_string(1) + "/problem" +
-                                std::to_string(1) + "_complexity" +
-                                std::to_string(1) + "_degree" +
-                                std::to_string(1) + ".txt";
-    std::vector<double> times;
-  // Read the precomputed matrix from the file
-  std::ifstream lse_input_stream(file_path);
-  if (!lse_input_stream) {
-    throw std::runtime_error("Failed to open matrix file: " + file_path);
-  }
-  const SparseLinearSystem lse =
-      SparseLinearSystem::read_from_stream(lse_input_stream);
-
-  for (int i = 0; i < numIterations; ++i) {
-    // Allocate memory to save kaczmarz solution
-    Eigen::VectorXd x_kaczmarz_sparse =
-        Eigen::VectorXd::Zero(lse.column_count());
-
-    int nr_of_steps = 0;  // just a placeholder, used in
-                                         // benchmark_one_carp_lambda.cpp
-    int relaxation = 0.35;         // just a placeholder, used in
-                                         // benchmark_one_carp_lambda.cpp
-    std::cout << "MAX IT "<< MAX_IT << std::endl;
-    const auto start = std::chrono::high_resolution_clock::now();
-
-    // const auto status =
-    //     carp_gpu(lse, x_kaczmarz_sparse, MAX_IT, PRECISION, relaxation,
-    //     nr_of_steps);
-
-    const auto status = carp_gpu(lse, x_kaczmarz_sparse, MAX_IT, PRECISION, relaxation,
-             nr_of_steps);
-
-    auto end = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> elapsed = end - start;
-    times.push_back(elapsed.count());
-    if (status == KaczmarzSolverStatus::ZeroNormRow) {
-      std::cout << "Zero norm row detected" << std::endl;
-    } else if (status == KaczmarzSolverStatus::OutOfIterations) {
-      std::cout << "Max iterations reached" << std::endl;
-    } else {
-    }
-  }
-
-  //make_file_cuda_carp(1, MAX_PROBLEMS, 1, 2, 1, 1, NUM_IT);
+  make_file_cuda_carp(1, MAX_PROBLEMS, 1, 2, 1, 1, NUM_IT);
   // make_file_eigen_solver(1, MAX_PROBLEMS, 1, 6, 1, 1, NUM_IT);
   // make_file_cuda_direct(1, MAX_PROBLEMS, 1, 5, 1, 1, NUM_IT);
   // make_file_eigen_iterative(1, MAX_PROBLEMS, 1, 6, 1, 1, NUM_IT);
