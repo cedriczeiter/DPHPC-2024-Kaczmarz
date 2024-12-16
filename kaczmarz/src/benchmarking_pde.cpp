@@ -126,12 +126,18 @@ double benchmark_carpcuda_solver_sparse(const std::string& file_path,
     //     carp_gpu(lse, x_kaczmarz_sparse, MAX_IT, PRECISION, relaxation,
     //     nr_of_steps);
 
-    carp_gpu(lse, x_kaczmarz_sparse, MAX_IT, PRECISION, relaxation,
+    const auto status = carp_gpu(lse, x_kaczmarz_sparse, MAX_IT, PRECISION, relaxation,
              nr_of_steps);
 
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
     times.push_back(elapsed.count());
+    if (status == KaczmarzSolverStatus::ZeroNormRow) {
+      std::cout << "Zero norm row detected" << std::endl;
+    } else if (status == KaczmarzSolverStatus::OutOfIterations) {
+      std::cout << "Max iterations reached" << std::endl;
+    } else {
+    }
   }
 
   double avgTime = 0;
