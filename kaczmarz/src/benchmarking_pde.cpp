@@ -200,7 +200,9 @@ double benchmark_banded_cuda_solver_sparse(const std::string& file_path,
   const SparseLinearSystem lse =
       SparseLinearSystem::read_from_stream(lse_input_stream);
   unsigned int bandwidth = compute_bandwidth(lse.A());
+  std::cout << "STARTING CONVERSION TO BANDED";
   BandedLinearSystem banded_lse = convert_to_banded(lse, bandwidth);
+  std::cout << "FINISHED CONVERSION TO BANDED";
   // const BandedLinearSystem banded_lse(lse.row_count(),(unsigned int)
   // compute_bandwidth(lse.A()),
   //               lse.A(), lse.b());
@@ -211,9 +213,6 @@ double benchmark_banded_cuda_solver_sparse(const std::string& file_path,
     // Allocate memory to save kaczmarz solution
     Vector x_kaczmarz = Vector::Zero(lse.column_count());
 
-    std::vector<double> times_residuals;
-    std::vector<double> residuals;
-    std::vector<int> iterations;
     const auto start = std::chrono::high_resolution_clock::now();
 
     const auto status =
