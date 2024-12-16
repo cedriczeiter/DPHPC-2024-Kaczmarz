@@ -21,8 +21,6 @@
 #define PRECISION 1e-9
 #define NUM_IT 10
 #define MAX_PROBLEMS 3
-#define NR_OF_STEPS_CARP 0
-#define RELAXATION 0.35
 
 int compute_bandwidth(const Eigen::SparseMatrix<double>& A) {
   int bandwidth = 0;
@@ -120,7 +118,6 @@ double benchmark_carpcuda_solver_sparse(const std::string& file_path,
                                          // benchmark_one_carp_lambda.cpp
     double relaxation = 0.35;         // just a placeholder, used in
                                          // benchmark_one_carp_lambda.cpp
-    std::cout << "MAX IT "<< MAX_IT << std::endl;
     const auto start = std::chrono::high_resolution_clock::now();
 
     // const auto status =
@@ -133,12 +130,12 @@ double benchmark_carpcuda_solver_sparse(const std::string& file_path,
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
     times.push_back(elapsed.count());
-    if (status == KaczmarzSolverStatus::ZeroNormRow) {
-      std::cout << "Zero norm row detected" << std::endl;
-    } else if (status == KaczmarzSolverStatus::OutOfIterations) {
-      std::cout << "Max iterations reached" << std::endl;
-    } else {
-    }
+    // if (status == KaczmarzSolverStatus::ZeroNormRow) {
+    //   std::cout << "Zero norm row detected" << std::endl;
+    // } else if (status == KaczmarzSolverStatus::OutOfIterations) {
+    //   std::cout << "Max iterations reached" << std::endl;
+    // } else {
+    // }
   }
 
   double avgTime = 0;
@@ -917,15 +914,15 @@ void make_file_cuda_direct(const unsigned int min_problem,
 }
 
 int main() {
-  make_file_cuda_carp(1, MAX_PROBLEMS, 1, 2, 1, 1, NUM_IT);
-  // make_file_eigen_solver(1, MAX_PROBLEMS, 1, 6, 1, 1, NUM_IT);
-  // make_file_cuda_direct(1, MAX_PROBLEMS, 1, 5, 1, 1, NUM_IT);
-  // make_file_eigen_iterative(1, MAX_PROBLEMS, 1, 6, 1, 1, NUM_IT);
-  // make_file_eigen_iterative_better(1, MAX_PROBLEMS, 1, 6, 1, 1, NUM_IT);
-  // make_file_normal_solver(1, MAX_PROBLEMS, 1, 4, 1, 1, NUM_IT);
-  // make_file_sparse_cg(1, MAX_PROBLEMS, 1, 6, 1, 1, NUM_IT);
-  // make_file_cuda_banded(1, MAX_PROBLEMS, 1, 3, 1, 1, NUM_IT);
-  // make_file_cpu_banded(1, MAX_PROBLEMS, 1, 3, 1, 1, NUM_IT);
+  make_file_cuda_carp(1, MAX_PROBLEMS, 1, 6, 1, 1, NUM_IT);
+  make_file_eigen_solver(1, MAX_PROBLEMS, 1, 6, 1, 1, NUM_IT);
+  make_file_cuda_direct(1, MAX_PROBLEMS, 1, 5, 1, 1, NUM_IT);
+  make_file_eigen_iterative(1, MAX_PROBLEMS, 1, 6, 1, 1, NUM_IT);
+  make_file_eigen_iterative_better(1, MAX_PROBLEMS, 1, 6, 1, 1, NUM_IT);
+  make_file_normal_solver(1, MAX_PROBLEMS, 1, 4, 1, 1, NUM_IT);
+  make_file_sparse_cg(1, MAX_PROBLEMS, 1, 6, 1, 1, NUM_IT);
+  make_file_cuda_banded(1, MAX_PROBLEMS, 1, 3, 1, 1, NUM_IT);
+  make_file_cpu_banded(1, MAX_PROBLEMS, 1, 3, 1, 1, NUM_IT);
 
   return 0;
 }
