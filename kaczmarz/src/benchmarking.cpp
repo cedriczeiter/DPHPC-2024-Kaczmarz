@@ -404,6 +404,7 @@ int main() {
   // Loop over problem sizes, benchmark, and write to file
   for (int dim = MIN_DIM; dim <= MAX_DIM; dim *= 2) {
     double stdDev;
+    std::cout << "NOW WORKING BANDED CUDA SOLVER, DIM " << dim << std::endl;
     double avgTime =
         benchmark_banded_cuda_solver_sparse(dim, numIterations, stdDev, rng);
 
@@ -423,6 +424,7 @@ int main() {
   // Loop over problem sizes, benchmark, and write to file
   for (int dim = MIN_DIM; dim <= MAX_DIM; dim *= 2) {
     double stdDev;
+    std::cout << "NOW WORKING ON CPU PARALLEL SOLVER, DIM " << dim << std::endl;
     double avgTime = benchmark_banded_2_cpu_threads_solver_sparse(
         dim, numIterations, stdDev, rng);
 
@@ -481,6 +483,7 @@ int main() {
   // Loop over problem sizes, benchmark, and write to file
   for (int dim = MIN_DIM; dim <= MAX_DIM; dim *= 2) {
     double stdDev;
+    std::cout << "NOW WORKING ON NORMAL SEQ SOLVER, DIM " << dim << std::endl;
     double avgTime =
         benchmark_sparsesolver_sparse(dim, numIterations, stdDev, rng);
 
