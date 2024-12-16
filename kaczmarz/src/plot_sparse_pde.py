@@ -11,11 +11,11 @@ data_seqcg["Algorithm"] = "Sparse CG"
 data_eigeniterative2 = pd.read_csv("results_eigeniterative_2_sparse_pde.csv")
 data_eigeniterative2["Algorithm"] = "Eigen iterative BiCGSTAB"
 
-data_bandedcuda = pd.read_csv("results_banded_cuda_sparse_pde.csv")
-data_bandedcuda["Algorithm"] = "Banded CUDA"
+#data_bandedcuda = pd.read_csv("results_banded_cuda_sparse_pde.csv")
+#data_bandedcuda["Algorithm"] = "Banded CUDA"
 
-data_bandedcpu = pd.read_csv("results_banded_cpu_2_threads_sparse_pde.csv")
-data_bandedcpu["Algorithm"] = "Banded CPU"
+#data_bandedcpu = pd.read_csv("results_banded_cpu_2_threads_sparse_pde.csv")
+#data_bandedcpu["Algorithm"] = "Banded CPU"
 
 data_seqnormal = pd.read_csv("results_sparsesolver_sparse_pde.csv")
 data_seqnormal["Algorithm"] = "Base algorithm"
@@ -33,8 +33,8 @@ data_carp["Algorithm"] = "CARP CUDA"
 data = pd.concat([
     data_eigeniterative,
     data_eigeniterative2,
-    data_bandedcuda,
-    data_bandedcpu,
+    #data_bandedcuda,
+    #data_bandedcpu,
     data_seqnormal,
     data_eigendirect,
     data_cudadirect,
