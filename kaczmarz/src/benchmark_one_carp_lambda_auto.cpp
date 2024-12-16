@@ -11,7 +11,7 @@
 
 using hrclock = std::chrono::high_resolution_clock;
 
-#define PRECISION 1e-10
+#define PRECISION 1e-9
 
 /**
  * The purpose of this file is to be easily able to manually benchmark a single
@@ -30,13 +30,18 @@ int main() {
 
   std::string file_path = "../../generated_bvp_matrices";
 
-  double end_relaxation = 30.0;
-  double step_relaxation = 0.25;
+  double end_relaxation = 0.7;
+  double step_relaxation = 0.1;
 
   const unsigned max_iterations =
       250'000;  // set such that it doesnt take tooo long
 
-  for (const auto &entry : std::filesystem::directory_iterator(file_path)) {
+  // Files are in file_path inside of three problem folders called problem1, problem2, problem3
+
+  std::filesystem::path path = file_path;
+  std::filesystem::recursive_directory_iterator files(path);
+
+  for (const auto &entry : files) {
     // file ends by txt and begins with problem
     if (entry.path().extension() == ".txt" &&
         entry.path().filename().string().substr(0, 7) == "problem") {
@@ -58,13 +63,13 @@ int main() {
       // Open file to write results to
       std::string file_name = entry.path().filename().string();
       std::ofstream outFile(
-          "../../generated_bvp_matrices/lambda_experiments/"
+          "../../generated_bvp_matrices/lambda_experiments_new/"
           "carp-cg-lambda-steps-" +
           file_name + ".csv");  // overwrites file if it already exists
       outFile
           << "Relaxation,Carp_steps\n";  // Write the header for the CSV file
 
-      double start_relaxation = 0.1;
+      double start_relaxation = 0.2;
 
       while (start_relaxation < end_relaxation) {
         std::cout << "----------------------------------- \n" << std::endl;
