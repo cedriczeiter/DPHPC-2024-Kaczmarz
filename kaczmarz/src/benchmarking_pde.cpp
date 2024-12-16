@@ -22,7 +22,7 @@
 #define NUM_IT 4
 #define MAX_PROBLEMS 3
 #define NR_OF_STEPS_CARP 0
-#define RELAXATION 1
+#define RELAXATION 0.35
 
 int compute_bandwidth(const Eigen::SparseMatrix<double>& A) {
   int bandwidth = 0;
@@ -50,9 +50,11 @@ BandedLinearSystem convert_to_banded(const SparseLinearSystem& sparse_system,
 
   // Fill the banded data
   for (int i = 0; i < (int)dim; ++i) {
-    for (int j = std::max(0, i - (int)bandwidth);
-         j <= std::min((int)dim - 1, i + (int)bandwidth); ++j) {
-      banded_data.push_back(sparse_system.A().coeff(i, j));
+    for (Eigen::SparseMatrix<double>::InnerIterator it(sparse_system.A(), i); it; ++it) {
+      int j = it.col();  // Column index of the non-zero entry
+      if (std::abs(i - j) <= (int)bandwidth) {  // Check if within bandwidth
+        banded_data.push_back(it.value());
+      }
     }
   }
 
@@ -905,15 +907,17 @@ void make_file_cuda_direct(const unsigned int min_problem,
 }
 
 int main() {
+  make_file_cuda_banded(1, MAX_PROBLEMS, 1, 6, 1, 1, NUM_IT);
+  make_file_cpu_banded(1, MAX_PROBLEMS, 1, 6, 1, 1, NUM_IT);
   make_file_cuda_carp(1, MAX_PROBLEMS, 1, 6, 1, 1, NUM_IT);
   make_file_eigen_solver(1, MAX_PROBLEMS, 1, 6, 1, 1, NUM_IT);
   make_file_cuda_direct(1, MAX_PROBLEMS, 1, 6, 1, 1, NUM_IT);
   make_file_eigen_iterative(1, MAX_PROBLEMS, 1, 6, 1, 1, NUM_IT);
   make_file_eigen_iterative_better(1, MAX_PROBLEMS, 1, 6, 1, 1, NUM_IT);
   make_file_normal_solver(1, MAX_PROBLEMS, 1, 3, 1, 1, NUM_IT);
-  make_file_sparse_cg(1, MAX_PROBLEMS, 1, 3, 1, 1, NUM_IT);
-  make_file_cuda_banded(1, MAX_PROBLEMS, 1, 6, 1, 1, NUM_IT);
-  make_file_cpu_banded(1, MAX_PROBLEMS, 1, 6, 1, 1, NUM_IT);
+  make_file_sparse_cg(1, MAX_PROBLEMS, 1, 6, 1, 1, NUM_IT);
+  // make_file_cuda_banded(1, MAX_PROBLEMS, 1, 6, 1, 1, NUM_IT);
+  // make_file_cpu_banded(1, MAX_PROBLEMS, 1, 6, 1, 1, NUM_IT);
 
   return 0;
 }
