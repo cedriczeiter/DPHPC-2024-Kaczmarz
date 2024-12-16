@@ -3,13 +3,13 @@ import matplotlib.pyplot as plt
 
 # Load the CSV files and manually assign algorithm names
 data_eigeniterative = pd.read_csv("results_eigeniterative_sparse_pde.csv")
-data_eigeniterative["Algorithm"] = "Eigen iterative CG"
+data_eigeniterative["Algorithm"] = "Eigen CG (iterative)"
 
 data_seqcg = pd.read_csv("results_sparsesolver_sparse_cg_pde.csv")
-data_seqcg["Algorithm"] = "Sparse CG"
+data_seqcg["Algorithm"] = "CGMNC"
 
 data_eigeniterative2 = pd.read_csv("results_eigeniterative_2_sparse_pde.csv")
-data_eigeniterative2["Algorithm"] = "Eigen iterative BiCGSTAB"
+data_eigeniterative2["Algorithm"] = "Eigen BiCGSTAB (iterative)"
 
 #data_bandedcuda = pd.read_csv("results_banded_cuda_sparse_pde.csv")
 #data_bandedcuda["Algorithm"] = "Banded CUDA"
@@ -18,13 +18,13 @@ data_eigeniterative2["Algorithm"] = "Eigen iterative BiCGSTAB"
 #data_bandedcpu["Algorithm"] = "Banded CPU"
 
 data_seqnormal = pd.read_csv("results_sparsesolver_sparse_pde.csv")
-data_seqnormal["Algorithm"] = "Base algorithm"
+data_seqnormal["Algorithm"] = "Basic Kaczmarz"
 
 data_eigendirect = pd.read_csv("results_eigensolver_sparse_pde.csv")
-data_eigendirect["Algorithm"] = "Eigen Direct"
+data_eigendirect["Algorithm"] = "Eigen LU"
 
 data_cudadirect = pd.read_csv("results_cudadirect_sparse_pde.csv")
-data_cudadirect["Algorithm"] = "CUDA Native"
+data_cudadirect["Algorithm"] = "CuSolver QR"
 
 data_carp = pd.read_csv("results_carp_cuda_sparse_pde.csv")
 data_carp["Algorithm"] = "CARP-CG"
