@@ -445,7 +445,9 @@ void make_file_cuda_banded(const unsigned int min_problem,
                                 std::to_string(complexity) + "_degree" +
                                 std::to_string(degree) + "_banded.txt";
         double stdDev;
+        std::cout << "WE ARE IN THIS FUNCTION";
         try {
+            std::cout << "WE ARE IN HERE FUNCTION";
           double avgTime = benchmark_banded_cuda_solver_sparse(
               file_path, iterations, stdDev);
 
