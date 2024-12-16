@@ -17,7 +17,7 @@
 #include "solvers/random.hpp"
 #include "solvers/sparse_cg.hpp"
 
-#define MAX_IT 4294967294
+#define MAX_IT (std::numeric_limits<unsigned int>::max()-1)
 #define PRECISION 1e-7
 #define NUM_IT 4
 #define MAX_PROBLEMS 3
