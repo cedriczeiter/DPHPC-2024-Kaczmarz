@@ -36,7 +36,8 @@ int main() {
   const unsigned max_iterations =
       250'000;  // set such that it doesnt take tooo long
 
-  // Files are in file_path inside of three problem folders called problem1, problem2, problem3
+  // Files are in file_path inside of three problem folders called problem1,
+  // problem2, problem3
 
   std::filesystem::path path = file_path;
   std::filesystem::recursive_directory_iterator files(path);
