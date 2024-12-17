@@ -18,9 +18,12 @@ void kaczmarz_banded_serial_naive(const BandedLinearSystem& lse, Vector& x,
 void kaczmarz_banded_serial_interleaved(const BandedLinearSystem& lse,
                                         Vector& x, unsigned iterations);
 
-KaczmarzSolverStatus kaczmarz_banded_cuda(const BandedLinearSystem& lse,
-                                          Eigen::VectorXd& x,
-                                          unsigned max_iterations,
-                                          double precision);
+void kaczmarz_banded_cuda_grouping1(const BandedLinearSystem& lse, Vector& x,
+                                    unsigned iterations, unsigned block_count,
+                                    unsigned threads_per_block);
+
+void kaczmarz_banded_cuda_grouping2(const BandedLinearSystem& lse, Vector& x,
+                                    unsigned iterations, unsigned block_count,
+                                    unsigned threads_per_block);
 
 #endif  // BANDED_HPP

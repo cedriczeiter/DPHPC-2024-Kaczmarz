@@ -1,15 +1,16 @@
 #ifndef BANDED_CUDA_HPP
 #define BANDED_CUDA_HPP
 
-#include <vector>
+#include "unpacked_banded_system.hpp"
 
-void invoke_kaczmarz_banded_update(unsigned bandwidth,
-                                   unsigned threads_per_block,
-                                   unsigned block_count,
-                                   unsigned width,
-                                   const std::vector<double>& A_data_padded,
-                                   std::vector<double>& x_padded,
-                                   const std::vector<double>& sq_norms_padded,
-                                   const std::vector<double>& b_padded);
+void invoke_kaczmarz_banded_cuda_grouping1(UnpackedBandedSystem& sys,
+                                           const unsigned iterations,
+                                           const unsigned block_count,
+                                           const unsigned threads_per_block);
+
+void invoke_kaczmarz_banded_cuda_grouping2(UnpackedBandedSystem& sys,
+                                           const unsigned iterations,
+                                           const unsigned block_count,
+                                           const unsigned threads_per_block);
 
 #endif  // BANDED_CUDA_HPP

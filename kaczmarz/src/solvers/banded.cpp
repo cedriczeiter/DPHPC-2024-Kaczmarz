@@ -2,19 +2,10 @@
 
 #include <cassert>
 #include <numeric>
-#include <iostream>
 
 #include "banded_cuda.hpp"
 #include "omp.h"
-
-struct UnpackedBandedSystem {
-  unsigned bandwidth;
-  unsigned dim;
-  std::vector<double> A_data;
-  std::vector<double> x_padded;
-  std::vector<double> sq_norms;
-  std::vector<double> b;
-};
+#include "unpacked_banded_system.hpp"
 
 UnpackedBandedSystem unpack_banded_system(const BandedLinearSystem& lse,
                                           const Vector& x,
@@ -266,76 +257,30 @@ void kaczmarz_banded_serial_interleaved(const BandedLinearSystem& lse,
   write_back_solution(sys, x);
 }
 
-KaczmarzSolverStatus kaczmarz_banded_cuda(const BandedLinearSystem& lse,
-                                          Eigen::VectorXd& x,
-                                          const unsigned /* max_iterations */,
-                                          const double /* precision */) {
-  const unsigned bandwidth = lse.bandwidth();
-  const unsigned dim = lse.dim();
+void kaczmarz_banded_cuda_grouping1(const BandedLinearSystem& lse,
+                                    Eigen::VectorXd& x,
+                                    const unsigned iterations,
+                                    const unsigned block_count,
+                                    const unsigned threads_per_block) {
+  const unsigned thread_count = block_count * threads_per_block;
+  const unsigned dim_padded =
+      std::max(lse.dim(), lse.bandwidth() * 2 * 2 * thread_count);
+  UnpackedBandedSystem sys = unpack_banded_system(lse, x, dim_padded);
+  invoke_kaczmarz_banded_cuda_grouping1(sys, iterations, block_count,
+                                        threads_per_block);
+  write_back_solution(sys, x);
+}
 
-  // reshuffling / padding memory on the CPU
-  
-  const unsigned max_useful_thread_count = (dim - 1) / (2 * (2 * bandwidth + 1)) + 1;
-  const unsigned threads_per_block = 125;
-  const unsigned block_count = 16;
-  //const unsigned desired_threads_per_count = 600;
-  const unsigned thread_count = threads_per_block * block_count;//std::min(max_useful_thread_count, desired_thread_count);
-  assert(thread_count <= max_useful_thread_count);
-  const unsigned width = (dim - 1) / (2 * thread_count) + 1;
-  std::cout << "thread count: " << thread_count << std::endl;
-  std::cout << "width: " << width << std::endl;
-
-  //const unsigned thread_count = (dim - 1) / (2 * bandwidth + 1) + 1;
-  const unsigned dim_padded = 2 * width * thread_count; //thread_count * (2 * bandwidth + 1);
-  std::vector<double> x_padded(bandwidth + dim_padded + bandwidth, 0.0);
-  std::copy(x.begin(), x.end(), x_padded.begin() + bandwidth);
-  std::vector<double> A_data_padded(dim_padded * (2 * bandwidth + 1), 0.0);
-  unsigned elem_idx = 0;
-  for (unsigned row_idx = 0; row_idx < bandwidth; row_idx++) {
-    const unsigned to_copy_count = row_idx + 1 + bandwidth;
-    std::copy_n(lse.A_data().begin() + elem_idx, to_copy_count,
-                A_data_padded.begin() + row_idx * (2 * bandwidth + 1) +
-                    (bandwidth - row_idx));
-    elem_idx += to_copy_count;
-  }
-  const unsigned middle_to_copy_count =
-      (dim - 2 * bandwidth) * (2 * bandwidth + 1);
-  std::copy_n(lse.A_data().begin() + elem_idx, middle_to_copy_count,
-              A_data_padded.begin() + bandwidth * (2 * bandwidth + 1));
-  elem_idx += middle_to_copy_count;
-  for (unsigned row_i = 0; row_i < bandwidth; row_i++) {
-    const unsigned to_copy_count = 2 * bandwidth - row_i;
-    std::copy_n(lse.A_data().begin() + elem_idx, to_copy_count,
-                A_data_padded.begin() +
-                    (dim - bandwidth + row_i) * (2 * bandwidth + 1));
-    elem_idx += to_copy_count;
-  }
-  for (unsigned pad_row_idx = dim; pad_row_idx < dim_padded; pad_row_idx++) {
-    A_data_padded[pad_row_idx * (2 * bandwidth + 1) + bandwidth] = 1.0;
-  }
-  const std::vector<double> sq_norms_padded = [bandwidth, dim, dim_padded,
-                                               &lse]() {
-    std::vector<double> sq_norms(dim_padded, 1.0);
-    unsigned elem_idx = 0;
-    for (unsigned row_idx = 0; row_idx < dim; row_idx++) {
-      const unsigned row_nnz =
-          std::min({2 * bandwidth + 1, bandwidth + 1 + row_idx,
-                    bandwidth + 1 + (dim - 1 - row_idx)});
-      sq_norms[row_idx] =
-          std::inner_product(lse.A_data().begin() + elem_idx,
-                             lse.A_data().begin() + elem_idx + row_nnz,
-                             lse.A_data().begin() + elem_idx, 0.0);
-      elem_idx += row_nnz;
-    }
-    return sq_norms;
-  }();
-  std::vector<double> b_padded(dim_padded, 0.0);
-  std::copy(lse.b().begin(), lse.b().end(), b_padded.begin());
-
-  invoke_kaczmarz_banded_update(bandwidth, threads_per_block, block_count, width, A_data_padded,
-                                x_padded, sq_norms_padded, b_padded);
-
-  std::copy_n(x_padded.begin() + bandwidth, dim, x.begin());
-
-  return KaczmarzSolverStatus::Converged;
+void kaczmarz_banded_cuda_grouping2(const BandedLinearSystem& lse,
+                                    Eigen::VectorXd& x,
+                                    const unsigned iterations,
+                                    const unsigned block_count,
+                                    const unsigned threads_per_block) {
+  const unsigned group_count = 2 * lse.bandwidth() + 1;
+  const unsigned rows_per_group = ceil_div(lse.dim(), group_count);
+  const unsigned dim_padded = rows_per_group * group_count;
+  UnpackedBandedSystem sys = unpack_banded_system(lse, x, dim_padded);
+  invoke_kaczmarz_banded_cuda_grouping2(sys, iterations, block_count,
+                                        threads_per_block);
+  write_back_solution(sys, x);
 }
