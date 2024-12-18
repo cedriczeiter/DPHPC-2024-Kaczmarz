@@ -167,10 +167,10 @@ int main() {
           // Check if the algorithm exceeded the time threshold previously
           if (execution_times.count(algorithm_name) > 0 &&
               execution_times[algorithm_name] > TIME_THRESHOLD) {
-            std::cout << "Skipping " << algorithm_name
-                      << " due to high execution time: "
-                      << execution_times[algorithm_name] << " seconds."
-                      << std::endl;
+            // std::cout << "Skipping " << algorithm_name
+            //           << " due to high execution time: "
+            //           << execution_times[algorithm_name] << " seconds."
+            //           << std::endl;
             continue;  // Skip this algorithm
           }
           try {
