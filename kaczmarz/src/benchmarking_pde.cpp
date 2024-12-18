@@ -122,9 +122,10 @@ int main() {
             // benchmark_banded_serial
             // benchmark_banded_cuda,
             // benchmark_banded_cpu,
-            benchmark_cgmnc, benchmark_eigen_direct,
+            benchmark_cgmnc,
             // benchmark_basic_kaczmarz,
             // benchmark_cusolver
+            benchmark_eigen_direct
         };
       }
 
