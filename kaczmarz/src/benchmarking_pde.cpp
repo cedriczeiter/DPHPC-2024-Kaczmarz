@@ -1165,7 +1165,7 @@ void benchmark_carpcg(unsigned int numIterations, unsigned int problem_i,
   std::cout << "      Running CARP for problem " << problem_i << ", complexity "
             << complexity_i << ", degree " << degree_i << std::endl;
 
-  for (int i = 0; i < numIterations; ++i) {
+  for (unsigned int i = 0; i < numIterations; ++i) {
     // Allocate memory to save kaczmarz solution
     Eigen::VectorXd x_kaczmarz_sparse =
         Eigen::VectorXd::Zero(lse.column_count());
@@ -1225,7 +1225,7 @@ void benchmark_eigen_cg(unsigned int numIterations, unsigned int problem_i,
             << ", complexity " << complexity_i << ", degree " << degree_i
             << std::endl;
 
-  for (int i = 0; i < numIterations; ++i) {
+  for (unsigned int i = 0; i < numIterations; ++i) {
     // Allocate memory to save kaczmarz solution
     const auto A = lse.A();
     const auto b = lse.b();
@@ -1279,7 +1279,7 @@ void benchmark_eigen_bicgstab(unsigned int numIterations,
             << ", complexity " << complexity_i << ", degree " << degree_i
             << std::endl;
 
-  for (int i = 0; i < numIterations; ++i) {
+  for (unsigned int i = 0; i < numIterations; ++i) {
     const auto A = lse.A();
     const auto b = lse.b();
     Eigen::BiCGSTAB<SparseMatrix> solver(A);
@@ -1331,7 +1331,7 @@ void benchmark_cgmnc(unsigned int numIterations, unsigned int problem_i,
             << ", complexity " << complexity_i << ", degree " << degree_i
             << std::endl;
 
-  for (int i = 0; i < numIterations; ++i) {
+  for (unsigned int i = 0; i < numIterations; ++i) {
     // Allocate memory to save kaczmarz solution
     Eigen::VectorXd x_kaczmarz_sparse =
         Eigen::VectorXd::Zero(lse.column_count());
@@ -1387,7 +1387,7 @@ void benchmark_eigen_direct(unsigned int numIterations, unsigned int problem_i,
 
   const auto A = lse.A();
   const auto b = lse.b();
-  for (int i = 0; i < numIterations; ++i) {
+  for (unsigned int i = 0; i < numIterations; ++i) {
     Eigen::SparseLU<Eigen::SparseMatrix<double>> solver;
     solver.compute(A);
     const auto start = std::chrono::high_resolution_clock::now();
@@ -1434,7 +1434,7 @@ void benchmark_basic_kaczmarz(unsigned int numIterations,
             << ", complexity " << complexity_i << ", degree " << degree_i
             << std::endl;
 
-  for (int i = 0; i < numIterations; ++i) {
+  for (unsigned int i = 0; i < numIterations; ++i) {
     Eigen::VectorXd x_kaczmarz_sparse =
         Eigen::VectorXd::Zero(lse.column_count());
     std::vector<double> times_residuals;
@@ -1495,7 +1495,7 @@ void benchmark_cusolver(unsigned int numIterations, unsigned int problem_i,
 
   const auto A = lse.A();
   const auto b = lse.b();
-  for (int i = 0; i < numIterations; ++i) {
+  for (unsigned int i = 0; i < numIterations; ++i) {
     Eigen::VectorXd x_kaczmarz_sparse =
         Eigen::VectorXd::Zero(lse.column_count());
     auto start = std::chrono::high_resolution_clock::now();
@@ -1559,7 +1559,7 @@ void benchmark_banded_cuda(unsigned int numIterations, unsigned int problem_i,
 
   // still need to convert the SparseLinearSystem to BandedLinearSystem
 
-  for (int i = 0; i < numIterations; ++i) {
+  for (unsigned int i = 0; i < numIterations; ++i) {
     // Allocate memory to save kaczmarz solution
     Vector x_kaczmarz = Vector::Zero(lse.column_count());
 
@@ -1619,7 +1619,7 @@ void benchmark_banded_cpu(unsigned int numIterations, unsigned int problem_i,
   BandedLinearSystem banded_lse = convert_to_banded(lse, bandwidth);
   // still need to convert the SparseLinearSystem to BandedLinearSystem
 
-  for (int i = 0; i < numIterations; ++i) {
+  for (unsigned int i = 0; i < numIterations; ++i) {
     // Allocate memory to save kaczmarz solution
     Vector x_kaczmarz = Vector::Zero(lse.column_count());
     const auto start = std::chrono::high_resolution_clock::now();
@@ -1679,7 +1679,7 @@ void benchmark_banded_serial(unsigned int numIterations, unsigned int problem_i,
   BandedLinearSystem banded_lse = convert_to_banded(lse, bandwidth);
   // still need to convert the SparseLinearSystem to BandedLinearSystem
 
-  for (int i = 0; i < numIterations; ++i) {
+  for (unsigned int i = 0; i < numIterations; ++i) {
     // Allocate memory to save kaczmarz solution
     Vector x_kaczmarz = Vector::Zero(lse.column_count());
     std::vector<double> times_residuals;
