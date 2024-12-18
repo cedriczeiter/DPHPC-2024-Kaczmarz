@@ -67,24 +67,28 @@ double benchmark_banded_serial(unsigned int numIterations,
 
 int main() {
   // Define a threshold in seconds
-  const double TIME_THRESHOLD = 0.01;
+  const double TIME_THRESHOLD = 1000.0;
   // Map to track execution times of algorithms
 
-  std::unordered_map<std::string, std::function<double(unsigned int, unsigned int,
+  std::unordered_map<std::string,
+                     std::function<double(unsigned int, unsigned int,
                                           unsigned int, unsigned int)>>
       algorithms;
-  std::vector<std::string>
-      algorithms_names = {"CARP_CG", "Eigen_CG",  "Eigen_BiCGSTAB", "CGMNC", "Eigen_Direct", "Basic_Kaczmarz"/*, "Banded_CPU", "Banded_CUDA", "Banded_SERIAL"*/, "CUSolver"};
-  algorithms = {{ "CARP_CG", benchmark_carpcg},
-                     {"Eigen_CG", benchmark_eigen_cg},
-                     { "Eigen_BiCGSTAB", benchmark_eigen_bicgstab},
-                     {"CGMNC", benchmark_cgmnc},
-                     {"Eigen_Direct", benchmark_eigen_direct},
-                     {"Basic_Kaczmarz", benchmark_basic_kaczmarz},
-                     {"Banded_CPU", benchmark_banded_cpu},
-                     {"Banded_CUDA", benchmark_banded_cuda},
-                     {"Banded_SERIAL", benchmark_banded_serial},
-                     {"CUSolver", benchmark_cusolver}};
+  std::vector<std::string> algorithms_names = {
+      "CARP_CG",      "Eigen_CG",       "Eigen_BiCGSTAB", "CGMNC",
+      "Eigen_Direct", "Basic_Kaczmarz", /*"Banded_CPU", "Banded_CUDA",
+                                           "Banded_SERIAL", */
+      "CUSolver"};
+  algorithms = {{"CARP_CG", benchmark_carpcg},
+                {"Eigen_CG", benchmark_eigen_cg},
+                {"Eigen_BiCGSTAB", benchmark_eigen_bicgstab},
+                {"CGMNC", benchmark_cgmnc},
+                {"Eigen_Direct", benchmark_eigen_direct},
+                {"Basic_Kaczmarz", benchmark_basic_kaczmarz},
+                {"Banded_CPU", benchmark_banded_cpu},
+                {"Banded_CUDA", benchmark_banded_cuda},
+                {"Banded_SERIAL", benchmark_banded_serial},
+                {"CUSolver", benchmark_cusolver}};
   std::vector<std::string> file_names = {
       "results_banded_serial_sparse_pde.csv",
       "results_banded_cpu_2_threads_sparse_pde.csv",
@@ -115,44 +119,6 @@ int main() {
       // Create a list of problems
       std::vector<unsigned int> problems = {1, 2, 3};
 
-      // Create a list of algorithms
-      // std::vector<std::function<void(unsigned int, unsigned int, unsigned int,
-      //                                unsigned int)>>
-      //     algorithms;
-      // if (complexity <= 4) {
-      //   algorithms = {benchmark_carpcg, benchmark_eigen_cg,
-      //                 benchmark_eigen_bicgstab,
-      //                 // Uncomment the following lines to include banded
-      //                 // algorithms if stable
-      //                 // benchmark_banded_serial
-      //                 // benchmark_banded_cuda,
-      //                 // benchmark_banded_cpu,
-      //                 benchmark_cgmnc, benchmark_eigen_direct,
-      //                 benchmark_basic_kaczmarz, benchmark_cusolver};
-      // } else if (complexity == 5) {
-      //   algorithms = {benchmark_carpcg, benchmark_eigen_cg,
-      //                 benchmark_eigen_bicgstab,
-      //                 // Uncomment the following lines to include banded
-      //                 // algorithms if stable
-      //                 // benchmark_banded_serial
-      //                 // benchmark_banded_cuda,
-      //                 // benchmark_banded_cpu,
-      //                 benchmark_cgmnc, benchmark_eigen_direct,
-      //                 // benchmark_basic_kaczmarz,
-      //                 benchmark_cusolver};
-      // } else {
-      //   algorithms = {benchmark_carpcg, benchmark_eigen_cg,
-      //                 benchmark_eigen_bicgstab,
-      //                 // Uncomment the following lines to include banded
-      //                 // algorithms if stable benchmark_banded_serial
-      //                 // benchmark_banded_cuda,
-      //                 // benchmark_banded_cpu,
-      //                 benchmark_cgmnc,
-      //                 // benchmark_basic_kaczmarz,
-      //                 // benchmark_cusolver
-      //                 benchmark_eigen_direct};
-      // }
-
       // Randomize algorithm order for this complexity
       std::random_device rd;
       std::mt19937 g(rd());
@@ -167,15 +133,16 @@ int main() {
           // Check if the algorithm exceeded the time threshold previously
           if (execution_times.count(algorithm_name) > 0 &&
               execution_times[algorithm_name] > TIME_THRESHOLD) {
-            // std::cout << "Skipping " << algorithm_name
-            //           << " due to high execution time: "
-            //           << execution_times[algorithm_name] << " seconds."
-            //           << std::endl;
+            std::cout << "      Skipping " << algorithm_name
+                      << " due to high execution time: "
+                      << execution_times[algorithm_name] << " seconds."
+                      << std::endl;
             continue;  // Skip this algorithm
           }
           try {
-            double time = algorithms[algorithm_name](iterations, problem, complexity,
-                                    degree);  // Run the algorithm
+            double time =
+                algorithms[algorithm_name](iterations, problem, complexity,
+                                           degree);  // Run the algorithm
             // Record execution time
             execution_times[algorithm_name] = time;
           } catch (const std::exception& e) {
