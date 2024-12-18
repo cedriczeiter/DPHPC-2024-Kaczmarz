@@ -115,18 +115,16 @@ int main() {
                       // benchmark_basic_kaczmarz,
                       benchmark_cusolver};
       } else {
-        algorithms = {
-            benchmark_carpcg, benchmark_eigen_cg, benchmark_eigen_bicgstab,
-            // Uncomment the following lines to include banded algorithms if
-            // stable
-            // benchmark_banded_serial
-            // benchmark_banded_cuda,
-            // benchmark_banded_cpu,
-            benchmark_cgmnc,
-            // benchmark_basic_kaczmarz,
-            // benchmark_cusolver
-            benchmark_eigen_direct
-        };
+        algorithms = {benchmark_carpcg, benchmark_eigen_cg,
+                      benchmark_eigen_bicgstab,
+                      // Uncomment the following lines to include banded
+                      // algorithms if stable benchmark_banded_serial
+                      // benchmark_banded_cuda,
+                      // benchmark_banded_cpu,
+                      benchmark_cgmnc,
+                      // benchmark_basic_kaczmarz,
+                      // benchmark_cusolver
+                      benchmark_eigen_direct};
       }
 
       // Randomize algorithm order for this complexity
