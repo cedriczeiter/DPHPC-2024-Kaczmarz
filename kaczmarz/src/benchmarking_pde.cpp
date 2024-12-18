@@ -67,7 +67,7 @@ double benchmark_banded_serial(unsigned int numIterations,
 
 int main() {
   // Define a threshold in seconds
-  const double TIME_THRESHOLD = 1000.0;
+  const double TIME_THRESHOLD = 500.0;
   // Map to track execution times of algorithms
 
   std::unordered_map<std::string,
