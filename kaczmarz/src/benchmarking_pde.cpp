@@ -5,6 +5,7 @@
 #include <fstream>
 #include <iostream>
 #include <random>
+#include <unordered_map>
 #include <vector>
 
 #include "linear_systems/dense.hpp"
@@ -36,30 +37,64 @@ void write_results_to_file(const std::string& file_name, unsigned int problem,
                            double avg_time, double std_dev,
                            unsigned int dimension);
 
-void benchmark_carpcg(unsigned int numIterations, unsigned int problem_i,
-                      unsigned int complexity_i, unsigned int degree_i);
-void benchmark_eigen_cg(unsigned int numIterations, unsigned int problem_i,
+double benchmark_carpcg(unsigned int numIterations, unsigned int problem_i,
                         unsigned int complexity_i, unsigned int degree_i);
-void benchmark_eigen_bicgstab(unsigned int numIterations,
-                              unsigned int problem_i, unsigned int complexity_i,
-                              unsigned int degree_i);
-void benchmark_cgmnc(unsigned int numIterations, unsigned int problem_i,
-                     unsigned int complexity_i, unsigned int degree_i);
-void benchmark_eigen_direct(unsigned int numIterations, unsigned int problem_i,
-                            unsigned int complexity_i, unsigned int degree_i);
-void benchmark_basic_kaczmarz(unsigned int numIterations,
-                              unsigned int problem_i, unsigned int complexity_i,
-                              unsigned int degree_i);
-void benchmark_cusolver(unsigned int numIterations, unsigned int problem_i,
-                        unsigned int complexity_i, unsigned int degree_i);
-void benchmark_banded_cuda(unsigned int numIterations, unsigned int problem_i,
-                           unsigned int complexity_i, unsigned int degree_i);
-void benchmark_banded_cpu(unsigned int numIterations, unsigned int problem_i,
+double benchmark_eigen_cg(unsigned int numIterations, unsigned int problem_i,
                           unsigned int complexity_i, unsigned int degree_i);
-void benchmark_banded_serial(unsigned int numIterations, unsigned int problem_i,
+double benchmark_eigen_bicgstab(unsigned int numIterations,
+                                unsigned int problem_i,
+                                unsigned int complexity_i,
+                                unsigned int degree_i);
+double benchmark_cgmnc(unsigned int numIterations, unsigned int problem_i,
+                       unsigned int complexity_i, unsigned int degree_i);
+double benchmark_eigen_direct(unsigned int numIterations,
+                              unsigned int problem_i, unsigned int complexity_i,
+                              unsigned int degree_i);
+double benchmark_basic_kaczmarz(unsigned int numIterations,
+                                unsigned int problem_i,
+                                unsigned int complexity_i,
+                                unsigned int degree_i);
+double benchmark_cusolver(unsigned int numIterations, unsigned int problem_i,
+                          unsigned int complexity_i, unsigned int degree_i);
+double benchmark_banded_cuda(unsigned int numIterations, unsigned int problem_i,
                              unsigned int complexity_i, unsigned int degree_i);
+double benchmark_banded_cpu(unsigned int numIterations, unsigned int problem_i,
+                            unsigned int complexity_i, unsigned int degree_i);
+double benchmark_banded_serial(unsigned int numIterations,
+                               unsigned int problem_i,
+                               unsigned int complexity_i,
+                               unsigned int degree_i);
 
 int main() {
+  // Define a threshold in seconds
+  const double TIME_THRESHOLD = 0.01;
+  // Map to track execution times of algorithms
+
+  std::unordered_map<std::function<double(unsigned int, unsigned int,
+                                          unsigned int, unsigned int)>,
+                     std::string>
+      algorithm_names;
+  std::vector<std::function<double(unsigned int, unsigned int, unsigned int,
+                                   unsigned int)>>
+      algorithms = {benchmark_carpcg, benchmark_eigen_cg,
+                    benchmark_eigen_bicgstab,
+                    // Uncomment the following lines to include banded
+                    // algorithms if stable
+                    // benchmark_banded_serial
+                    // benchmark_banded_cuda,
+                    // benchmark_banded_cpu,
+                    benchmark_cgmnc, benchmark_eigen_direct,
+                    benchmark_basic_kaczmarz, benchmark_cusolver};
+  algorithm_names = {{benchmark_carpcg, "CARP_CG"},
+                     {benchmark_eigen_cg, "Eigen_CG"},
+                     {benchmark_eigen_bicgstab, "Eigen_BiCGSTAB"},
+                     {benchmark_cgmnc, "CGMNC"},
+                     {benchmark_eigen_direct, "Eigen_Direct"},
+                     {benchmark_basic_kaczmarz, "Basic_Kaczmarz"},
+                     {benchmark_banded_cpu, "Banded_CPU"},
+                     {benchmark_banded_cuda, "Banded_CUDA"},
+                     {benchmark_banded_serial, "Banded_SERIAL"},
+                     {benchmark_cusolver, "CUSolver"}};
   std::vector<std::string> file_names = {
       "results_banded_serial_sparse_pde.csv",
       "results_banded_cpu_2_threads_sparse_pde.csv",
@@ -80,6 +115,7 @@ int main() {
   // Main loop over degrees
   for (unsigned int degree = 1; degree <= MAX_DEGREE; ++degree) {
     std::cout << "Processing degree: " << degree << std::endl;
+    std::unordered_map<std::string, double> execution_times;
 
     // Loop over complexities
     for (unsigned int complexity = 1; complexity <= MAX_COMPLEXITY;
@@ -90,42 +126,42 @@ int main() {
       std::vector<unsigned int> problems = {1, 2, 3};
 
       // Create a list of algorithms
-      std::vector<std::function<void(unsigned int, unsigned int, unsigned int,
-                                     unsigned int)>>
-          algorithms;
-      if (complexity <= 4) {
-        algorithms = {benchmark_carpcg, benchmark_eigen_cg,
-                      benchmark_eigen_bicgstab,
-                      // Uncomment the following lines to include banded
-                      // algorithms if stable
-                      // benchmark_banded_serial
-                      // benchmark_banded_cuda,
-                      // benchmark_banded_cpu,
-                      benchmark_cgmnc, benchmark_eigen_direct,
-                      benchmark_basic_kaczmarz, benchmark_cusolver};
-      } else if (complexity == 5) {
-        algorithms = {benchmark_carpcg, benchmark_eigen_cg,
-                      benchmark_eigen_bicgstab,
-                      // Uncomment the following lines to include banded
-                      // algorithms if stable
-                      // benchmark_banded_serial
-                      // benchmark_banded_cuda,
-                      // benchmark_banded_cpu,
-                      benchmark_cgmnc, benchmark_eigen_direct,
-                      // benchmark_basic_kaczmarz,
-                      benchmark_cusolver};
-      } else {
-        algorithms = {benchmark_carpcg, benchmark_eigen_cg,
-                      benchmark_eigen_bicgstab,
-                      // Uncomment the following lines to include banded
-                      // algorithms if stable benchmark_banded_serial
-                      // benchmark_banded_cuda,
-                      // benchmark_banded_cpu,
-                      benchmark_cgmnc,
-                      // benchmark_basic_kaczmarz,
-                      // benchmark_cusolver
-                      benchmark_eigen_direct};
-      }
+      // std::vector<std::function<void(unsigned int, unsigned int, unsigned int,
+      //                                unsigned int)>>
+      //     algorithms;
+      // if (complexity <= 4) {
+      //   algorithms = {benchmark_carpcg, benchmark_eigen_cg,
+      //                 benchmark_eigen_bicgstab,
+      //                 // Uncomment the following lines to include banded
+      //                 // algorithms if stable
+      //                 // benchmark_banded_serial
+      //                 // benchmark_banded_cuda,
+      //                 // benchmark_banded_cpu,
+      //                 benchmark_cgmnc, benchmark_eigen_direct,
+      //                 benchmark_basic_kaczmarz, benchmark_cusolver};
+      // } else if (complexity == 5) {
+      //   algorithms = {benchmark_carpcg, benchmark_eigen_cg,
+      //                 benchmark_eigen_bicgstab,
+      //                 // Uncomment the following lines to include banded
+      //                 // algorithms if stable
+      //                 // benchmark_banded_serial
+      //                 // benchmark_banded_cuda,
+      //                 // benchmark_banded_cpu,
+      //                 benchmark_cgmnc, benchmark_eigen_direct,
+      //                 // benchmark_basic_kaczmarz,
+      //                 benchmark_cusolver};
+      // } else {
+      //   algorithms = {benchmark_carpcg, benchmark_eigen_cg,
+      //                 benchmark_eigen_bicgstab,
+      //                 // Uncomment the following lines to include banded
+      //                 // algorithms if stable benchmark_banded_serial
+      //                 // benchmark_banded_cuda,
+      //                 // benchmark_banded_cpu,
+      //                 benchmark_cgmnc,
+      //                 // benchmark_basic_kaczmarz,
+      //                 // benchmark_cusolver
+      //                 benchmark_eigen_direct};
+      // }
 
       // Randomize algorithm order for this complexity
       std::random_device rd;
@@ -137,9 +173,22 @@ int main() {
         std::cout << "    Processing problem: " << problem << std::endl;
 
         for (auto& algorithm : algorithms) {
+          // Get the name of the current algorithm
+          std::string algorithm_name = algorithm_names[algorithm];
+          // Check if the algorithm exceeded the time threshold previously
+          if (execution_times.count(algorithm_name) > 0 &&
+              execution_times[algorithm_name] > TIME_THRESHOLD) {
+            std::cout << "Skipping " << algorithm_name
+                      << " due to high execution time: "
+                      << execution_times[algorithm_name] << " seconds."
+                      << std::endl;
+            continue;  // Skip this algorithm
+          }
           try {
-            algorithm(iterations, problem, complexity,
-                      degree);  // Run the algorithm
+            double time = algorithm(iterations, problem, complexity,
+                                    degree);  // Run the algorithm
+            // Record execution time
+            execution_times[algorithm_name] = time;
           } catch (const std::exception& e) {
             std::cerr << "Error in algorithm execution for problem " << problem
                       << ", complexity " << complexity << ", degree " << degree
@@ -246,8 +295,8 @@ void compute_statistics(const std::vector<double>& times, double& avgTime,
   stdDev = std::sqrt(variance);
 }
 
-void benchmark_carpcg(unsigned int numIterations, unsigned int problem_i,
-                      unsigned int complexity_i, unsigned int degree_i) {
+double benchmark_carpcg(unsigned int numIterations, unsigned int problem_i,
+                        unsigned int complexity_i, unsigned int degree_i) {
   std::string file_path = "../../generated_bvp_matrices/problem" +
                           std::to_string(problem_i) + "/problem" +
                           std::to_string(problem_i) + "_complexity" +
@@ -304,9 +353,11 @@ void benchmark_carpcg(unsigned int numIterations, unsigned int problem_i,
   // Write results
   write_results_to_file("results_carp_cuda_sparse_pde.csv", problem_i,
                         complexity_i, degree_i, avg_time, std_dev, rows);
+  return avg_time;
 }
-void benchmark_eigen_cg(unsigned int numIterations, unsigned int problem_i,
-                        unsigned int complexity_i, unsigned int degree_i) {
+
+double benchmark_eigen_cg(unsigned int numIterations, unsigned int problem_i,
+                          unsigned int complexity_i, unsigned int degree_i) {
   std::string file_path = "../../generated_bvp_matrices/problem" +
                           std::to_string(problem_i) + "/problem" +
                           std::to_string(problem_i) + "_complexity" +
@@ -357,10 +408,13 @@ void benchmark_eigen_cg(unsigned int numIterations, unsigned int problem_i,
   // Write results
   write_results_to_file("results_eigeniterative_sparse_pde.csv", problem_i,
                         complexity_i, degree_i, avg_time, std_dev, rows);
+  return avg_time;
 }
-void benchmark_eigen_bicgstab(unsigned int numIterations,
-                              unsigned int problem_i, unsigned int complexity_i,
-                              unsigned int degree_i) {
+
+double benchmark_eigen_bicgstab(unsigned int numIterations,
+                                unsigned int problem_i,
+                                unsigned int complexity_i,
+                                unsigned int degree_i) {
   std::string file_path = "../../generated_bvp_matrices/problem" +
                           std::to_string(problem_i) + "/problem" +
                           std::to_string(problem_i) + "_complexity" +
@@ -410,9 +464,11 @@ void benchmark_eigen_bicgstab(unsigned int numIterations,
   // Write results
   write_results_to_file("results_eigeniterative_2_sparse_pde.csv", problem_i,
                         complexity_i, degree_i, avg_time, std_dev, rows);
+  return avg_time;
 }
-void benchmark_cgmnc(unsigned int numIterations, unsigned int problem_i,
-                     unsigned int complexity_i, unsigned int degree_i) {
+
+double benchmark_cgmnc(unsigned int numIterations, unsigned int problem_i,
+                       unsigned int complexity_i, unsigned int degree_i) {
   std::string file_path = "../../generated_bvp_matrices/problem" +
                           std::to_string(problem_i) + "/problem" +
                           std::to_string(problem_i) + "_complexity" +
@@ -465,9 +521,12 @@ void benchmark_cgmnc(unsigned int numIterations, unsigned int problem_i,
   // Write results
   write_results_to_file("results_sparsesolver_sparse_cg_pde.csv", problem_i,
                         complexity_i, degree_i, avg_time, std_dev, rows);
+  return avg_time;
 }
-void benchmark_eigen_direct(unsigned int numIterations, unsigned int problem_i,
-                            unsigned int complexity_i, unsigned int degree_i) {
+
+double benchmark_eigen_direct(unsigned int numIterations,
+                              unsigned int problem_i, unsigned int complexity_i,
+                              unsigned int degree_i) {
   std::string file_path = "../../generated_bvp_matrices/problem" +
                           std::to_string(problem_i) + "/problem" +
                           std::to_string(problem_i) + "_complexity" +
@@ -513,10 +572,12 @@ void benchmark_eigen_direct(unsigned int numIterations, unsigned int problem_i,
   // Write results
   write_results_to_file("results_eigensolver_sparse_pde.csv", problem_i,
                         complexity_i, degree_i, avg_time, std_dev, rows);
+  return avg_time;
 }
-void benchmark_basic_kaczmarz(unsigned int numIterations,
-                              unsigned int problem_i, unsigned int complexity_i,
-                              unsigned int degree_i) {
+double benchmark_basic_kaczmarz(unsigned int numIterations,
+                                unsigned int problem_i,
+                                unsigned int complexity_i,
+                                unsigned int degree_i) {
   std::string file_path = "../../generated_bvp_matrices/problem" +
                           std::to_string(problem_i) + "/problem" +
                           std::to_string(problem_i) + "_complexity" +
@@ -572,9 +633,11 @@ void benchmark_basic_kaczmarz(unsigned int numIterations,
   // Write results
   write_results_to_file("results_sparsesolver_sparse_pde.csv", problem_i,
                         complexity_i, degree_i, avg_time, std_dev, rows);
+  return avg_time;
 }
-void benchmark_cusolver(unsigned int numIterations, unsigned int problem_i,
-                        unsigned int complexity_i, unsigned int degree_i) {
+
+double benchmark_cusolver(unsigned int numIterations, unsigned int problem_i,
+                          unsigned int complexity_i, unsigned int degree_i) {
   std::string file_path = "../../generated_bvp_matrices/problem" +
                           std::to_string(problem_i) + "/problem" +
                           std::to_string(problem_i) + "_complexity" +
@@ -630,9 +693,11 @@ void benchmark_cusolver(unsigned int numIterations, unsigned int problem_i,
   // Write results
   write_results_to_file("results_cudadirect_sparse_pde.csv", problem_i,
                         complexity_i, degree_i, avg_time, std_dev, rows);
+  return avg_time;
 }
-void benchmark_banded_cuda(unsigned int numIterations, unsigned int problem_i,
-                           unsigned int complexity_i, unsigned int degree_i) {
+
+double benchmark_banded_cuda(unsigned int numIterations, unsigned int problem_i,
+                             unsigned int complexity_i, unsigned int degree_i) {
   std::string file_path = "../../generated_bvp_matrices/problem" +
                           std::to_string(problem_i) + "/problem" +
                           std::to_string(problem_i) + "_complexity" +
@@ -689,9 +754,11 @@ void benchmark_banded_cuda(unsigned int numIterations, unsigned int problem_i,
   // Write results
   write_results_to_file("results_banded_cuda_sparse_pde.csv", problem_i,
                         complexity_i, degree_i, avg_time, std_dev, rows);
+  return avg_time;
 }
-void benchmark_banded_cpu(unsigned int numIterations, unsigned int problem_i,
-                          unsigned int complexity_i, unsigned int degree_i) {
+
+double benchmark_banded_cpu(unsigned int numIterations, unsigned int problem_i,
+                            unsigned int complexity_i, unsigned int degree_i) {
   std::string file_path = "../../generated_bvp_matrices/problem" +
                           std::to_string(problem_i) + "/problem" +
                           std::to_string(problem_i) + "_complexity" +
@@ -748,9 +815,12 @@ void benchmark_banded_cpu(unsigned int numIterations, unsigned int problem_i,
   write_results_to_file("results_banded_cpu_2_threads_sparse_pde.csv",
                         problem_i, complexity_i, degree_i, avg_time, std_dev,
                         rows);
+  return avg_time;
 }
-void benchmark_banded_serial(unsigned int numIterations, unsigned int problem_i,
-                             unsigned int complexity_i, unsigned int degree_i) {
+double benchmark_banded_serial(unsigned int numIterations,
+                               unsigned int problem_i,
+                               unsigned int complexity_i,
+                               unsigned int degree_i) {
   std::string file_path = "../../generated_bvp_matrices/problem" +
                           std::to_string(problem_i) + "/problem" +
                           std::to_string(problem_i) + "_complexity" +
@@ -809,4 +879,5 @@ void benchmark_banded_serial(unsigned int numIterations, unsigned int problem_i,
   // Write results
   write_results_to_file("results_banded_serial_sparse_pde.csv", problem_i,
                         complexity_i, degree_i, avg_time, std_dev, rows);
+  return avg_time;
 }
