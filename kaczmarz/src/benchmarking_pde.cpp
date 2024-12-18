@@ -70,31 +70,21 @@ int main() {
   const double TIME_THRESHOLD = 0.01;
   // Map to track execution times of algorithms
 
-  std::unordered_map<std::function<double(unsigned int, unsigned int,
-                                          unsigned int, unsigned int)>,
-                     std::string>
-      algorithm_names;
-  std::vector<std::function<double(unsigned int, unsigned int, unsigned int,
-                                   unsigned int)>>
-      algorithms = {benchmark_carpcg, benchmark_eigen_cg,
-                    benchmark_eigen_bicgstab,
-                    // Uncomment the following lines to include banded
-                    // algorithms if stable
-                    // benchmark_banded_serial
-                    // benchmark_banded_cuda,
-                    // benchmark_banded_cpu,
-                    benchmark_cgmnc, benchmark_eigen_direct,
-                    benchmark_basic_kaczmarz, benchmark_cusolver};
-  algorithm_names = {{benchmark_carpcg, "CARP_CG"},
-                     {benchmark_eigen_cg, "Eigen_CG"},
-                     {benchmark_eigen_bicgstab, "Eigen_BiCGSTAB"},
-                     {benchmark_cgmnc, "CGMNC"},
-                     {benchmark_eigen_direct, "Eigen_Direct"},
-                     {benchmark_basic_kaczmarz, "Basic_Kaczmarz"},
-                     {benchmark_banded_cpu, "Banded_CPU"},
-                     {benchmark_banded_cuda, "Banded_CUDA"},
-                     {benchmark_banded_serial, "Banded_SERIAL"},
-                     {benchmark_cusolver, "CUSolver"}};
+  std::unordered_map<std::string, std::function<double(unsigned int, unsigned int,
+                                          unsigned int, unsigned int)>>
+      algorithms;
+  std::vector<std::string>
+      algorithms_names = {"CARP_CG", "Eigen_CG",  "Eigen_BiCGSTAB", "CGMNC", "Eigen_Direct", "Basic_Kaczmarz"/*, "Banded_CPU", "Banded_CUDA", "Banded_SERIAL"*/, "CUSolver"};
+  algorithms = {{ "CARP_CG", benchmark_carpcg},
+                     {"Eigen_CG", benchmark_eigen_cg},
+                     { "Eigen_BiCGSTAB", benchmark_eigen_bicgstab},
+                     {"CGMNC", benchmark_cgmnc},
+                     {"Eigen_Direct", benchmark_eigen_direct},
+                     {"Basic_Kaczmarz", benchmark_basic_kaczmarz},
+                     {"Banded_CPU", benchmark_banded_cpu},
+                     {"Banded_CUDA", benchmark_banded_cuda},
+                     {"Banded_SERIAL", benchmark_banded_serial},
+                     {"CUSolver", benchmark_cusolver}};
   std::vector<std::string> file_names = {
       "results_banded_serial_sparse_pde.csv",
       "results_banded_cpu_2_threads_sparse_pde.csv",
@@ -166,15 +156,14 @@ int main() {
       // Randomize algorithm order for this complexity
       std::random_device rd;
       std::mt19937 g(rd());
-      std::shuffle(algorithms.begin(), algorithms.end(), g);
+      std::shuffle(algorithms_names.begin(), algorithms_names.end(), g);
 
       // Execute each problem for the current complexity and degree
       for (unsigned int problem : problems) {
         std::cout << "    Processing problem: " << problem << std::endl;
 
-        for (auto& algorithm : algorithms) {
+        for (auto& algorithm_name : algorithms_names) {
           // Get the name of the current algorithm
-          std::string algorithm_name = algorithm_names[algorithm];
           // Check if the algorithm exceeded the time threshold previously
           if (execution_times.count(algorithm_name) > 0 &&
               execution_times[algorithm_name] > TIME_THRESHOLD) {
@@ -185,7 +174,7 @@ int main() {
             continue;  // Skip this algorithm
           }
           try {
-            double time = algorithm(iterations, problem, complexity,
+            double time = algorithms[algorithm_name](iterations, problem, complexity,
                                     degree);  // Run the algorithm
             // Record execution time
             execution_times[algorithm_name] = time;
