@@ -266,7 +266,7 @@ void benchmark_carpcg(unsigned int numIterations, unsigned int problem_i,
   double avg_time = 0.0, std_dev = 0.0;
   std::vector<double> times;
 
-  // Perform benchmarking (replace this with actual benchmarking logic)
+  // Perform benchmarking
   std::cout << "      Running CARP for problem " << problem_i << ", complexity "
             << complexity_i << ", degree " << degree_i << std::endl;
 
@@ -325,7 +325,7 @@ void benchmark_eigen_cg(unsigned int numIterations, unsigned int problem_i,
   double avg_time = 0.0, std_dev = 0.0;
   std::vector<double> times;
 
-  // Perform benchmarking (replace this with actual benchmarking logic)
+  // Perform benchmarking
   std::cout << "      Running EIGEN CG for problem " << problem_i
             << ", complexity " << complexity_i << ", degree " << degree_i
             << std::endl;
@@ -379,7 +379,7 @@ void benchmark_eigen_bicgstab(unsigned int numIterations,
   double avg_time = 0.0, std_dev = 0.0;
   std::vector<double> times;
 
-  // Perform benchmarking (replace this with actual benchmarking logic)
+  // Perform benchmarking
   std::cout << "      Running EIGEN BiCGSTAB for problem " << problem_i
             << ", complexity " << complexity_i << ", degree " << degree_i
             << std::endl;
@@ -431,7 +431,7 @@ void benchmark_cgmnc(unsigned int numIterations, unsigned int problem_i,
   double avg_time = 0.0, std_dev = 0.0;
   std::vector<double> times;
 
-  // Perform benchmarking (replace this with actual benchmarking logic)
+  // Perform benchmarking
   std::cout << "      Running CGMNC for problem " << problem_i
             << ", complexity " << complexity_i << ", degree " << degree_i
             << std::endl;
@@ -485,7 +485,7 @@ void benchmark_eigen_direct(unsigned int numIterations, unsigned int problem_i,
   double avg_time = 0.0, std_dev = 0.0;
   std::vector<double> times;
 
-  // Perform benchmarking (replace this with actual benchmarking logic)
+  // Perform benchmarking
   std::cout << "      Running EIGEN DIRECT for problem " << problem_i
             << ", complexity " << complexity_i << ", degree " << degree_i
             << std::endl;
@@ -534,7 +534,7 @@ void benchmark_basic_kaczmarz(unsigned int numIterations,
   double avg_time = 0.0, std_dev = 0.0;
   std::vector<double> times;
 
-  // Perform benchmarking (replace this with actual benchmarking logic)
+  // Perform benchmarking
   std::cout << "      Running BASIC KACZMARZ for problem " << problem_i
             << ", complexity " << complexity_i << ", degree " << degree_i
             << std::endl;
@@ -593,7 +593,7 @@ void benchmark_cusolver(unsigned int numIterations, unsigned int problem_i,
   double avg_time = 0.0, std_dev = 0.0;
   std::vector<double> times;
 
-  // Perform benchmarking (replace this with actual benchmarking logic)
+  // Perform benchmarking
   std::cout << "      Running CUSOLVER for problem " << problem_i
             << ", complexity " << complexity_i << ", degree " << degree_i
             << std::endl;
@@ -651,18 +651,13 @@ void benchmark_banded_cuda(unsigned int numIterations, unsigned int problem_i,
   double avg_time = 0.0, std_dev = 0.0;
   std::vector<double> times;
 
-  // Perform benchmarking (replace this with actual benchmarking logic)
+  // Perform benchmarking
   std::cout << "      Running BANDED CUDA for problem " << problem_i
             << ", complexity " << complexity_i << ", degree " << degree_i
             << std::endl;
 
   unsigned int bandwidth = compute_bandwidth(lse.A());
   BandedLinearSystem banded_lse = convert_to_banded(lse, bandwidth);
-  // const BandedLinearSystem banded_lse(lse.row_count(),(unsigned int)
-  // compute_bandwidth(lse.A()),
-  //               lse.A(), lse.b());
-
-  // still need to convert the SparseLinearSystem to BandedLinearSystem
 
   for (unsigned int i = 0; i < numIterations; ++i) {
     // Allocate memory to save kaczmarz solution
@@ -715,14 +710,13 @@ void benchmark_banded_cpu(unsigned int numIterations, unsigned int problem_i,
   double avg_time = 0.0, std_dev = 0.0;
   std::vector<double> times;
 
-  // Perform benchmarking (replace this with actual benchmarking logic)
+  // Perform benchmarking
   std::cout << "      Running BANDED CPU for problem " << problem_i
             << ", complexity " << complexity_i << ", degree " << degree_i
             << std::endl;
 
   unsigned int bandwidth = compute_bandwidth(lse.A());
   BandedLinearSystem banded_lse = convert_to_banded(lse, bandwidth);
-  // still need to convert the SparseLinearSystem to BandedLinearSystem
 
   for (unsigned int i = 0; i < numIterations; ++i) {
     // Allocate memory to save kaczmarz solution
@@ -775,14 +769,13 @@ void benchmark_banded_serial(unsigned int numIterations, unsigned int problem_i,
   double avg_time = 0.0, std_dev = 0.0;
   std::vector<double> times;
 
-  // Perform benchmarking (replace this with actual benchmarking logic)
+  // Perform benchmarking
   std::cout << "      Running BANDED SERIAL for problem " << problem_i
             << ", complexity " << complexity_i << ", degree " << degree_i
             << std::endl;
 
   unsigned int bandwidth = compute_bandwidth(lse.A());
   BandedLinearSystem banded_lse = convert_to_banded(lse, bandwidth);
-  // still need to convert the SparseLinearSystem to BandedLinearSystem
 
   for (unsigned int i = 0; i < numIterations; ++i) {
     // Allocate memory to save kaczmarz solution
