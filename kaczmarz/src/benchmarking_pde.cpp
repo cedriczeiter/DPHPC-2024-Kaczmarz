@@ -20,7 +20,7 @@
 #define MAX_IT (std::numeric_limits<unsigned int>::max() - 1)
 #define PRECISION 1e-9
 #define MAX_PROBLEMS 3
-#define MAX_COMPLEXITY 7
+#define MAX_COMPLEXITY 8
 #define MAX_DEGREE 1
 #define NUM_IT 10
 
