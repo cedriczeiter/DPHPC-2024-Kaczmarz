@@ -272,6 +272,7 @@ double benchmark_carpcg(unsigned int numIterations, unsigned int problem_i,
   }
   const SparseLinearSystem lse =
       SparseLinearSystem::read_from_stream(lse_input_stream);
+  lse_input_stream.close();
 
   double avg_time = 0.0, std_dev = 0.0;
   std::vector<double> times;
@@ -312,6 +313,7 @@ double benchmark_carpcg(unsigned int numIterations, unsigned int problem_i,
     throw std::runtime_error("Failed to open matrix file: " + file_path);
   }
   lse_input_stream_2 >> nnz >> rows >> cols;
+  lse_input_stream_2.close();
 
   // Write results
   write_results_to_file("results_carp_cuda_sparse_pde.csv", problem_i,
@@ -333,6 +335,7 @@ double benchmark_eigen_cg(unsigned int numIterations, unsigned int problem_i,
   }
   const SparseLinearSystem lse =
       SparseLinearSystem::read_from_stream(lse_input_stream);
+  lse_input_stream.close();
 
   double avg_time = 0.0, std_dev = 0.0;
   std::vector<double> times;
@@ -367,6 +370,7 @@ double benchmark_eigen_cg(unsigned int numIterations, unsigned int problem_i,
     throw std::runtime_error("Failed to open matrix file: " + file_path);
   }
   lse_input_stream_2 >> nnz >> rows >> cols;
+  lse_input_stream_2.close();
 
   // Write results
   write_results_to_file("results_eigeniterative_sparse_pde.csv", problem_i,
@@ -390,6 +394,7 @@ double benchmark_eigen_bicgstab(unsigned int numIterations,
   }
   const SparseLinearSystem lse =
       SparseLinearSystem::read_from_stream(lse_input_stream);
+  lse_input_stream.close();
 
   double avg_time = 0.0, std_dev = 0.0;
   std::vector<double> times;
@@ -423,6 +428,7 @@ double benchmark_eigen_bicgstab(unsigned int numIterations,
     throw std::runtime_error("Failed to open matrix file: " + file_path);
   }
   lse_input_stream_2 >> nnz >> rows >> cols;
+  lse_input_stream_2.close();
 
   // Write results
   write_results_to_file("results_eigeniterative_2_sparse_pde.csv", problem_i,
@@ -444,6 +450,7 @@ double benchmark_cgmnc(unsigned int numIterations, unsigned int problem_i,
   }
   const SparseLinearSystem lse =
       SparseLinearSystem::read_from_stream(lse_input_stream);
+  lse_input_stream.close();
 
   double avg_time = 0.0, std_dev = 0.0;
   std::vector<double> times;
@@ -480,6 +487,7 @@ double benchmark_cgmnc(unsigned int numIterations, unsigned int problem_i,
     throw std::runtime_error("Failed to open matrix file: " + file_path);
   }
   lse_input_stream_2 >> nnz >> rows >> cols;
+  lse_input_stream_2.close();
 
   // Write results
   write_results_to_file("results_sparsesolver_sparse_cg_pde.csv", problem_i,
@@ -502,6 +510,7 @@ double benchmark_eigen_direct(unsigned int numIterations,
   }
   const SparseLinearSystem lse =
       SparseLinearSystem::read_from_stream(lse_input_stream);
+  lse_input_stream.close();
   double avg_time = 0.0, std_dev = 0.0;
   std::vector<double> times;
 
@@ -531,6 +540,7 @@ double benchmark_eigen_direct(unsigned int numIterations,
     throw std::runtime_error("Failed to open matrix file: " + file_path);
   }
   lse_input_stream_2 >> nnz >> rows >> cols;
+  lse_input_stream_2.close();
 
   // Write results
   write_results_to_file("results_eigensolver_sparse_pde.csv", problem_i,
@@ -553,6 +563,7 @@ double benchmark_basic_kaczmarz(unsigned int numIterations,
   }
   const SparseLinearSystem lse =
       SparseLinearSystem::read_from_stream(lse_input_stream);
+  lse_input_stream.close();
   double avg_time = 0.0, std_dev = 0.0;
   std::vector<double> times;
 
@@ -592,6 +603,7 @@ double benchmark_basic_kaczmarz(unsigned int numIterations,
     throw std::runtime_error("Failed to open matrix file: " + file_path);
   }
   lse_input_stream_2 >> nnz >> rows >> cols;
+  lse_input_stream_2.close();
 
   // Write results
   write_results_to_file("results_sparsesolver_sparse_pde.csv", problem_i,
@@ -613,6 +625,7 @@ double benchmark_cusolver(unsigned int numIterations, unsigned int problem_i,
   }
   const SparseLinearSystem lse =
       SparseLinearSystem::read_from_stream(lse_input_stream);
+  lse_input_stream.close();
 
   double avg_time = 0.0, std_dev = 0.0;
   std::vector<double> times;
@@ -652,6 +665,7 @@ double benchmark_cusolver(unsigned int numIterations, unsigned int problem_i,
     throw std::runtime_error("Failed to open matrix file: " + file_path);
   }
   lse_input_stream_2 >> nnz >> rows >> cols;
+  lse_input_stream_2.close();
 
   // Write results
   write_results_to_file("results_cudadirect_sparse_pde.csv", problem_i,
@@ -673,6 +687,7 @@ double benchmark_banded_cuda(unsigned int numIterations, unsigned int problem_i,
   }
   const SparseLinearSystem lse =
       SparseLinearSystem::read_from_stream(lse_input_stream);
+  lse_input_stream.close();
 
   double avg_time = 0.0, std_dev = 0.0;
   std::vector<double> times;
@@ -713,6 +728,7 @@ double benchmark_banded_cuda(unsigned int numIterations, unsigned int problem_i,
     throw std::runtime_error("Failed to open matrix file: " + file_path);
   }
   lse_input_stream_2 >> nnz >> rows >> cols;
+  lse_input_stream_2.close();
 
   // Write results
   write_results_to_file("results_banded_cuda_sparse_pde.csv", problem_i,
@@ -734,6 +750,7 @@ double benchmark_banded_cpu(unsigned int numIterations, unsigned int problem_i,
   }
   const SparseLinearSystem lse =
       SparseLinearSystem::read_from_stream(lse_input_stream);
+  lse_input_stream.close();
 
   double avg_time = 0.0, std_dev = 0.0;
   std::vector<double> times;
@@ -773,6 +790,7 @@ double benchmark_banded_cpu(unsigned int numIterations, unsigned int problem_i,
     throw std::runtime_error("Failed to open matrix file: " + file_path);
   }
   lse_input_stream_2 >> nnz >> rows >> cols;
+  lse_input_stream_2.close();
 
   // Write results
   write_results_to_file("results_banded_cpu_2_threads_sparse_pde.csv",
@@ -796,6 +814,7 @@ double benchmark_banded_serial(unsigned int numIterations,
   }
   const SparseLinearSystem lse =
       SparseLinearSystem::read_from_stream(lse_input_stream);
+  lse_input_stream.close();
 
   double avg_time = 0.0, std_dev = 0.0;
   std::vector<double> times;
@@ -838,6 +857,7 @@ double benchmark_banded_serial(unsigned int numIterations,
     throw std::runtime_error("Failed to open matrix file: " + file_path);
   }
   lse_input_stream_2 >> nnz >> rows >> cols;
+  lse_input_stream_2.close();
 
   // Write results
   write_results_to_file("results_banded_serial_sparse_pde.csv", problem_i,
