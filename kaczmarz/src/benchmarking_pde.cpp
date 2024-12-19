@@ -109,7 +109,11 @@ int main() {
   // Main loop over degrees
   for (unsigned int degree = 1; degree <= MAX_DEGREE; ++degree) {
     std::cout << "Processing degree: " << degree << std::endl;
-    std::unordered_map<std::string, double> execution_times;
+    std::unordered_map<
+        std::string,
+        std::unordered_map<unsigned int,
+                           std::unordered_map<unsigned int, double>>>
+        execution_times;
 
     // Loop over complexities
     for (unsigned int complexity = 1; complexity <= MAX_COMPLEXITY;
@@ -129,22 +133,25 @@ int main() {
         std::cout << "    Processing problem: " << problem << std::endl;
 
         for (auto& algorithm_name : algorithms_names) {
-          // Get the name of the current algorithm
-          // Check if the algorithm exceeded the time threshold previously
+          // Skip higher complexities if the algorithm exceeded the threshold
           if (execution_times.count(algorithm_name) > 0 &&
-              execution_times[algorithm_name] > TIME_THRESHOLD) {
+              execution_times[algorithm_name].count(problem) > 0 &&
+              execution_times[algorithm_name][problem].count(complexity - 1) >
+                  0 &&
+              execution_times[algorithm_name][problem][complexity - 1] >
+                  TIME_THRESHOLD) {
             std::cout << "      Skipping " << algorithm_name
-                      << " due to high execution time: "
-                      << execution_times[algorithm_name] << " seconds."
+                      << " for complexity " << complexity
+                      << " due to high execution time at a lower complexity."
                       << std::endl;
-            continue;  // Skip this algorithm
+            continue;
           }
           try {
             double time =
                 algorithms[algorithm_name](iterations, problem, complexity,
                                            degree);  // Run the algorithm
-            // Record execution time
-            execution_times[algorithm_name] = time;
+                                                     // Record execution time
+            execution_times[algorithm_name][problem][complexity] = time;
           } catch (const std::exception& e) {
             std::cerr << "Error in algorithm execution for problem " << problem
                       << ", complexity " << complexity << ", degree " << degree
