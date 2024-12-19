@@ -67,17 +67,18 @@ double benchmark_banded_serial(unsigned int numIterations,
 int main() {
   // Define a threshold in seconds
   const double TIME_THRESHOLD = 300.0;
-  // Map to track execution times of algorithms
 
   std::unordered_map<std::string,
                      std::function<double(unsigned int, unsigned int,
                                           unsigned int, unsigned int)>>
       algorithms;
+
   std::vector<std::string> algorithms_names = {
       "CARP_CG",      "Eigen_CG",       "Eigen_BiCGSTAB", "CGMNC",
       "Eigen_Direct", "Basic_Kaczmarz", /*"Banded_CPU", "Banded_CUDA",
                                            "Banded_SERIAL", */
       "CUSolver"};
+
   algorithms = {{"CARP_CG", benchmark_carpcg},
                 {"Eigen_CG", benchmark_eigen_cg},
                 {"Eigen_BiCGSTAB", benchmark_eigen_bicgstab},
@@ -88,6 +89,7 @@ int main() {
                 {"Banded_CUDA", benchmark_banded_cuda},
                 {"Banded_SERIAL", benchmark_banded_serial},
                 {"CUSolver", benchmark_cusolver}};
+
   std::vector<std::string> file_names = {
       "results_banded_serial_sparse_pde.csv",
       "results_banded_cpu_2_threads_sparse_pde.csv",
