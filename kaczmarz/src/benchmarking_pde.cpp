@@ -826,9 +826,6 @@ double benchmark_banded_serial(unsigned int numIterations,
   for (unsigned int i = 0; i < numIterations; ++i) {
     // Allocate memory to save kaczmarz solution
     Vector x_kaczmarz = Vector::Zero(lse.column_count());
-    std::vector<double> times_residuals;
-    std::vector<double> residuals;
-    std::vector<int> iterations;
     const auto start = std::chrono::high_resolution_clock::now();
 
     const auto status =
