@@ -20,7 +20,6 @@
 
 #define MAX_IT (std::numeric_limits<unsigned int>::max() - 1)
 #define PRECISION 1e-9
-#define MAX_PROBLEMS 3
 #define MAX_COMPLEXITY 8
 #define MAX_DEGREE 1
 #define NUM_IT 10
@@ -67,7 +66,8 @@ double benchmark_banded_serial(unsigned int numIterations,
 
 int main() {
   // Define a threshold in seconds
-  const double TIME_THRESHOLD = 500.0;
+  // const double TIME_THRESHOLD = 500.0;
+  const double TIME_THRESHOLD = 0.01;
   // Map to track execution times of algorithms
 
   std::unordered_map<std::string,
