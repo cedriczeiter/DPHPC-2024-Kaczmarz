@@ -335,7 +335,8 @@ double benchmark_eigen_cg(unsigned int numIterations, unsigned int problem_i,
 
   double avg_time = 0.0, std_dev = 0.0;
   std::vector<double> times;
-
+  const auto A = lse.A();
+  const auto b = lse.b();
   // Perform benchmarking
   std::cout << "      Running EIGEN CG for problem " << problem_i
             << ", complexity " << complexity_i << ", degree " << degree_i
@@ -343,13 +344,11 @@ double benchmark_eigen_cg(unsigned int numIterations, unsigned int problem_i,
 
   for (unsigned int i = 0; i < numIterations; ++i) {
     // Allocate memory to save kaczmarz solution
-    const auto A = lse.A();
-    const auto b = lse.b();
+    const auto start = std::chrono::high_resolution_clock::now();
     Eigen::LeastSquaresConjugateGradient<SparseMatrix> lscg(A);
     // lscg.preconditioner() = Eigen::IdentityPreconditioner;
     lscg.setTolerance(PRECISION);
     lscg.setMaxIterations(MAX_IT);
-    const auto start = std::chrono::high_resolution_clock::now();
 
     Vector x_kaczmarz_sparse = lscg.solve(b);
 
@@ -395,19 +394,20 @@ double benchmark_eigen_bicgstab(unsigned int numIterations,
   double avg_time = 0.0, std_dev = 0.0;
   std::vector<double> times;
 
+  const auto A = lse.A();
+  const auto b = lse.b();
+
   // Perform benchmarking
   std::cout << "      Running EIGEN BiCGSTAB for problem " << problem_i
             << ", complexity " << complexity_i << ", degree " << degree_i
             << std::endl;
 
   for (unsigned int i = 0; i < numIterations; ++i) {
-    const auto A = lse.A();
-    const auto b = lse.b();
+    const auto start = std::chrono::high_resolution_clock::now();
     Eigen::BiCGSTAB<SparseMatrix> solver(A);
     // lscg.preconditioner() = Eigen::IdentityPreconditioner;
     solver.setTolerance(PRECISION);
     solver.setMaxIterations(MAX_IT);
-    const auto start = std::chrono::high_resolution_clock::now();
 
     Vector x_kaczmarz_sparse = solver.solve(b);
 
@@ -518,9 +518,9 @@ double benchmark_eigen_direct(unsigned int numIterations,
   const auto A = lse.A();
   const auto b = lse.b();
   for (unsigned int i = 0; i < numIterations; ++i) {
+    const auto start = std::chrono::high_resolution_clock::now();
     Eigen::SparseLU<Eigen::SparseMatrix<double>> solver;
     solver.compute(A);
-    const auto start = std::chrono::high_resolution_clock::now();
     Vector x_kaczmarz_sparse = solver.solve(b);
 
     auto end = std::chrono::high_resolution_clock::now();
