@@ -76,14 +76,22 @@ double benchmark_banded_serial(unsigned int numIterations,
 
 SparseLinearSystem read_matrix_from_file(const std::string &file_path);
 
-void write_results(const std::string &file_name, unsigned int problem, unsigned int complexity, unsigned int degree, double avg_time, double std_dev, const std::string &file_path);
+void write_results(const std::string &file_name, unsigned int problem,
+                   unsigned int complexity, unsigned int degree,
+                   double avg_time, double std_dev,
+                   const std::string &file_path);
 
 std::string generate_file_path(unsigned int problem, unsigned int complexity,
                                unsigned int degree);
 
-void add_elapsed_time_to_vec(std::vector<double> &times, const std::chrono::time_point<std::chrono::high_resolution_clock> start, const std::chrono::time_point<std::chrono::high_resolution_clock> end);
+void add_elapsed_time_to_vec(
+    std::vector<double> &times,
+    const std::chrono::time_point<std::chrono::high_resolution_clock> start,
+    const std::chrono::time_point<std::chrono::high_resolution_clock> end);
 
-double write_and_calc_results(const std::string &file_name, unsigned int problem,
-                   unsigned int complexity, unsigned int degree, const std::string &file_path);
+double write_and_calc_results(const std::string &file_name,
+                              unsigned int problem, unsigned int complexity,
+                              unsigned int degree,
+                              const std::string &file_path);
 
-#endif // BENCHMARKING_PDE_HPP
+#endif  // BENCHMARKING_PDE_HPP
