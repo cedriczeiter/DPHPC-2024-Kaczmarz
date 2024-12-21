@@ -90,14 +90,14 @@ int main() {
           std::cout << "Zero norm row detected" << std::endl;
         } else if (status == KaczmarzSolverStatus::OutOfIterations) {
           std::cout << "Max iterations reached" << std::endl;
-          continue;
+          // write to csv
+          outFile << start_relaxation << "," << -1 << "\n";
         } else {
           std::cout << " --- Relaxation: " << start_relaxation
                     << " --- Nr. of steps: " << nr_of_steps << std::endl;
+          // write to csv
+          outFile << start_relaxation << "," << nr_of_steps << "\n";
         }
-
-        // write to csv
-        outFile << start_relaxation << "," << nr_of_steps << "\n";
 
         start_relaxation += step_relaxation;
       }
