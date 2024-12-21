@@ -1,0 +1,1 @@
+Ran on Cédrics Laptop with precision e-9. Uses the new carp algorithm which combines relaxation and nonzero.
