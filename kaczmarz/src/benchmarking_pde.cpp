@@ -18,10 +18,17 @@
 #include "solvers/random.hpp"
 #include "solvers/sparse_cg.hpp"
 
+// Define constants
+
+// Maximum number of iterations
 #define MAX_IT (std::numeric_limits<unsigned int>::max() - 1)
+// Precision threshold
 #define PRECISION 1e-9
+// Highest complexity to test
 #define MAX_COMPLEXITY 8
+// Highest degree to test (out of three currently available)
 #define MAX_DEGREE 1
+// Number of iterations for each benchmark
 #define NUM_IT 10
 
 // Function declarations
@@ -131,7 +138,7 @@ int main() {
         std::cout << "    Processing problem: " << problem << std::endl;
 
         for (auto& algorithm_name : algorithms_names) {
-          // Check if the algorithm is already marked to skip
+          // Check if the algorithm is already marked to skip (if true stored)
           if (skip_algorithm[algorithm_name][problem]) {
             std::cout << "      Skipping " << algorithm_name
                       << " for complexity " << complexity
@@ -163,6 +170,7 @@ int main() {
   return 0;
 }
 
+// This function writes the header to the file at the given path
 void write_header(const std::string& file_path) {
   // Open the file in truncation mode to clear existing content
   std::ofstream outFile(
@@ -283,10 +291,9 @@ double benchmark_carpcg(unsigned int numIterations, unsigned int problem_i,
     // Allocate memory to save kaczmarz solution
     Eigen::VectorXd x_kaczmarz_sparse =
         Eigen::VectorXd::Zero(lse.column_count());
-    int nr_of_steps = 0;       // just a placeholder, used in
-                               // benchmark_one_carp_lambda.cpp
-    double relaxation = 0.35;  // just a placeholder, used in
-                               // benchmark_one_carp_lambda.cpp
+    int nr_of_steps = 0;  // just a placeholder, gets overwritten with nr of
+                          // steps, but not used here
+    double relaxation = 0.35;  // found to be optimal by experiments
     const auto start = std::chrono::high_resolution_clock::now();
 
     const auto status = carp_gpu(lse, x_kaczmarz_sparse, MAX_IT, PRECISION,
