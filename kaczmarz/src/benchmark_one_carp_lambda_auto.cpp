@@ -30,11 +30,11 @@ int main() {
 
   std::string file_path = "../../generated_bvp_matrices";
 
-  double end_relaxation = 0.7;
-  double step_relaxation = 0.05;
+  double end_relaxation = 3.0;
+  double step_relaxation = 0.025;
 
   const unsigned max_iterations =
-      40000;  // set such that it doesnt take tooo long
+      50000;  // set such that it doesnt take tooo long
 
   // Files are in file_path inside of three problem folders called problem1,
   // problem2, problem3
@@ -72,7 +72,7 @@ int main() {
       outFile
           << "Relaxation,Carp_steps\n";  // Write the header for the CSV file
 
-      double start_relaxation = 0.2;
+      double start_relaxation = 0.025;
 
       while (start_relaxation < end_relaxation) {
         std::cout << "----------------------------------- \n" << std::endl;
@@ -90,7 +90,7 @@ int main() {
           std::cout << "Zero norm row detected" << std::endl;
         } else if (status == KaczmarzSolverStatus::OutOfIterations) {
           std::cout << "Max iterations reached" << std::endl;
-          break;
+          continue;
         } else {
           std::cout << " --- Relaxation: " << start_relaxation
                     << " --- Nr. of steps: " << nr_of_steps << std::endl;
