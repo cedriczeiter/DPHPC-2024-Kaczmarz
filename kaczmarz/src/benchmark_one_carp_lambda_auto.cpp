@@ -45,9 +45,9 @@ int main() {
   for (const auto &entry : files) {
     // file ends by txt and begins with problem and does not end by banded.txt
     if (entry.path().extension() == ".txt" &&
-        entry.path().filename().string().substr(0, 7) == "problem"
-        && entry.path().filename().string().substr(entry.path().filename().string().size() - 10) != "banded.txt")
-        {
+        entry.path().filename().string().substr(0, 7) == "problem" &&
+        entry.path().filename().string().substr(
+            entry.path().filename().string().size() - 10) != "banded.txt") {
       std::cout << "----------------------------------- \n" << std::endl;
       std::cout << "in file: " << entry.path() << std::endl;
 
