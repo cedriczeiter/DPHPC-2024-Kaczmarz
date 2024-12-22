@@ -35,6 +35,8 @@
 #define NUM_IT 10
 // Cutoff time for benchmarking
 #define TIME_THRESHOLD 300.0
+// How often to check for residual in carp
+#define L_RESIDUAL 1000
 
 // Function declarations
 void write_header(const std::string &file_path);
