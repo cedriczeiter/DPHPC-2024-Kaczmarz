@@ -1,4 +1,4 @@
-#include "benchmarking_pde.hpp"
+#include "benchmark_pde.hpp"
 
 int main() {
   std::unordered_map<std::string,
