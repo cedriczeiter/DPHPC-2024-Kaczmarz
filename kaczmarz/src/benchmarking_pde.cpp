@@ -1,75 +1,4 @@
-#include <Eigen/IterativeLinearSolvers>
-#include <Eigen/SparseLU>
-#include <chrono>
-#include <cmath>
-#include <fstream>
-#include <iostream>
-#include <random>
-#include <unordered_map>
-#include <vector>
-
-#include "linear_systems/dense.hpp"
-#include "linear_systems/sparse.hpp"
-#include "solvers/asynchronous.hpp"
-#include "solvers/banded.hpp"
-#include "solvers/basic.hpp"
-#include "solvers/carp.hpp"
-#include "solvers/cusolver.hpp"
-#include "solvers/random.hpp"
-#include "solvers/sparse_cg.hpp"
-
-// Define constants
-
-// Maximum number of iterations
-#define MAX_IT (std::numeric_limits<unsigned int>::max() - 1)
-// Precision threshold
-#define PRECISION 1e-9
-// Highest complexity to test
-#define MAX_COMPLEXITY 8
-// Highest degree to test (out of three currently available)
-#define MAX_DEGREE 1
-// Number of iterations for each benchmark
-#define NUM_IT 10
-
-// Function declarations
-void write_header(const std::string& file_path);
-int compute_bandwidth(const Eigen::SparseMatrix<double>& A);
-BandedLinearSystem convert_to_banded(const SparseLinearSystem& sparse_system,
-                                     unsigned bandwidth);
-void compute_statistics(const std::vector<double>& times, double& avgTime,
-                        double& stdDev);
-void write_results_to_file(const std::string& file_name, unsigned int problem,
-                           unsigned int complexity, unsigned int degree,
-                           double avg_time, double std_dev,
-                           unsigned int dimension);
-
-double benchmark_carpcg(unsigned int numIterations, unsigned int problem_i,
-                        unsigned int complexity_i, unsigned int degree_i);
-double benchmark_eigen_cg(unsigned int numIterations, unsigned int problem_i,
-                          unsigned int complexity_i, unsigned int degree_i);
-double benchmark_eigen_bicgstab(unsigned int numIterations,
-                                unsigned int problem_i,
-                                unsigned int complexity_i,
-                                unsigned int degree_i);
-double benchmark_cgmnc(unsigned int numIterations, unsigned int problem_i,
-                       unsigned int complexity_i, unsigned int degree_i);
-double benchmark_eigen_direct(unsigned int numIterations,
-                              unsigned int problem_i, unsigned int complexity_i,
-                              unsigned int degree_i);
-double benchmark_basic_kaczmarz(unsigned int numIterations,
-                                unsigned int problem_i,
-                                unsigned int complexity_i,
-                                unsigned int degree_i);
-double benchmark_cusolver(unsigned int numIterations, unsigned int problem_i,
-                          unsigned int complexity_i, unsigned int degree_i);
-double benchmark_banded_cuda(unsigned int numIterations, unsigned int problem_i,
-                             unsigned int complexity_i, unsigned int degree_i);
-double benchmark_banded_cpu(unsigned int numIterations, unsigned int problem_i,
-                            unsigned int complexity_i, unsigned int degree_i);
-double benchmark_banded_serial(unsigned int numIterations,
-                               unsigned int problem_i,
-                               unsigned int complexity_i,
-                               unsigned int degree_i);
+#include "benchmarking_pde.hpp"
 
 int main() {
   // Define a threshold in seconds
@@ -111,7 +40,7 @@ int main() {
       "results_carp_cuda_sparse_pde.csv"};
 
   // Loop over file names and call write_header
-  for (const auto& file_name : file_names) {
+  for (const auto &file_name : file_names) {
     write_header(file_name);
   }
   unsigned int iterations = NUM_IT;
@@ -138,7 +67,7 @@ int main() {
       for (unsigned int problem : problems) {
         std::cout << "    Processing problem: " << problem << std::endl;
 
-        for (auto& algorithm_name : algorithms_names) {
+        for (auto &algorithm_name : algorithms_names) {
           // Check if the algorithm is already marked to skip (if true stored)
           if (skip_algorithm[algorithm_name][problem]) {
             std::cout << "      Skipping " << algorithm_name
@@ -158,7 +87,7 @@ int main() {
                         << " seconds." << std::endl;
               skip_algorithm[algorithm_name][problem] = true;
             }
-          } catch (const std::exception& e) {
+          } catch (const std::exception &e) {
             std::cerr << "Error in algorithm execution for problem " << problem
                       << ", complexity " << complexity << ", degree " << degree
                       << ": " << e.what() << std::endl;
@@ -171,8 +100,56 @@ int main() {
   return 0;
 }
 
+// Function to read the matrix from a file
+SparseLinearSystem read_matrix_from_file(const std::string &file_path) {
+  std::ifstream lse_input_stream(file_path);
+  if (!lse_input_stream) {
+    throw std::runtime_error("Failed to open matrix file: " + file_path);
+  }
+  const SparseLinearSystem lse =
+      SparseLinearSystem::read_from_stream(lse_input_stream);
+  lse_input_stream.close();
+  return lse;
+}
+
+// Function to write results to a file
+void write_results(const std::string &file_name, unsigned int problem,
+                   unsigned int complexity, unsigned int degree,
+                   double avg_time, double std_dev,
+                   const std::string &file_path) {
+  unsigned nnz, rows, cols;
+  std::ifstream lse_input_stream(file_path);
+  if (!lse_input_stream) {
+    throw std::runtime_error("Failed to open matrix file: " + file_path);
+  }
+  lse_input_stream >> nnz >> rows >> cols;
+  lse_input_stream.close();
+  write_results_to_file(file_name, problem, complexity, degree, avg_time,
+                        std_dev, rows);
+}
+
+// Function to generate the file path for a given problem, complexity, and
+// degree
+std::string generate_file_path(unsigned int problem, unsigned int complexity,
+                               unsigned int degree) {
+  return "../../generated_bvp_matrices/problem" + std::to_string(problem) +
+         "/problem" + std::to_string(problem) + "_complexity" +
+         std::to_string(complexity) + "_degree" + std::to_string(degree) +
+         ".txt";
+}
+
+// Function to add elapsed time to a vector calculated from start and end time
+// points
+void add_elapsed_time_to_vec(
+    std::vector<double> &times,
+    const std::chrono::time_point<std::chrono::high_resolution_clock> start,
+    const std::chrono::time_point<std::chrono::high_resolution_clock> end) {
+  std::chrono::duration<double> elapsed = end - start;
+  times.push_back(elapsed.count());
+}
+
 // This function writes the header to the file at the given path
-void write_header(const std::string& file_path) {
+void write_header(const std::string &file_path) {
   // Open the file in truncation mode to clear existing content
   std::ofstream outFile(
       file_path);  // Default mode is std::ios::out | std::ios::trunc
@@ -188,7 +165,7 @@ void write_header(const std::string& file_path) {
 }
 
 // Utility function to write results to files
-void write_results_to_file(const std::string& file_name, unsigned int problem,
+void write_results_to_file(const std::string &file_name, unsigned int problem,
                            unsigned int complexity, unsigned int degree,
                            double avg_time, double std_dev,
                            unsigned int dimension) {
@@ -199,7 +176,29 @@ void write_results_to_file(const std::string& file_name, unsigned int problem,
   outFile.close();
 }
 
-int compute_bandwidth(const Eigen::SparseMatrix<double>& A) {
+// Takes the measured times and informations about the problem and writes them
+// to a file after calculating the average time and standard deviation
+double write_and_calc_results(const std::string &file_name,
+                              unsigned int problem, unsigned int complexity,
+                              unsigned int degree, const std::string &file_path,
+                              const std::vector<double> &times) {
+  double avg_time = 0.0, std_dev = 0.0;
+  compute_statistics(times, avg_time, std_dev);
+  write_results(file_name, problem, complexity, degree, avg_time, std_dev,
+                file_path);
+  return avg_time;
+}
+
+// Inform user about kaczmarz solver status
+void inform_user_about_kaczmarz_status(KaczmarzSolverStatus status) {
+  if (status == KaczmarzSolverStatus::ZeroNormRow) {
+    std::cout << "Zero norm row detected" << std::endl;
+  } else if (status == KaczmarzSolverStatus::OutOfIterations) {
+    std::cout << "Max iterations reached" << std::endl;
+  }
+}
+
+int compute_bandwidth(const Eigen::SparseMatrix<double> &A) {
   int bandwidth = 0;
 
   // Traverse each row (or column) of the sparse matrix
@@ -214,7 +213,7 @@ int compute_bandwidth(const Eigen::SparseMatrix<double>& A) {
   return bandwidth;
 }
 
-BandedLinearSystem convert_to_banded(const SparseLinearSystem& sparse_system,
+BandedLinearSystem convert_to_banded(const SparseLinearSystem &sparse_system,
                                      unsigned bandwidth) {
   // Extract dimension
   unsigned dim = sparse_system.A().rows();
@@ -247,8 +246,8 @@ BandedLinearSystem convert_to_banded(const SparseLinearSystem& sparse_system,
 /// @param times A vector of times recorded for benchmarking in seconds.
 /// @param avgTime Reference to store the computed average time in seconds.
 /// @param stdDev Reference to store the computed standard deviation.
-void compute_statistics(const std::vector<double>& times, double& avgTime,
-                        double& stdDev) {
+void compute_statistics(const std::vector<double> &times, double &avgTime,
+                        double &stdDev) {
   int n = times.size();
   if (n == 0) {
     avgTime = 0;
@@ -267,24 +266,11 @@ void compute_statistics(const std::vector<double>& times, double& avgTime,
 
 double benchmark_carpcg(unsigned int numIterations, unsigned int problem_i,
                         unsigned int complexity_i, unsigned int degree_i) {
-  std::string file_path = "../../generated_bvp_matrices/problem" +
-                          std::to_string(problem_i) + "/problem" +
-                          std::to_string(problem_i) + "_complexity" +
-                          std::to_string(complexity_i) + "_degree" +
-                          std::to_string(degree_i) + ".txt";
-  // Read the precomputed matrix from the file
-  std::ifstream lse_input_stream(file_path);
-  if (!lse_input_stream) {
-    throw std::runtime_error("Failed to open matrix file: " + file_path);
-  }
-  const SparseLinearSystem lse =
-      SparseLinearSystem::read_from_stream(lse_input_stream);
-  lse_input_stream.close();
+  std::string file_path = generate_file_path(problem_i, complexity_i, degree_i);
+  const SparseLinearSystem lse = read_matrix_from_file(file_path);
 
-  double avg_time = 0.0, std_dev = 0.0;
   std::vector<double> times;
 
-  // Perform benchmarking
   std::cout << "      Running CARP for problem " << problem_i << ", complexity "
             << complexity_i << ", degree " << degree_i << std::endl;
 
@@ -300,50 +286,23 @@ double benchmark_carpcg(unsigned int numIterations, unsigned int problem_i,
     const auto status = carp_gpu(lse, x_kaczmarz_sparse, MAX_IT, PRECISION,
                                  relaxation, nr_of_steps);
 
-    auto end = std::chrono::high_resolution_clock::now();
+    const auto end = std::chrono::high_resolution_clock::now();
 
-    std::chrono::duration<double> elapsed = end - start;
-    times.push_back(elapsed.count());
-    if (status == KaczmarzSolverStatus::ZeroNormRow) {
-      std::cout << "Zero norm row detected" << std::endl;
-    } else if (status == KaczmarzSolverStatus::OutOfIterations) {
-      std::cout << "Max iterations reached" << std::endl;
-    } else {
-    }
+    add_elapsed_time_to_vec(times, start, end);
+
+    inform_user_about_kaczmarz_status(status);
   }
 
-  compute_statistics(times, avg_time, std_dev);
-  unsigned nnz, rows, cols;
-  std::ifstream lse_input_stream_2(file_path);
-  if (!lse_input_stream_2) {
-    throw std::runtime_error("Failed to open matrix file: " + file_path);
-  }
-  lse_input_stream_2 >> nnz >> rows >> cols;
-  lse_input_stream_2.close();
-
-  // Write results
-  write_results_to_file("results_carp_cuda_sparse_pde.csv", problem_i,
-                        complexity_i, degree_i, avg_time, std_dev, rows);
-  return avg_time;
+  return write_and_calc_results("results_carp_cuda_sparse_pde.csv", problem_i,
+                                complexity_i, degree_i, file_path, times);
 }
 
 double benchmark_eigen_cg(unsigned int numIterations, unsigned int problem_i,
                           unsigned int complexity_i, unsigned int degree_i) {
-  std::string file_path = "../../generated_bvp_matrices/problem" +
-                          std::to_string(problem_i) + "/problem" +
-                          std::to_string(problem_i) + "_complexity" +
-                          std::to_string(complexity_i) + "_degree" +
-                          std::to_string(degree_i) + ".txt";
+  std::string file_path = generate_file_path(problem_i, complexity_i, degree_i);
   // Read the precomputed matrix from the file
-  std::ifstream lse_input_stream(file_path);
-  if (!lse_input_stream) {
-    throw std::runtime_error("Failed to open matrix file: " + file_path);
-  }
-  const SparseLinearSystem lse =
-      SparseLinearSystem::read_from_stream(lse_input_stream);
-  lse_input_stream.close();
+  const SparseLinearSystem lse = read_matrix_from_file(file_path);
 
-  double avg_time = 0.0, std_dev = 0.0;
   std::vector<double> times;
   const auto A = lse.A();
   const auto b = lse.b();
@@ -362,46 +321,24 @@ double benchmark_eigen_cg(unsigned int numIterations, unsigned int problem_i,
 
     Vector x_kaczmarz_sparse = lscg.solve(b);
 
-    auto end = std::chrono::high_resolution_clock::now();
+    const auto end = std::chrono::high_resolution_clock::now();
 
-    std::chrono::duration<double> elapsed = end - start;
-    times.push_back(elapsed.count());
+    add_elapsed_time_to_vec(times, start, end);
   }
 
-  compute_statistics(times, avg_time, std_dev);
-  unsigned nnz, rows, cols;
-  std::ifstream lse_input_stream_2(file_path);
-  if (!lse_input_stream_2) {
-    throw std::runtime_error("Failed to open matrix file: " + file_path);
-  }
-  lse_input_stream_2 >> nnz >> rows >> cols;
-  lse_input_stream_2.close();
-
-  // Write results
-  write_results_to_file("results_eigeniterative_sparse_pde.csv", problem_i,
-                        complexity_i, degree_i, avg_time, std_dev, rows);
-  return avg_time;
+  return write_and_calc_results("results_eigeniterative_sparse_pde.csv",
+                                problem_i, complexity_i, degree_i, file_path,
+                                times);
 }
 
 double benchmark_eigen_bicgstab(unsigned int numIterations,
                                 unsigned int problem_i,
                                 unsigned int complexity_i,
                                 unsigned int degree_i) {
-  std::string file_path = "../../generated_bvp_matrices/problem" +
-                          std::to_string(problem_i) + "/problem" +
-                          std::to_string(problem_i) + "_complexity" +
-                          std::to_string(complexity_i) + "_degree" +
-                          std::to_string(degree_i) + ".txt";
+  std::string file_path = generate_file_path(problem_i, complexity_i, degree_i);
   // Read the precomputed matrix from the file
-  std::ifstream lse_input_stream(file_path);
-  if (!lse_input_stream) {
-    throw std::runtime_error("Failed to open matrix file: " + file_path);
-  }
-  const SparseLinearSystem lse =
-      SparseLinearSystem::read_from_stream(lse_input_stream);
-  lse_input_stream.close();
+  const SparseLinearSystem lse = read_matrix_from_file(file_path);
 
-  double avg_time = 0.0, std_dev = 0.0;
   std::vector<double> times;
 
   const auto A = lse.A();
@@ -421,44 +358,22 @@ double benchmark_eigen_bicgstab(unsigned int numIterations,
 
     Vector x_kaczmarz_sparse = solver.solve(b);
 
-    auto end = std::chrono::high_resolution_clock::now();
+    const auto end = std::chrono::high_resolution_clock::now();
 
-    std::chrono::duration<double> elapsed = end - start;
-    times.push_back(elapsed.count());
+    add_elapsed_time_to_vec(times, start, end);
   }
 
-  compute_statistics(times, avg_time, std_dev);
-  unsigned nnz, rows, cols;
-  std::ifstream lse_input_stream_2(file_path);
-  if (!lse_input_stream_2) {
-    throw std::runtime_error("Failed to open matrix file: " + file_path);
-  }
-  lse_input_stream_2 >> nnz >> rows >> cols;
-  lse_input_stream_2.close();
-
-  // Write results
-  write_results_to_file("results_eigeniterative_2_sparse_pde.csv", problem_i,
-                        complexity_i, degree_i, avg_time, std_dev, rows);
-  return avg_time;
+  return write_and_calc_results("results_eigeniterative_2_sparse_pde.csv",
+                                problem_i, complexity_i, degree_i, file_path,
+                                times);
 }
 
 double benchmark_cgmnc(unsigned int numIterations, unsigned int problem_i,
                        unsigned int complexity_i, unsigned int degree_i) {
-  std::string file_path = "../../generated_bvp_matrices/problem" +
-                          std::to_string(problem_i) + "/problem" +
-                          std::to_string(problem_i) + "_complexity" +
-                          std::to_string(complexity_i) + "_degree" +
-                          std::to_string(degree_i) + ".txt";
+  std::string file_path = generate_file_path(problem_i, complexity_i, degree_i);
   // Read the precomputed matrix from the file
-  std::ifstream lse_input_stream(file_path);
-  if (!lse_input_stream) {
-    throw std::runtime_error("Failed to open matrix file: " + file_path);
-  }
-  const SparseLinearSystem lse =
-      SparseLinearSystem::read_from_stream(lse_input_stream);
-  lse_input_stream.close();
+  const SparseLinearSystem lse = read_matrix_from_file(file_path);
 
-  double avg_time = 0.0, std_dev = 0.0;
   std::vector<double> times;
 
   // Perform benchmarking
@@ -474,50 +389,25 @@ double benchmark_cgmnc(unsigned int numIterations, unsigned int problem_i,
 
     const auto status = sparse_cg(lse, x_kaczmarz_sparse, PRECISION, MAX_IT);
 
-    auto end = std::chrono::high_resolution_clock::now();
+    const auto end = std::chrono::high_resolution_clock::now();
 
-    std::chrono::duration<double> elapsed = end - start;
-    times.push_back(elapsed.count());
-    if (status == KaczmarzSolverStatus::ZeroNormRow) {
-      std::cout << "Zero norm row detected" << std::endl;
-    } else if (status == KaczmarzSolverStatus::OutOfIterations) {
-      std::cout << "Max iterations reached" << std::endl;
-    } else {
-    }
+    add_elapsed_time_to_vec(times, start, end);
+
+    inform_user_about_kaczmarz_status(status);
   }
 
-  compute_statistics(times, avg_time, std_dev);
-  unsigned nnz, rows, cols;
-  std::ifstream lse_input_stream_2(file_path);
-  if (!lse_input_stream_2) {
-    throw std::runtime_error("Failed to open matrix file: " + file_path);
-  }
-  lse_input_stream_2 >> nnz >> rows >> cols;
-  lse_input_stream_2.close();
-
-  // Write results
-  write_results_to_file("results_sparsesolver_sparse_cg_pde.csv", problem_i,
-                        complexity_i, degree_i, avg_time, std_dev, rows);
-  return avg_time;
+  return write_and_calc_results("results_sparsesolver_sparse_cg_pde.csv",
+                                problem_i, complexity_i, degree_i, file_path,
+                                times);
 }
 
 double benchmark_eigen_direct(unsigned int numIterations,
                               unsigned int problem_i, unsigned int complexity_i,
                               unsigned int degree_i) {
-  std::string file_path = "../../generated_bvp_matrices/problem" +
-                          std::to_string(problem_i) + "/problem" +
-                          std::to_string(problem_i) + "_complexity" +
-                          std::to_string(complexity_i) + "_degree" +
-                          std::to_string(degree_i) + ".txt";
+  std::string file_path = generate_file_path(problem_i, complexity_i, degree_i);
   // Read the precomputed matrix from the file
-  std::ifstream lse_input_stream(file_path);
-  if (!lse_input_stream) {
-    throw std::runtime_error("Failed to open matrix file: " + file_path);
-  }
-  const SparseLinearSystem lse =
-      SparseLinearSystem::read_from_stream(lse_input_stream);
-  lse_input_stream.close();
-  double avg_time = 0.0, std_dev = 0.0;
+  const SparseLinearSystem lse = read_matrix_from_file(file_path);
+
   std::vector<double> times;
 
   // Perform benchmarking
@@ -533,44 +423,22 @@ double benchmark_eigen_direct(unsigned int numIterations,
     solver.compute(A);
     Vector x_kaczmarz_sparse = solver.solve(b);
 
-    auto end = std::chrono::high_resolution_clock::now();
+    const auto end = std::chrono::high_resolution_clock::now();
 
-    std::chrono::duration<double> elapsed = end - start;
-    times.push_back(elapsed.count());
+    add_elapsed_time_to_vec(times, start, end);
   }
 
-  compute_statistics(times, avg_time, std_dev);
-  unsigned nnz, rows, cols;
-  std::ifstream lse_input_stream_2(file_path);
-  if (!lse_input_stream_2) {
-    throw std::runtime_error("Failed to open matrix file: " + file_path);
-  }
-  lse_input_stream_2 >> nnz >> rows >> cols;
-  lse_input_stream_2.close();
-
-  // Write results
-  write_results_to_file("results_eigensolver_sparse_pde.csv", problem_i,
-                        complexity_i, degree_i, avg_time, std_dev, rows);
-  return avg_time;
+  return write_and_calc_results("results_eigensolver_sparse_pde.csv", problem_i,
+                                complexity_i, degree_i, file_path, times);
 }
 double benchmark_basic_kaczmarz(unsigned int numIterations,
                                 unsigned int problem_i,
                                 unsigned int complexity_i,
                                 unsigned int degree_i) {
-  std::string file_path = "../../generated_bvp_matrices/problem" +
-                          std::to_string(problem_i) + "/problem" +
-                          std::to_string(problem_i) + "_complexity" +
-                          std::to_string(complexity_i) + "_degree" +
-                          std::to_string(degree_i) + ".txt";
+  std::string file_path = generate_file_path(problem_i, complexity_i, degree_i);
   // Read the precomputed matrix from the file
-  std::ifstream lse_input_stream(file_path);
-  if (!lse_input_stream) {
-    throw std::runtime_error("Failed to open matrix file: " + file_path);
-  }
-  const SparseLinearSystem lse =
-      SparseLinearSystem::read_from_stream(lse_input_stream);
-  lse_input_stream.close();
-  double avg_time = 0.0, std_dev = 0.0;
+  const SparseLinearSystem lse = read_matrix_from_file(file_path);
+
   std::vector<double> times;
 
   // Perform benchmarking
@@ -590,50 +458,24 @@ double benchmark_basic_kaczmarz(unsigned int numIterations,
         sparse_kaczmarz(lse, x_kaczmarz_sparse, MAX_IT, PRECISION,
                         times_residuals, residuals, iterations, 1000);
 
-    auto end = std::chrono::high_resolution_clock::now();
+    const auto end = std::chrono::high_resolution_clock::now();
 
-    std::chrono::duration<double> elapsed = end - start;
-    times.push_back(elapsed.count());
-    if (status == KaczmarzSolverStatus::ZeroNormRow) {
-      std::cout << "Zero norm row detected" << std::endl;
-    } else if (status == KaczmarzSolverStatus::OutOfIterations) {
-      std::cout << "Max iterations reached" << std::endl;
-    } else {
-    }
+    add_elapsed_time_to_vec(times, start, end);
+
+    inform_user_about_kaczmarz_status(status);
   }
 
-  compute_statistics(times, avg_time, std_dev);
-  unsigned nnz, rows, cols;
-  std::ifstream lse_input_stream_2(file_path);
-  if (!lse_input_stream_2) {
-    throw std::runtime_error("Failed to open matrix file: " + file_path);
-  }
-  lse_input_stream_2 >> nnz >> rows >> cols;
-  lse_input_stream_2.close();
-
-  // Write results
-  write_results_to_file("results_sparsesolver_sparse_pde.csv", problem_i,
-                        complexity_i, degree_i, avg_time, std_dev, rows);
-  return avg_time;
+  return write_and_calc_results("results_sparsesolver_sparse_pde.csv",
+                                problem_i, complexity_i, degree_i, file_path,
+                                times);
 }
 
 double benchmark_cusolver(unsigned int numIterations, unsigned int problem_i,
                           unsigned int complexity_i, unsigned int degree_i) {
-  std::string file_path = "../../generated_bvp_matrices/problem" +
-                          std::to_string(problem_i) + "/problem" +
-                          std::to_string(problem_i) + "_complexity" +
-                          std::to_string(complexity_i) + "_degree" +
-                          std::to_string(degree_i) + ".txt";
+  std::string file_path = generate_file_path(problem_i, complexity_i, degree_i);
   // Read the precomputed matrix from the file
-  std::ifstream lse_input_stream(file_path);
-  if (!lse_input_stream) {
-    throw std::runtime_error("Failed to open matrix file: " + file_path);
-  }
-  const SparseLinearSystem lse =
-      SparseLinearSystem::read_from_stream(lse_input_stream);
-  lse_input_stream.close();
+  const SparseLinearSystem lse = read_matrix_from_file(file_path);
 
-  double avg_time = 0.0, std_dev = 0.0;
   std::vector<double> times;
 
   // Perform benchmarking
@@ -652,50 +494,23 @@ double benchmark_cusolver(unsigned int numIterations, unsigned int problem_i,
         cusolver(lse, x_kaczmarz_sparse, MAX_IT, PRECISION);
 
     // End timer
-    auto end = std::chrono::high_resolution_clock::now();
+    const auto end = std::chrono::high_resolution_clock::now();
 
-    std::chrono::duration<double> elapsed = end - start;
-    times.push_back(elapsed.count());
-    if (status == KaczmarzSolverStatus::ZeroNormRow) {
-      std::cout << "Zero norm row detected" << std::endl;
-    } else if (status == KaczmarzSolverStatus::OutOfIterations) {
-      std::cout << "Max iterations reached" << std::endl;
-    } else {
-    }
+    add_elapsed_time_to_vec(times, start, end);
+
+    inform_user_about_kaczmarz_status(status);
   }
 
-  compute_statistics(times, avg_time, std_dev);
-  unsigned nnz, rows, cols;
-  std::ifstream lse_input_stream_2(file_path);
-  if (!lse_input_stream_2) {
-    throw std::runtime_error("Failed to open matrix file: " + file_path);
-  }
-  lse_input_stream_2 >> nnz >> rows >> cols;
-  lse_input_stream_2.close();
-
-  // Write results
-  write_results_to_file("results_cudadirect_sparse_pde.csv", problem_i,
-                        complexity_i, degree_i, avg_time, std_dev, rows);
-  return avg_time;
+  return write_and_calc_results("results_cudadirect_sparse_pde.csv", problem_i,
+                                complexity_i, degree_i, file_path, times);
 }
 
 double benchmark_banded_cuda(unsigned int numIterations, unsigned int problem_i,
                              unsigned int complexity_i, unsigned int degree_i) {
-  std::string file_path = "../../generated_bvp_matrices/problem" +
-                          std::to_string(problem_i) + "/problem" +
-                          std::to_string(problem_i) + "_complexity" +
-                          std::to_string(complexity_i) + "_degree" +
-                          std::to_string(degree_i) + "_banded.txt";
+  std::string file_path = generate_file_path(problem_i, complexity_i, degree_i);
   // Read the precomputed matrix from the file
-  std::ifstream lse_input_stream(file_path);
-  if (!lse_input_stream) {
-    throw std::runtime_error("Failed to open matrix file: " + file_path);
-  }
-  const SparseLinearSystem lse =
-      SparseLinearSystem::read_from_stream(lse_input_stream);
-  lse_input_stream.close();
+  const SparseLinearSystem lse = read_matrix_from_file(file_path);
 
-  double avg_time = 0.0, std_dev = 0.0;
   std::vector<double> times;
 
   // Perform benchmarking
@@ -715,50 +530,23 @@ double benchmark_banded_cuda(unsigned int numIterations, unsigned int problem_i,
     const auto status =
         kaczmarz_banded_cuda(banded_lse, x_kaczmarz, MAX_IT, PRECISION);
 
-    auto end = std::chrono::high_resolution_clock::now();
+    const auto end = std::chrono::high_resolution_clock::now();
 
-    std::chrono::duration<double> elapsed = end - start;
-    times.push_back(elapsed.count());
-    if (status == KaczmarzSolverStatus::ZeroNormRow) {
-      std::cout << "Zero norm row detected" << std::endl;
-    } else if (status == KaczmarzSolverStatus::OutOfIterations) {
-      std::cout << "Max iterations reached" << std::endl;
-    } else {
-    }
+    add_elapsed_time_to_vec(times, start, end);
+
+    inform_user_about_kaczmarz_status(status);
   }
 
-  compute_statistics(times, avg_time, std_dev);
-  unsigned nnz, rows, cols;
-  std::ifstream lse_input_stream_2(file_path);
-  if (!lse_input_stream_2) {
-    throw std::runtime_error("Failed to open matrix file: " + file_path);
-  }
-  lse_input_stream_2 >> nnz >> rows >> cols;
-  lse_input_stream_2.close();
-
-  // Write results
-  write_results_to_file("results_banded_cuda_sparse_pde.csv", problem_i,
-                        complexity_i, degree_i, avg_time, std_dev, rows);
-  return avg_time;
+  return write_and_calc_results("results_banded_cuda_sparse_pde.csv", problem_i,
+                                complexity_i, degree_i, file_path, times);
 }
 
 double benchmark_banded_cpu(unsigned int numIterations, unsigned int problem_i,
                             unsigned int complexity_i, unsigned int degree_i) {
-  std::string file_path = "../../generated_bvp_matrices/problem" +
-                          std::to_string(problem_i) + "/problem" +
-                          std::to_string(problem_i) + "_complexity" +
-                          std::to_string(complexity_i) + "_degree" +
-                          std::to_string(degree_i) + "_banded.txt";
+  std::string file_path = generate_file_path(problem_i, complexity_i, degree_i);
   // Read the precomputed matrix from the file
-  std::ifstream lse_input_stream(file_path);
-  if (!lse_input_stream) {
-    throw std::runtime_error("Failed to open matrix file: " + file_path);
-  }
-  const SparseLinearSystem lse =
-      SparseLinearSystem::read_from_stream(lse_input_stream);
-  lse_input_stream.close();
+  const SparseLinearSystem lse = read_matrix_from_file(file_path);
 
-  double avg_time = 0.0, std_dev = 0.0;
   std::vector<double> times;
 
   // Perform benchmarking
@@ -777,53 +565,26 @@ double benchmark_banded_cpu(unsigned int numIterations, unsigned int problem_i,
     const auto status = kaczmarz_banded_2_cpu_threads(banded_lse, x_kaczmarz,
                                                       MAX_IT, PRECISION);
 
-    auto end = std::chrono::high_resolution_clock::now();
+    const auto end = std::chrono::high_resolution_clock::now();
 
-    std::chrono::duration<double> elapsed = end - start;
-    times.push_back(elapsed.count());
-    if (status == KaczmarzSolverStatus::ZeroNormRow) {
-      std::cout << "Zero norm row detected" << std::endl;
-    } else if (status == KaczmarzSolverStatus::OutOfIterations) {
-      std::cout << "Max iterations reached" << std::endl;
-    } else {
-    }
+    add_elapsed_time_to_vec(times, start, end);
+
+    inform_user_about_kaczmarz_status(status);
   }
 
-  compute_statistics(times, avg_time, std_dev);
-  unsigned nnz, rows, cols;
-  std::ifstream lse_input_stream_2(file_path);
-  if (!lse_input_stream_2) {
-    throw std::runtime_error("Failed to open matrix file: " + file_path);
-  }
-  lse_input_stream_2 >> nnz >> rows >> cols;
-  lse_input_stream_2.close();
-
-  // Write results
-
-  write_results_to_file("results_banded_cpu_2_threads_sparse_pde.csv",
-                        problem_i, complexity_i, degree_i, avg_time, std_dev,
-                        rows);
-  return avg_time;
+  return write_and_calc_results("results_banded_cpu_2_threads_sparse_pde.csv",
+                                problem_i, complexity_i, degree_i, file_path,
+                                times);
 }
+
 double benchmark_banded_serial(unsigned int numIterations,
                                unsigned int problem_i,
                                unsigned int complexity_i,
                                unsigned int degree_i) {
-  std::string file_path = "../../generated_bvp_matrices/problem" +
-                          std::to_string(problem_i) + "/problem" +
-                          std::to_string(problem_i) + "_complexity" +
-                          std::to_string(complexity_i) + "_degree" +
-                          std::to_string(degree_i) + "_banded.txt";
+  std::string file_path = generate_file_path(problem_i, complexity_i, degree_i);
   // Read the precomputed matrix from the file
-  std::ifstream lse_input_stream(file_path);
-  if (!lse_input_stream) {
-    throw std::runtime_error("Failed to open matrix file: " + file_path);
-  }
-  const SparseLinearSystem lse =
-      SparseLinearSystem::read_from_stream(lse_input_stream);
-  lse_input_stream.close();
+  const SparseLinearSystem lse = read_matrix_from_file(file_path);
 
-  double avg_time = 0.0, std_dev = 0.0;
   std::vector<double> times;
 
   // Perform benchmarking
@@ -842,31 +603,15 @@ double benchmark_banded_serial(unsigned int numIterations,
     const auto status =
         kaczmarz_banded_serial(banded_lse, x_kaczmarz, MAX_IT, PRECISION);
 
-    auto end = std::chrono::high_resolution_clock::now();
+    const auto end = std::chrono::high_resolution_clock::now();
 
-    std::chrono::duration<double> elapsed = end - start;
-    times.push_back(elapsed.count());
-    if (status == KaczmarzSolverStatus::ZeroNormRow) {
-      std::cout << "Zero norm row detected" << std::endl;
-    } else if (status == KaczmarzSolverStatus::OutOfIterations) {
-      std::cout << "Max iterations reached" << std::endl;
-    } else {
-    }
+    add_elapsed_time_to_vec(times, start, end);
+
+    inform_user_about_kaczmarz_status(status);
+
   }
 
-  std::cout << " hiiiiiiii" << std::endl;
-
-  compute_statistics(times, avg_time, std_dev);
-  unsigned nnz, rows, cols;
-  std::ifstream lse_input_stream_2(file_path);
-  if (!lse_input_stream_2) {
-    throw std::runtime_error("Failed to open matrix file: " + file_path);
-  }
-  lse_input_stream_2 >> nnz >> rows >> cols;
-  lse_input_stream_2.close();
-
-  // Write results
-  write_results_to_file("results_banded_serial_sparse_pde.csv", problem_i,
-                        complexity_i, degree_i, avg_time, std_dev, rows);
-  return avg_time;
+  return write_and_calc_results("results_banded_serial_sparse_pde.csv",
+                                problem_i, complexity_i, degree_i, file_path,
+                                times);
 }
