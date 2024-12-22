@@ -7,13 +7,13 @@
 #include <iostream>
 #include <random>
 
+#include "asynchronous.hpp"
+#include "banded.hpp"
+#include "carp.hpp"
+#include "cusolver.hpp"
 #include "linear_systems/sparse.hpp"
 #include "linear_systems/types.hpp"
-#include "solvers/asynchronous.hpp"
-#include "solvers/banded.hpp"
-#include "solvers/carp.hpp"
-#include "solvers/cusolver.hpp"
-#include "solvers/sparse_cg.hpp"
+#include "sparse_cg.hpp"
 
 using hrclock = std::chrono::high_resolution_clock;
 
@@ -38,7 +38,8 @@ int main() {
 
   // Read in the system from file
   std::ifstream lse_input_stream(
-      "../../generated_bvp_matrices/problem1_complexity8_degree1.txt");
+      "../../generated_bvp_matrices/problem1/problem1_complexity3_degree1.txt");
+
   const SparseLinearSystem sparse_lse =
       SparseLinearSystem::read_from_stream(lse_input_stream);
 
