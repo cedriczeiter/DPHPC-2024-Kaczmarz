@@ -70,3 +70,7 @@ build/
 # Virtual environment file
 .venv
 venv/
+
+# The too big files for git
+*complexity7*
+*complexity8*
