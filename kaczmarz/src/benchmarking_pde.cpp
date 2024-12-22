@@ -9,6 +9,7 @@ int main() {
                                           unsigned int, unsigned int)>>
       algorithms;
 
+  // These algorithms are used for benchmarking
   std::vector<std::string> algorithms_names = {
       "CARP_CG",      "Eigen_CG",       "Eigen_BiCGSTAB", "CGMNC",
       "Eigen_Direct", "Basic_Kaczmarz", /*"Banded_CPU", "Banded_CUDA",
@@ -575,6 +576,7 @@ double benchmark_banded_cpu(unsigned int numIterations, unsigned int problem_i,
                                 problem_i, complexity_i, degree_i, file_path,
                                 times);
 }
+
 double benchmark_banded_serial(unsigned int numIterations,
                                unsigned int problem_i,
                                unsigned int complexity_i,
@@ -606,6 +608,7 @@ double benchmark_banded_serial(unsigned int numIterations,
     add_elapsed_time_to_vec(times, start, end);
 
     inform_user_about_kaczmarz_status(status);
+
   }
 
   return write_and_calc_results("results_banded_serial_sparse_pde.csv",
