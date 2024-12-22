@@ -80,6 +80,7 @@ int main() {
                                           unsigned int, unsigned int)>>
       algorithms;
 
+  // These algorithms are used for benchmarking
   std::vector<std::string> algorithms_names = {
       "CARP_CG",      "Eigen_CG",       "Eigen_BiCGSTAB", "CGMNC",
       "Eigen_Direct", "Basic_Kaczmarz", /*"Banded_CPU", "Banded_CUDA",
@@ -798,6 +799,7 @@ double benchmark_banded_cpu(unsigned int numIterations, unsigned int problem_i,
   lse_input_stream_2.close();
 
   // Write results
+
   write_results_to_file("results_banded_cpu_2_threads_sparse_pde.csv",
                         problem_i, complexity_i, degree_i, avg_time, std_dev,
                         rows);
@@ -851,6 +853,8 @@ double benchmark_banded_serial(unsigned int numIterations,
     } else {
     }
   }
+
+  std::cout << " hiiiiiiii" << std::endl;
 
   compute_statistics(times, avg_time, std_dev);
   unsigned nnz, rows, cols;
