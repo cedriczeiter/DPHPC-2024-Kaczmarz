@@ -608,7 +608,6 @@ double benchmark_banded_serial(unsigned int numIterations,
     add_elapsed_time_to_vec(times, start, end);
 
     inform_user_about_kaczmarz_status(status);
-
   }
 
   return write_and_calc_results("results_banded_serial_sparse_pde.csv",

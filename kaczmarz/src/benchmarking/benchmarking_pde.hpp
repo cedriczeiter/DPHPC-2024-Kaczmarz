@@ -11,13 +11,13 @@
 #include <unordered_map>
 #include <vector>
 
-#include "linear_systems/dense.hpp"
-#include "linear_systems/sparse.hpp"
 #include "asynchronous.hpp"
 #include "banded.hpp"
 #include "basic.hpp"
 #include "carp.hpp"
 #include "cusolver.hpp"
+#include "linear_systems/dense.hpp"
+#include "linear_systems/sparse.hpp"
 #include "random.hpp"
 #include "sparse_cg.hpp"
 
