@@ -2,9 +2,9 @@
 #include <iostream>
 #include <random>
 
+#include "asynchronous.hpp"
+#include "banded.hpp"
 #include "linear_systems/sparse.hpp"
-#include "solvers/asynchronous.hpp"
-#include "solvers/banded.hpp"
 
 using hrclock = std::chrono::high_resolution_clock;
 

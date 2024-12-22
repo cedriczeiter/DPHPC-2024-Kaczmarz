@@ -7,15 +7,15 @@
 #include <iostream>
 #include <random>
 
+#include "asynchronous.hpp"
+#include "banded.hpp"
+#include "carp.hpp"
 #include "linear_systems/sparse.hpp"
 #include "linear_systems/types.hpp"
-#include "solvers/asynchronous.hpp"
-#include "solvers/banded.hpp"
-#include "solvers/carp.hpp"
 
 using hrclock = std::chrono::high_resolution_clock;
 
-#define PRECISION 1e-10
+#define PRECISION 1e-9
 #define NRUNS 1  // usefull if we want to time the stuff multiple times
 
 /**
@@ -34,7 +34,7 @@ int main() {
 
   // Read in the system from file
   std::ifstream lse_input_stream(
-      "../../generated_bvp_matrices/problem1_complexity3_degree3.txt");
+      "../../generated_bvp_matrices/problem1/problem1_complexity3_degree3.txt");
   const SparseLinearSystem sparse_lse =
       SparseLinearSystem::read_from_stream(lse_input_stream);
 
