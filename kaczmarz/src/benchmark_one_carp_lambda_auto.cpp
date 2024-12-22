@@ -65,6 +65,16 @@ int main() {
 
       // Open file to write results to
       std::string file_name = entry.path().filename().string();
+
+      // If file already exists, skip it
+      if (std::filesystem::exists(
+              "../../generated_bvp_matrices/lambda_experiments_new/"
+              "carp-cg-lambda-steps-" +
+              file_name + ".csv")) {
+        std::cout << "File already exists, skipping" << std::endl;
+        continue;
+      }
+
       std::ofstream outFile(
           "../../generated_bvp_matrices/lambda_experiments_new/"
           "carp-cg-lambda-steps-" +
@@ -73,30 +83,42 @@ int main() {
           << "Relaxation,Carp_steps\n";  // Write the header for the CSV file
 
       double start_relaxation = 0.025;
+      unsigned failed_in_row = 0;
 
       while (start_relaxation < end_relaxation) {
-        std::cout << "----------------------------------- \n" << std::endl;
-        std::cout << "Relaxation: " << start_relaxation << " out of "
-                  << end_relaxation << std::endl;
+        if (failed_in_row <= 10) {
+          std::cout << "----------------------------------- \n" << std::endl;
+          std::cout << "Relaxation: " << start_relaxation << " out of "
+                    << end_relaxation << std::endl;
 
-        Vector x_kaczmarz = Vector::Zero(dim);
+          Vector x_kaczmarz = Vector::Zero(dim);
 
-        int nr_of_steps = 0;
-        const auto status = carp_gpu(sparse_lse, x_kaczmarz, max_iterations,
-                                     PRECISION, start_relaxation, nr_of_steps);
+          int nr_of_steps = 0;
+          const auto status =
+              carp_gpu(sparse_lse, x_kaczmarz, max_iterations, PRECISION,
+                       start_relaxation, nr_of_steps);
 
-        // Print the status of the Kaczmarz solver to terminal
-        if (status == KaczmarzSolverStatus::ZeroNormRow) {
-          std::cout << "Zero norm row detected" << std::endl;
-        } else if (status == KaczmarzSolverStatus::OutOfIterations) {
-          std::cout << "Max iterations reached" << std::endl;
-          // write to csv
-          outFile << start_relaxation << "," << -1 << "\n";
+          // Print the status of the Kaczmarz solver to terminal
+          if (status == KaczmarzSolverStatus::ZeroNormRow) {
+            std::cout << "Zero norm row detected" << std::endl;
+            outFile << start_relaxation << "," << -3 << "\n";
+            failed_in_row++;
+          } else if (status == KaczmarzSolverStatus::OutOfIterations) {
+            std::cout << "Max iterations reached" << std::endl;
+            // write to csv
+            outFile << start_relaxation << "," << -1 << "\n";
+            failed_in_row++;
+          } else {
+            std::cout << " --- Relaxation: " << start_relaxation
+                      << " --- Nr. of steps: " << nr_of_steps << std::endl;
+            // write to csv
+            outFile << start_relaxation << "," << nr_of_steps << "\n";
+            failed_in_row = 0;
+          }
+
         } else {
-          std::cout << " --- Relaxation: " << start_relaxation
-                    << " --- Nr. of steps: " << nr_of_steps << std::endl;
-          // write to csv
-          outFile << start_relaxation << "," << nr_of_steps << "\n";
+          std::cout << "Too many failed in a row, stopping" << std::endl;
+          outFile << start_relaxation << "," << -1 << "\n";
         }
 
         start_relaxation += step_relaxation;
