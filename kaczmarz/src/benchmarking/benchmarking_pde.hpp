@@ -13,13 +13,13 @@
 
 #include "linear_systems/dense.hpp"
 #include "linear_systems/sparse.hpp"
-#include "solvers/asynchronous.hpp"
-#include "solvers/banded.hpp"
-#include "solvers/basic.hpp"
-#include "solvers/carp.hpp"
-#include "solvers/cusolver.hpp"
-#include "solvers/random.hpp"
-#include "solvers/sparse_cg.hpp"
+#include "asynchronous.hpp"
+#include "banded.hpp"
+#include "basic.hpp"
+#include "carp.hpp"
+#include "cusolver.hpp"
+#include "random.hpp"
+#include "sparse_cg.hpp"
 
 // Define constants
 

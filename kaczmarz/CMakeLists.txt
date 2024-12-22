@@ -122,7 +122,7 @@ if (CMAKE_CUDA_COMPILER)
   add_executable(benchmark_carp_multiple_run ${SOURCE_DIR}/benchmarking/benchmark_carp_multiple_run.cpp)
   add_executable(relaxation_parameter_carp_single_run ${SOURCE_DIR}/benchmarking/relaxation_parameter_carp_single_run.cpp)
   add_executable(relaxation_parameter_carp_multiple_run ${SOURCE_DIR}/benchmarking/relaxation_parameter_carp_multiple_run.cpp)
-  add_executable(benchmarking_pde ${SOURCE_DIR}/benchmarking_pde.cpp)
+  add_executable(benchmarking_pde ${SOURCE_DIR}/benchmarking/benchmarking_pde.cpp)
   add_executable(show_convergence ${SOURCE_DIR}/show_convergence.cpp)
 
   # Link the non-CUDA and CUDA libraries to the executables
