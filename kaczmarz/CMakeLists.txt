@@ -146,9 +146,9 @@ endif()
 ################################
 
 # Configure files
-CONFIGURE_FILE(${SOURCE_DIR}/plot.py ${PATH_TO_BUILD} plot.py COPYONLY)
-CONFIGURE_FILE(${SOURCE_DIR}/plot_convergence.py ${PATH_TO_BUILD} plot_convergence.py COPYONLY)
-CONFIGURE_FILE(${SOURCE_DIR}/plot_dense.py ${PATH_TO_BUILD} plot_dense.py COPYONLY)
-CONFIGURE_FILE(${SOURCE_DIR}/plot_sparse.py ${PATH_TO_BUILD} plot_sparse.py COPYONLY)
-CONFIGURE_FILE(${SOURCE_DIR}/plot_sparse_pde.py ${PATH_TO_BUILD} plot_sparse_pde.py COPYONLY)
-CONFIGURE_FILE(${SOURCE_DIR}/plot_convergence_new.py ${PATH_TO_BUILD} plot_convergence_new.py COPYONLY)
+CONFIGURE_FILE(${SOURCE_DIR}/plotting/plot.py ${PATH_TO_BUILD} plot.py COPYONLY)
+CONFIGURE_FILE(${SOURCE_DIR}/plotting/plot_convergence.py ${PATH_TO_BUILD} plot_convergence.py COPYONLY)
+CONFIGURE_FILE(${SOURCE_DIR}/plotting/plot_dense.py ${PATH_TO_BUILD} plot_dense.py COPYONLY)
+CONFIGURE_FILE(${SOURCE_DIR}/plotting/plot_sparse.py ${PATH_TO_BUILD} plot_sparse.py COPYONLY)
+CONFIGURE_FILE(${SOURCE_DIR}/plotting/plot_sparse_pde.py ${PATH_TO_BUILD} plot_sparse_pde.py COPYONLY)
+CONFIGURE_FILE(${SOURCE_DIR}/plotting/plot_convergence_new.py ${PATH_TO_BUILD} plot_convergence_new.py COPYONLY)
