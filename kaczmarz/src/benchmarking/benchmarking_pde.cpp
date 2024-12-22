@@ -40,7 +40,6 @@ int main() {
   for (const auto &file_name : file_names) {
     write_header(file_name);
   }
-  unsigned int iterations = NUM_IT;
   // Main loop over degrees
   for (unsigned int degree = 1; degree <= MAX_DEGREE; ++degree) {
     std::cout << "Processing degree: " << degree << std::endl;
@@ -74,7 +73,7 @@ int main() {
           }
           try {
             double time =
-                algorithms[algorithm_name](iterations, problem, complexity,
+                algorithms[algorithm_name](NUM_IT, problem, complexity,
                                            degree);  // Run the algorithm
                                                      // Record execution time
             // Check if the execution time exceeds the threshold
