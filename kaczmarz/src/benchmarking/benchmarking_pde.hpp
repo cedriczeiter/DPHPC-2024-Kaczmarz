@@ -93,7 +93,9 @@ void add_elapsed_time_to_vec(
 
 double write_and_calc_results(const std::string &file_name,
                               unsigned int problem, unsigned int complexity,
-                              unsigned int degree,
-                              const std::string &file_path);
+                              unsigned int degree, const std::string &file_path,
+                              const std::vector<double> &times);
+
+void inform_user_about_kaczmarz_status(KaczmarzSolverStatus status);
 
 #endif  // BENCHMARKING_PDE_HPP
