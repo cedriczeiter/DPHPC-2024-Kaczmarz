@@ -46,7 +46,7 @@ KaczmarzSolverStatus carp_gpu(const SparseLinearSystem& lse, Vector& x,
     Eigen::SparseVector<double> A_row_i = lse.A().innerVector(i);
     h_sq_norms[i] = A_row_i.dot(A_row_i);
 
-    if (h_sq_norms[i] < 1e-7) {
+    if (h_sq_norms[i] < 1e-8) {
       return KaczmarzSolverStatus::ZeroNormRow;  // check for zero norm rows
     }
   }
@@ -60,7 +60,7 @@ KaczmarzSolverStatus carp_gpu(const SparseLinearSystem& lse, Vector& x,
       max_nnz_in_row = nnz_in_row;
     }
   }
-  std::cout << "Max nnz in a row: " << max_nnz_in_row << std::endl;
+  // std::cout << "Max nnz in a row: " << max_nnz_in_row << std::endl;
 
   // call carp solver for beginning
   return invoke_carp_solver_gpu(A_outer, A_inner, A_values, b, x.data(),

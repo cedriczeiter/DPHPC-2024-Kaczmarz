@@ -115,14 +115,14 @@ if (CMAKE_CUDA_COMPILER)
   target_link_libraries(cuda_library PRIVATE Eigen3::Eigen ${CUDA_LIBRARIES} cusparse cusolver)
 
   # CUDA-enabled executables
-  add_executable(benchmark_convergence ${SOURCE_DIR}/benchmarking_convergence.cpp)
+  add_executable(benchmark_convergence ${SOURCE_DIR}/benchmarking/benchmark_convergence.cpp)
   add_executable(benchmark_executable ${SOURCE_DIR}/benchmarking.cpp)
   add_executable(kaczmarz_example ${SOURCE_DIR}/kaczmarz_example.cpp)
-  add_executable(benchmark_single_run ${SOURCE_DIR}/benchmarking//benchmark_single_run.cpp)
+  add_executable(benchmark_single_run ${SOURCE_DIR}/benchmarking/benchmark_single_run.cpp)
   add_executable(benchmark_carp_multiple_run ${SOURCE_DIR}/benchmarking/benchmark_carp_multiple_run.cpp)
   add_executable(relaxation_parameter_carp_single_run ${SOURCE_DIR}/benchmarking/relaxation_parameter_carp_single_run.cpp)
   add_executable(relaxation_parameter_carp_multiple_run ${SOURCE_DIR}/benchmarking/relaxation_parameter_carp_multiple_run.cpp)
-  add_executable(benchmarking_pde ${SOURCE_DIR}/benchmarking_pde.cpp)
+  add_executable(benchmark_pde ${SOURCE_DIR}/benchmarking/benchmark_pde.cpp)
   add_executable(show_convergence ${SOURCE_DIR}/show_convergence.cpp)
 
   # Link the non-CUDA and CUDA libraries to the executables
@@ -132,7 +132,7 @@ if (CMAKE_CUDA_COMPILER)
   target_link_libraries(benchmark_single_run PRIVATE non_cuda_library cuda_library linear_systems)
   target_link_libraries(benchmark_carp_multiple_run PRIVATE non_cuda_library cuda_library linear_systems)
   target_link_libraries(relaxation_parameter_carp_single_run PRIVATE non_cuda_library cuda_library linear_systems)
-  target_link_libraries(benchmarking_pde PRIVATE non_cuda_library cuda_library linear_systems)
+  target_link_libraries(benchmark_pde PRIVATE non_cuda_library cuda_library linear_systems)
   target_link_libraries(show_convergence PRIVATE non_cuda_library cuda_library linear_systems)
   target_link_libraries(relaxation_parameter_carp_multiple_run PRIVATE non_cuda_library cuda_library linear_systems)
 

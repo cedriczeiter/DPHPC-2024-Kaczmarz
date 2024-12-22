@@ -4,10 +4,10 @@
 #include <cuda_runtime.h>
 #include <stdio.h>
 
-#define L_RESIDUAL 1
-
 #define ROWS_PER_THREAD 1
 #define THREADS_PER_BLOCK 512
+
+#define L_RESIDUAL 1000
 
 void add_gpu(const double* d_a, const double* d_b, double* d_output,
              const double factor, const unsigned dim);
