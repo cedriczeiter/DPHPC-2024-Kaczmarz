@@ -33,6 +33,8 @@
 #define MAX_DEGREE 1
 // Number of iterations for each benchmark
 #define NUM_IT 10
+// Cutoff time for benchmarking
+#define TIME_THRESHOLD 300.0
 
 // Function declarations
 void write_header(const std::string &file_path);

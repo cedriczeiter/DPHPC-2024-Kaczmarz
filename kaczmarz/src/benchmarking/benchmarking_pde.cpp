@@ -1,9 +1,6 @@
 #include "benchmarking_pde.hpp"
 
 int main() {
-  // Define a threshold in seconds
-  const double TIME_THRESHOLD = 300.0;
-
   std::unordered_map<std::string,
                      std::function<double(unsigned int, unsigned int,
                                           unsigned int, unsigned int)>>
