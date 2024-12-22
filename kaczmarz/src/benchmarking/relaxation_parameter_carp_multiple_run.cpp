@@ -12,7 +12,7 @@
 using hrclock = std::chrono::high_resolution_clock;
 
 #define PRECISION 1e-9
-#define L_RESIDUAL 1
+// make sure to change L_RESIDUAL in carp_utils.hpp to 1
 
 /**
  * The purpose of this file is to be easily able to manually benchmark a single

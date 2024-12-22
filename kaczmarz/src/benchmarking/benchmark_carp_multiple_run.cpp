@@ -18,7 +18,7 @@
 using hrclock = std::chrono::high_resolution_clock;
 
 #define NRUNS 10
-#define L_RESIDUAL 1000
+// make sure to change L_RESIDUAL in carp_utils.hpp to 1000
 
 /**
  * The purpose of this file is to be easily able to manually benchmark a single
