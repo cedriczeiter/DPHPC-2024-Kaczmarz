@@ -88,6 +88,10 @@ void write_results(const std::string &file_name, unsigned int problem,
 std::string generate_file_path(unsigned int problem, unsigned int complexity,
                                unsigned int degree);
 
+std::string generate_file_path_banded(unsigned int problem,
+                                      unsigned int complexity,
+                                      unsigned int degree);
+
 void add_elapsed_time_to_vec(
     std::vector<double> &times,
     const std::chrono::time_point<std::chrono::high_resolution_clock> start,

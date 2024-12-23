@@ -343,7 +343,8 @@ double benchmark_cusolver(unsigned int numIterations, unsigned int problem_i,
 
 double benchmark_banded_cuda(unsigned int numIterations, unsigned int problem_i,
                              unsigned int complexity_i, unsigned int degree_i) {
-  std::string file_path = generate_file_path(problem_i, complexity_i, degree_i);
+  std::string file_path =
+      generate_file_path_banded(problem_i, complexity_i, degree_i);
   // Read the precomputed matrix from the file
   const SparseLinearSystem lse = read_matrix_from_file(file_path);
 
@@ -379,7 +380,8 @@ double benchmark_banded_cuda(unsigned int numIterations, unsigned int problem_i,
 
 double benchmark_banded_cpu(unsigned int numIterations, unsigned int problem_i,
                             unsigned int complexity_i, unsigned int degree_i) {
-  std::string file_path = generate_file_path(problem_i, complexity_i, degree_i);
+  std::string file_path =
+      generate_file_path_banded(problem_i, complexity_i, degree_i);
   // Read the precomputed matrix from the file
   const SparseLinearSystem lse = read_matrix_from_file(file_path);
 
@@ -417,7 +419,8 @@ double benchmark_banded_serial(unsigned int numIterations,
                                unsigned int problem_i,
                                unsigned int complexity_i,
                                unsigned int degree_i) {
-  std::string file_path = generate_file_path(problem_i, complexity_i, degree_i);
+  std::string file_path =
+      generate_file_path_banded(problem_i, complexity_i, degree_i);
   // Read the precomputed matrix from the file
   const SparseLinearSystem lse = read_matrix_from_file(file_path);
 
@@ -491,6 +494,17 @@ std::string generate_file_path(unsigned int problem, unsigned int complexity,
          "/problem" + std::to_string(problem) + "_complexity" +
          std::to_string(complexity) + "_degree" + std::to_string(degree) +
          ".txt";
+}
+
+// Function to generate the file path for a given banded problem, complexity,
+// and degree
+std::string generate_file_path_banded(unsigned int problem,
+                                      unsigned int complexity,
+                                      unsigned int degree) {
+  return "../../generated_bvp_matrices/problem" + std::to_string(problem) +
+         "/problem" + std::to_string(problem) + "_complexity" +
+         std::to_string(complexity) + "_degree" + std::to_string(degree) +
+         "_banded.txt";
 }
 
 // Function to add elapsed time to a vector calculated from start and end time
