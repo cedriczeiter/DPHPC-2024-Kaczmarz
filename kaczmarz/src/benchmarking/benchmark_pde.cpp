@@ -523,8 +523,8 @@ void write_header(const std::string &file_path) {
   std::ofstream outFile(
       file_path);  // Default mode is std::ios::out | std::ios::trunc
   if (outFile.is_open()) {
-    outFile << "Problem,Complexity,Degree,AvgTime,StdDev,Dim\n";  // Write the
-                                                                  // header
+    outFile << "Problem,Complexity,Degree,AvgTime,StdDev,Dim,MaxIt,Precision,"
+               "MaxComplexity,MaxDegree,NumIt,TimeThreshold\n";
     outFile.flush();  // Ensure data is written to the disk immediately
     outFile.close();
   } else {
@@ -540,7 +540,9 @@ void write_results_to_file(const std::string &file_name, unsigned int problem,
                            unsigned int dimension) {
   std::ofstream outFile(file_name, std::ios::app);
   outFile << problem << "," << complexity << "," << degree << "," << avg_time
-          << "," << std_dev << "," << dimension << "\n";
+          << "," << std_dev << "," << dimension << "," << MAX_IT << ","
+          << PRECISION << "," << MAX_COMPLEXITY << "," << MAX_DEGREE << ","
+          << NUM_IT << "," << TIME_THRESHOLD << "\n";
   outFile.flush();  // Ensure data is written to the disk immediately
   outFile.close();
 }
