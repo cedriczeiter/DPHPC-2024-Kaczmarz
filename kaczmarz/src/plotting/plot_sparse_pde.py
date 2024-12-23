@@ -3,19 +3,22 @@ import matplotlib.pyplot as plt
 
 # Load the CSV files and manually assign algorithm names
 data_eigeniterative = pd.read_csv("results_eigeniterative_sparse_pde.csv")
-data_eigeniterative["Algorithm"] = "Eigen CG (iterative)"
+data_eigeniterative["Algorithm"] = "Eigen  LeastSquaresCG"
 
 data_seqcg = pd.read_csv("results_sparsesolver_sparse_cg_pde.csv")
 data_seqcg["Algorithm"] = "CGMNC"
 
 data_eigeniterative2 = pd.read_csv("results_eigeniterative_2_sparse_pde.csv")
-data_eigeniterative2["Algorithm"] = "Eigen BiCGSTAB (iterative)"
+data_eigeniterative2["Algorithm"] = "Eigen BiCGSTAB"
 
 #data_bandedcuda = pd.read_csv("results_banded_cuda_sparse_pde.csv")
 #data_bandedcuda["Algorithm"] = "Banded CUDA"
 
 #data_bandedcpu = pd.read_csv("results_banded_cpu_2_threads_sparse_pde.csv")
 #data_bandedcpu["Algorithm"] = "Banded CPU"
+
+#data_bandedserial = pd.read_csv("results_banded_serial_sparse_pde.csv")
+#data_bandedserial["Algorithm"] = "Banded Serial"
 
 data_seqnormal = pd.read_csv("results_sparsesolver_sparse_pde.csv")
 data_seqnormal["Algorithm"] = "Basic Kaczmarz"
@@ -33,13 +36,14 @@ data_carp["Algorithm"] = "CARP-CG"
 data = pd.concat([
     data_eigeniterative,
     data_eigeniterative2,
+    #data_bandedserial,
     #data_bandedcuda,
     #data_bandedcpu,
     data_seqnormal,
     data_eigendirect,
     data_cudadirect,
-    data_seqcg,
-    data_carp])
+    data_carp,
+    data_seqcg])
 
 # Get unique problems and degrees
 problems = data["Problem"].unique()
@@ -81,7 +85,7 @@ for problem in problems:
         plt.tight_layout(rect=[0, 0, 0.85, 1])
 
         # Save the plot without cropping
-        plt.savefig(f"benchmark_problem_{problem}_degree_{degree}.png", bbox_inches='tight')
+        plt.savefig(f"benchmark_all_problem_{problem}_degree_{degree}.png", bbox_inches='tight')
 
         # Show the plot (if interactive)
         plt.show()
