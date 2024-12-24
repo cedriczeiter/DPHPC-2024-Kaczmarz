@@ -8,9 +8,9 @@ int main() {
 
   // These algorithms are used for benchmarking
   std::vector<std::string> algorithms_names = {
-      "CARP_CG",      "Eigen_CG",       "Eigen_BiCGSTAB", "CGMNC",
-      "Eigen_Direct", "Basic_Kaczmarz", /*"Banded_CPU", "Banded_CUDA",
-                                           "Banded_SERIAL", */
+      "CARP_CG", "Eigen_CG",     "Eigen_BiCGSTAB",
+      "CGMNC",   "Eigen_Direct", /*"Basic_Kaczmarz", "Banded_CPU",
+                                    "Banded_CUDA", "Banded_SERIAL", */
       "CUSolver"};
 
   algorithms = {{"CARP_CG", benchmark_carpcg},
@@ -107,8 +107,9 @@ double benchmark_carpcg(unsigned int numIterations, unsigned int problem_i,
 
   std::vector<double> times;
 
-  std::cout << "      Running CARP for problem " << problem_i << ", complexity "
-            << complexity_i << ", degree " << degree_i << std::endl;
+  std::cout << "      Running CARP Cuda Sparse for problem " << problem_i
+            << ", complexity " << complexity_i << ", degree " << degree_i
+            << std::endl;
 
   for (unsigned int i = 0; i < numIterations; ++i) {
     // Allocate memory to save kaczmarz solution
@@ -143,9 +144,9 @@ double benchmark_eigen_cg(unsigned int numIterations, unsigned int problem_i,
   const auto A = lse.A();
   const auto b = lse.b();
   // Perform benchmarking
-  std::cout << "      Running EIGEN CG for problem " << problem_i
-            << ", complexity " << complexity_i << ", degree " << degree_i
-            << std::endl;
+  std::cout << "      Running EIGEN Iterative sparse CG for problem "
+            << problem_i << ", complexity " << complexity_i << ", degree "
+            << degree_i << std::endl;
 
   for (unsigned int i = 0; i < numIterations; ++i) {
     // Allocate memory to save kaczmarz solution
@@ -181,9 +182,9 @@ double benchmark_eigen_bicgstab(unsigned int numIterations,
   const auto b = lse.b();
 
   // Perform benchmarking
-  std::cout << "      Running EIGEN BiCGSTAB for problem " << problem_i
-            << ", complexity " << complexity_i << ", degree " << degree_i
-            << std::endl;
+  std::cout << "      Running EIGEN iterative 2 BiCGSTAB for problem "
+            << problem_i << ", complexity " << complexity_i << ", degree "
+            << degree_i << std::endl;
 
   for (unsigned int i = 0; i < numIterations; ++i) {
     const auto start = std::chrono::high_resolution_clock::now();
@@ -213,7 +214,7 @@ double benchmark_cgmnc(unsigned int numIterations, unsigned int problem_i,
   std::vector<double> times;
 
   // Perform benchmarking
-  std::cout << "      Running CGMNC for problem " << problem_i
+  std::cout << "      Running CGMNC (Sparse CG) for problem " << problem_i
             << ", complexity " << complexity_i << ", degree " << degree_i
             << std::endl;
 
@@ -247,7 +248,7 @@ double benchmark_eigen_direct(unsigned int numIterations,
   std::vector<double> times;
 
   // Perform benchmarking
-  std::cout << "      Running EIGEN DIRECT for problem " << problem_i
+  std::cout << "      Running EIGEN DIRECT sparse for problem " << problem_i
             << ", complexity " << complexity_i << ", degree " << degree_i
             << std::endl;
 
@@ -278,9 +279,9 @@ double benchmark_basic_kaczmarz(unsigned int numIterations,
   std::vector<double> times;
 
   // Perform benchmarking
-  std::cout << "      Running BASIC KACZMARZ for problem " << problem_i
-            << ", complexity " << complexity_i << ", degree " << degree_i
-            << std::endl;
+  std::cout << "      Running BASIC KACZMARZ (sparsesolver sparse) for problem "
+            << problem_i << ", complexity " << complexity_i << ", degree "
+            << degree_i << std::endl;
 
   for (unsigned int i = 0; i < numIterations; ++i) {
     Eigen::VectorXd x_kaczmarz_sparse =
@@ -315,9 +316,9 @@ double benchmark_cusolver(unsigned int numIterations, unsigned int problem_i,
   std::vector<double> times;
 
   // Perform benchmarking
-  std::cout << "      Running CUSOLVER for problem " << problem_i
-            << ", complexity " << complexity_i << ", degree " << degree_i
-            << std::endl;
+  std::cout << "      Running CUSOLVER (cudadirect sparse) for problem "
+            << problem_i << ", complexity " << complexity_i << ", degree "
+            << degree_i << std::endl;
 
   const auto A = lse.A();
   const auto b = lse.b();
@@ -351,7 +352,7 @@ double benchmark_banded_cuda(unsigned int numIterations, unsigned int problem_i,
   std::vector<double> times;
 
   // Perform benchmarking
-  std::cout << "      Running BANDED CUDA for problem " << problem_i
+  std::cout << "      Running BANDED CUDA sparse for problem " << problem_i
             << ", complexity " << complexity_i << ", degree " << degree_i
             << std::endl;
 
@@ -388,7 +389,7 @@ double benchmark_banded_cpu(unsigned int numIterations, unsigned int problem_i,
   std::vector<double> times;
 
   // Perform benchmarking
-  std::cout << "      Running BANDED CPU for problem " << problem_i
+  std::cout << "      Running BANDED CPU 2 threads for problem " << problem_i
             << ", complexity " << complexity_i << ", degree " << degree_i
             << std::endl;
 
@@ -427,7 +428,7 @@ double benchmark_banded_serial(unsigned int numIterations,
   std::vector<double> times;
 
   // Perform benchmarking
-  std::cout << "      Running BANDED SERIAL for problem " << problem_i
+  std::cout << "      Running BANDED SERIAL sparse for problem " << problem_i
             << ", complexity " << complexity_i << ", degree " << degree_i
             << std::endl;
 
