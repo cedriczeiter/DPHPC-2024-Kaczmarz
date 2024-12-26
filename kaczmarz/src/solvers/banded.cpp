@@ -90,6 +90,21 @@ void BandedSolver::run_iterations(const BandedLinearSystem& lse, Vector& x, cons
   this->cleanup();
 }
 
+inline void row_update(UnpackedBandedSystem& sys, const unsigned row_idx) {
+  const auto x_iter =
+    sys.x_padded.begin() + sys.bandwidth + row_idx - sys.bandwidth;
+  const auto row_iter =
+    sys.A_data.begin() + (2 * sys.bandwidth + 1) * row_idx;
+  const double dot = std::inner_product(
+      row_iter, row_iter + 2 * sys.bandwidth + 1, x_iter, 0.0);
+  const double update_coeff =
+    (sys.b[row_idx] - dot) / sys.sq_norms[row_idx];
+  std::transform(x_iter, x_iter + 2 * sys.bandwidth + 1, row_iter, x_iter,
+      [update_coeff](const double xi, const double ai) {
+      return xi + update_coeff * ai;
+      });
+}
+
 unsigned OpenMPGrouping1IBandedSolver::pad_dimension(const unsigned dim, const unsigned bandwidth) {
   const unsigned rows_per_group =
       std::max(2 * bandwidth, ceil_div(dim, 2 * this->thread_count));
@@ -107,10 +122,6 @@ void OpenMPGrouping1IBandedSolver::cleanup() {
 void OpenMPGrouping1IBandedSolver::iterate(const unsigned iterations) {
   const unsigned dim = sys->dim;
   const unsigned bandwidth = sys->bandwidth;
-  auto& x_padded = sys->x_padded;
-  const auto& b = sys->b;
-  const auto& A_data = sys->A_data;
-  const auto& sq_norms = sys->sq_norms;
 
   assert(dim % (2 * thread_count) == 0);
   const unsigned rows_per_group = dim / (2 * thread_count);
@@ -123,36 +134,14 @@ void OpenMPGrouping1IBandedSolver::iterate(const unsigned iterations) {
     for (unsigned iter = 0; iter < iterations; iter++) {
       for (unsigned row_idx = base_row_idx1;
            row_idx < base_row_idx1 + rows_per_group; row_idx++) {
-        const auto x_iter =
-            x_padded.begin() + bandwidth + row_idx - bandwidth;
-        const auto row_iter =
-            A_data.begin() + (2 * bandwidth + 1) * row_idx;
-        const double dot = std::inner_product(
-            row_iter, row_iter + 2 * bandwidth + 1, x_iter, 0.0);
-        const double update_coeff =
-            (b[row_idx] - dot) / sq_norms[row_idx];
-        std::transform(x_iter, x_iter + 2 * bandwidth + 1, row_iter, x_iter,
-                       [update_coeff](const double xi, const double ai) {
-                         return xi + update_coeff * ai;
-                       });
+        row_update(*this->sys, row_idx);
       }
 
 #pragma omp barrier
 
       for (unsigned row_idx = base_row_idx2;
            row_idx < base_row_idx2 + rows_per_group; row_idx++) {
-        const auto x_iter =
-            x_padded.begin() + bandwidth + row_idx - bandwidth;
-        const auto row_iter =
-            A_data.begin() + (2 * bandwidth + 1) * row_idx;
-        const double dot = std::inner_product(
-            row_iter, row_iter + 2 * bandwidth + 1, x_iter, 0.0);
-        const double update_coeff =
-            (b[row_idx] - dot) / sq_norms[row_idx];
-        std::transform(x_iter, x_iter + 2 * bandwidth + 1, row_iter, x_iter,
-                       [update_coeff](const double xi, const double ai) {
-                         return xi + update_coeff * ai;
-                       });
+        row_update(*this->sys, row_idx);
       }
 
 #pragma omp barrier
@@ -177,10 +166,6 @@ void OpenMPGrouping2IBandedSolver::cleanup() {
 void OpenMPGrouping2IBandedSolver::iterate(const unsigned iterations) {
   const unsigned dim = sys->dim;
   const unsigned bandwidth = sys->bandwidth;
-  auto& x_padded = sys->x_padded;
-  const auto& b = sys->b;
-  const auto& A_data = sys->A_data;
-  const auto& sq_norms = sys->sq_norms;
 
   assert(dim % (2 * bandwidth + 1) == 0);
   const unsigned rows_per_group = dim / (2 * bandwidth + 1);
@@ -201,19 +186,7 @@ void OpenMPGrouping2IBandedSolver::iterate(const unsigned iterations) {
              row_in_group_idx < row_in_group_to; row_in_group_idx++) {
           const unsigned row_idx =
               row_in_group_idx * (2 * bandwidth + 1) + group_idx;
-          const auto x_iter =
-              x_padded.begin() + bandwidth + row_idx - bandwidth;
-          const auto row_iter =
-              A_data.begin() + (2 * bandwidth + 1) * row_idx;
-          const double dot = std::inner_product(
-              row_iter, row_iter + 2 * bandwidth + 1, x_iter, 0.0);
-          const double update_coeff =
-              (b[row_idx] - dot) / sq_norms[row_idx];
-          std::transform(x_iter, x_iter + 2 * bandwidth + 1, row_iter,
-                         x_iter,
-                         [update_coeff](const double xi, const double ai) {
-                           return xi + update_coeff * ai;
-                         });
+          row_update(*this->sys, row_idx);
         }
 #pragma omp barrier
       }
@@ -235,26 +208,10 @@ void SerialNaiveBandedSolver::cleanup() {
 
 void SerialNaiveBandedSolver::iterate(const unsigned iterations) {
   const unsigned dim = sys->dim;
-  const unsigned bandwidth = sys->bandwidth;
-  auto& x_padded = sys->x_padded;
-  const auto& b = sys->b;
-  const auto& A_data = sys->A_data;
-  const auto& sq_norms = sys->sq_norms;
 
   for (unsigned iter = 0; iter < iterations; iter++) {
     for (unsigned row_idx = 0; row_idx < dim; row_idx++) {
-      const auto x_iter =
-          x_padded.begin() + bandwidth + row_idx - bandwidth;
-      const auto row_iter =
-          A_data.begin() + (2 * bandwidth + 1) * row_idx;
-      const double dot = std::inner_product(
-          row_iter, row_iter + 2 * bandwidth + 1, x_iter, 0.0);
-      const double update_coeff =
-          (b[row_idx] - dot) / sq_norms[row_idx];
-      std::transform(x_iter, x_iter + 2 * bandwidth + 1, row_iter, x_iter,
-                     [update_coeff](const double xi, const double ai) {
-                       return xi + update_coeff * ai;
-                     });
+      row_update(*this->sys, row_idx);
     }
   }
 }
@@ -274,28 +231,13 @@ void SerialInterleavedBandedSolver::cleanup() {
 void SerialInterleavedBandedSolver::iterate(const unsigned iterations) {
   const unsigned dim = sys->dim;
   const unsigned bandwidth = sys->bandwidth;
-  auto& x_padded = sys->x_padded;
-  const auto& b = sys->b;
-  const auto& A_data = sys->A_data;
-  const auto& sq_norms = sys->sq_norms;
 
   for (unsigned iter = 0; iter < iterations; iter++) {
     for (unsigned group_idx = 0; group_idx < 2 * bandwidth + 1;
          group_idx++) {
       for (unsigned row_idx = group_idx; row_idx < dim;
            row_idx += 2 * bandwidth + 1) {
-        const auto x_iter =
-            x_padded.begin() + bandwidth + row_idx - bandwidth;
-        const auto row_iter =
-            A_data.begin() + (2 * bandwidth + 1) * row_idx;
-        const double dot = std::inner_product(
-            row_iter, row_iter + 2 * bandwidth + 1, x_iter, 0.0);
-        const double update_coeff =
-            (b[row_idx] - dot) / sq_norms[row_idx];
-        std::transform(x_iter, x_iter + 2 * bandwidth + 1, row_iter, x_iter,
-                       [update_coeff](const double xi, const double ai) {
-                         return xi + update_coeff * ai;
-                       });
+        row_update(*this->sys, row_idx);
       }
     }
   }
