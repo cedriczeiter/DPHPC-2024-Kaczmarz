@@ -7,6 +7,14 @@
 #include "omp.h"
 #include "unpacked_banded_system.hpp"
 
+unsigned ceil_div(const unsigned a, const unsigned b) {
+  assert(b != 0);
+  if (a == 0) {
+    return 0;
+  }
+  return (a - 1) / b + 1;
+}
+
 UnpackedBandedSystem unpack_banded_system(const BandedLinearSystem& lse,
                                           const Vector& x,
                                           const unsigned target_dim) {
@@ -74,21 +82,40 @@ void write_back_solution(const UnpackedBandedSystem& sys, Vector& x) {
   std::copy_n(sys.x_padded.begin() + sys.bandwidth, x.size(), x.begin());
 }
 
-unsigned ceil_div(const unsigned a, const unsigned b) {
-  assert(b != 0);
-  if (a == 0) {
-    return 0;
-  }
-  return (a - 1) / b + 1;
+void BandedSolver::run_iterations(const BandedLinearSystem& lse, Vector& x, const unsigned iterations) {
+  UnpackedBandedSystem sys = unpack_banded_system(lse, x, this->pad_dimension(lse.dim(), lse.bandwidth()));
+  this->setup(&sys);
+  this->iterate(iterations);
+  write_back_solution(sys, x);
+  this->cleanup();
 }
 
-void kaczmarz_banded_openmp_grouping1_impl(UnpackedBandedSystem& sys,
-                                           const unsigned iterations,
-                                           const unsigned thread_count) {
-  assert(sys.dim % (2 * thread_count) == 0);
-  const unsigned rows_per_group = sys.dim / (2 * thread_count);
+unsigned OpenMPGrouping1IBandedSolver::pad_dimension(const unsigned dim, const unsigned bandwidth) {
+  const unsigned rows_per_group =
+      std::max(2 * bandwidth, ceil_div(dim, 2 * this->thread_count));
+  return rows_per_group * 2 * this->thread_count;
+}
 
-#pragma omp parallel num_threads(thread_count)
+void OpenMPGrouping1IBandedSolver::setup(UnpackedBandedSystem *const sys) {
+  this->sys = sys;
+}
+
+void OpenMPGrouping1IBandedSolver::cleanup() {
+  this->sys = nullptr;
+}
+
+void OpenMPGrouping1IBandedSolver::iterate(const unsigned iterations) {
+  const unsigned dim = sys->dim;
+  const unsigned bandwidth = sys->bandwidth;
+  auto& x_padded = sys->x_padded;
+  const auto& b = sys->b;
+  const auto& A_data = sys->A_data;
+  const auto& sq_norms = sys->sq_norms;
+
+  assert(dim % (2 * thread_count) == 0);
+  const unsigned rows_per_group = dim / (2 * thread_count);
+
+#pragma omp parallel num_threads(this->thread_count)
   {
     const unsigned tid = omp_get_thread_num();
     const unsigned base_row_idx1 = rows_per_group * (2 * tid);
@@ -97,14 +124,14 @@ void kaczmarz_banded_openmp_grouping1_impl(UnpackedBandedSystem& sys,
       for (unsigned row_idx = base_row_idx1;
            row_idx < base_row_idx1 + rows_per_group; row_idx++) {
         const auto x_iter =
-            sys.x_padded.begin() + sys.bandwidth + row_idx - sys.bandwidth;
+            x_padded.begin() + bandwidth + row_idx - bandwidth;
         const auto row_iter =
-            sys.A_data.begin() + (2 * sys.bandwidth + 1) * row_idx;
+            A_data.begin() + (2 * bandwidth + 1) * row_idx;
         const double dot = std::inner_product(
-            row_iter, row_iter + 2 * sys.bandwidth + 1, x_iter, 0.0);
+            row_iter, row_iter + 2 * bandwidth + 1, x_iter, 0.0);
         const double update_coeff =
-            (sys.b[row_idx] - dot) / sys.sq_norms[row_idx];
-        std::transform(x_iter, x_iter + 2 * sys.bandwidth + 1, row_iter, x_iter,
+            (b[row_idx] - dot) / sq_norms[row_idx];
+        std::transform(x_iter, x_iter + 2 * bandwidth + 1, row_iter, x_iter,
                        [update_coeff](const double xi, const double ai) {
                          return xi + update_coeff * ai;
                        });
@@ -115,14 +142,14 @@ void kaczmarz_banded_openmp_grouping1_impl(UnpackedBandedSystem& sys,
       for (unsigned row_idx = base_row_idx2;
            row_idx < base_row_idx2 + rows_per_group; row_idx++) {
         const auto x_iter =
-            sys.x_padded.begin() + sys.bandwidth + row_idx - sys.bandwidth;
+            x_padded.begin() + bandwidth + row_idx - bandwidth;
         const auto row_iter =
-            sys.A_data.begin() + (2 * sys.bandwidth + 1) * row_idx;
+            A_data.begin() + (2 * bandwidth + 1) * row_idx;
         const double dot = std::inner_product(
-            row_iter, row_iter + 2 * sys.bandwidth + 1, x_iter, 0.0);
+            row_iter, row_iter + 2 * bandwidth + 1, x_iter, 0.0);
         const double update_coeff =
-            (sys.b[row_idx] - dot) / sys.sq_norms[row_idx];
-        std::transform(x_iter, x_iter + 2 * sys.bandwidth + 1, row_iter, x_iter,
+            (b[row_idx] - dot) / sq_norms[row_idx];
+        std::transform(x_iter, x_iter + 2 * bandwidth + 1, row_iter, x_iter,
                        [update_coeff](const double xi, const double ai) {
                          return xi + update_coeff * ai;
                        });
@@ -133,24 +160,32 @@ void kaczmarz_banded_openmp_grouping1_impl(UnpackedBandedSystem& sys,
   }
 }
 
-void kaczmarz_banded_openmp_grouping1(const BandedLinearSystem& lse, Vector& x,
-                                      const unsigned iterations,
-                                      const unsigned thread_count) {
-  const unsigned rows_per_group =
-      std::max(2 * lse.bandwidth(), ceil_div(lse.dim(), 2 * thread_count));
-  const unsigned dim_padded = rows_per_group * 2 * thread_count;
-  UnpackedBandedSystem sys = unpack_banded_system(lse, x, dim_padded);
-  kaczmarz_banded_openmp_grouping1_impl(sys, iterations, thread_count);
-  write_back_solution(sys, x);
+unsigned OpenMPGrouping2IBandedSolver::pad_dimension(const unsigned dim, const unsigned bandwidth) {
+  const unsigned group_count = 2 * bandwidth + 1;
+  const unsigned rows_per_group = ceil_div(dim, group_count);
+  return rows_per_group * group_count;
 }
 
-void kaczmarz_banded_openmp_grouping2_impl(UnpackedBandedSystem& sys,
-                                           const unsigned iterations,
-                                           const unsigned thread_count) {
-  assert(sys.dim % (2 * sys.bandwidth + 1) == 0);
-  const unsigned rows_per_group = sys.dim / (2 * sys.bandwidth + 1);
+void OpenMPGrouping2IBandedSolver::setup(UnpackedBandedSystem *const sys) {
+  this->sys = sys;
+}
 
-#pragma omp parallel num_threads(thread_count)
+void OpenMPGrouping2IBandedSolver::cleanup() {
+  this->sys = nullptr;
+}
+
+void OpenMPGrouping2IBandedSolver::iterate(const unsigned iterations) {
+  const unsigned dim = sys->dim;
+  const unsigned bandwidth = sys->bandwidth;
+  auto& x_padded = sys->x_padded;
+  const auto& b = sys->b;
+  const auto& A_data = sys->A_data;
+  const auto& sq_norms = sys->sq_norms;
+
+  assert(dim % (2 * bandwidth + 1) == 0);
+  const unsigned rows_per_group = dim / (2 * bandwidth + 1);
+
+#pragma omp parallel num_threads(this->thread_count)
   {
     const unsigned tid = omp_get_thread_num();
     const unsigned rows_per_thread = rows_per_group / thread_count;
@@ -160,21 +195,21 @@ void kaczmarz_banded_openmp_grouping2_impl(UnpackedBandedSystem& sys,
     const unsigned row_in_group_to =
         (tid + 1) * rows_per_thread + std::min(tid + 1, extra_rows);
     for (unsigned iter = 0; iter < iterations; iter++) {
-      for (unsigned group_idx = 0; group_idx < 2 * sys.bandwidth + 1;
+      for (unsigned group_idx = 0; group_idx < 2 * bandwidth + 1;
            group_idx++) {
         for (unsigned row_in_group_idx = row_in_group_from;
              row_in_group_idx < row_in_group_to; row_in_group_idx++) {
           const unsigned row_idx =
-              row_in_group_idx * (2 * sys.bandwidth + 1) + group_idx;
+              row_in_group_idx * (2 * bandwidth + 1) + group_idx;
           const auto x_iter =
-              sys.x_padded.begin() + sys.bandwidth + row_idx - sys.bandwidth;
+              x_padded.begin() + bandwidth + row_idx - bandwidth;
           const auto row_iter =
-              sys.A_data.begin() + (2 * sys.bandwidth + 1) * row_idx;
+              A_data.begin() + (2 * bandwidth + 1) * row_idx;
           const double dot = std::inner_product(
-              row_iter, row_iter + 2 * sys.bandwidth + 1, x_iter, 0.0);
+              row_iter, row_iter + 2 * bandwidth + 1, x_iter, 0.0);
           const double update_coeff =
-              (sys.b[row_idx] - dot) / sys.sq_norms[row_idx];
-          std::transform(x_iter, x_iter + 2 * sys.bandwidth + 1, row_iter,
+              (b[row_idx] - dot) / sq_norms[row_idx];
+          std::transform(x_iter, x_iter + 2 * bandwidth + 1, row_iter,
                          x_iter,
                          [update_coeff](const double xi, const double ai) {
                            return xi + update_coeff * ai;
@@ -186,30 +221,37 @@ void kaczmarz_banded_openmp_grouping2_impl(UnpackedBandedSystem& sys,
   }
 }
 
-void kaczmarz_banded_openmp_grouping2(const BandedLinearSystem& lse, Vector& x,
-                                      const unsigned iterations,
-                                      const unsigned thread_count) {
-  const unsigned group_count = 2 * lse.bandwidth() + 1;
-  const unsigned rows_per_group = ceil_div(lse.dim(), group_count);
-  const unsigned dim_padded = rows_per_group * group_count;
-  UnpackedBandedSystem sys = unpack_banded_system(lse, x, dim_padded);
-  kaczmarz_banded_openmp_grouping2_impl(sys, iterations, thread_count);
-  write_back_solution(sys, x);
+unsigned SerialNaiveBandedSolver::pad_dimension(const unsigned dim, const unsigned /* bandwidth */) {
+  return dim;
 }
 
-void kaczmarz_banded_serial_naive_impl(UnpackedBandedSystem& sys,
-                                       const unsigned iterations) {
+void SerialNaiveBandedSolver::setup(UnpackedBandedSystem *const sys) {
+  this->sys = sys;
+}
+
+void SerialNaiveBandedSolver::cleanup() {
+  this->sys = nullptr;
+}
+
+void SerialNaiveBandedSolver::iterate(const unsigned iterations) {
+  const unsigned dim = sys->dim;
+  const unsigned bandwidth = sys->bandwidth;
+  auto& x_padded = sys->x_padded;
+  const auto& b = sys->b;
+  const auto& A_data = sys->A_data;
+  const auto& sq_norms = sys->sq_norms;
+
   for (unsigned iter = 0; iter < iterations; iter++) {
-    for (unsigned row_idx = 0; row_idx < sys.dim; row_idx++) {
+    for (unsigned row_idx = 0; row_idx < dim; row_idx++) {
       const auto x_iter =
-          sys.x_padded.begin() + sys.bandwidth + row_idx - sys.bandwidth;
+          x_padded.begin() + bandwidth + row_idx - bandwidth;
       const auto row_iter =
-          sys.A_data.begin() + (2 * sys.bandwidth + 1) * row_idx;
+          A_data.begin() + (2 * bandwidth + 1) * row_idx;
       const double dot = std::inner_product(
-          row_iter, row_iter + 2 * sys.bandwidth + 1, x_iter, 0.0);
+          row_iter, row_iter + 2 * bandwidth + 1, x_iter, 0.0);
       const double update_coeff =
-          (sys.b[row_idx] - dot) / sys.sq_norms[row_idx];
-      std::transform(x_iter, x_iter + 2 * sys.bandwidth + 1, row_iter, x_iter,
+          (b[row_idx] - dot) / sq_norms[row_idx];
+      std::transform(x_iter, x_iter + 2 * bandwidth + 1, row_iter, x_iter,
                      [update_coeff](const double xi, const double ai) {
                        return xi + update_coeff * ai;
                      });
@@ -217,44 +259,46 @@ void kaczmarz_banded_serial_naive_impl(UnpackedBandedSystem& sys,
   }
 }
 
-void kaczmarz_banded_serial_interleaved_impl(UnpackedBandedSystem& sys,
-                                             const unsigned iterations) {
+unsigned SerialInterleavedBandedSolver::pad_dimension(const unsigned dim, const unsigned /* bandwidth */) {
+  return dim;
+}
+
+void SerialInterleavedBandedSolver::setup(UnpackedBandedSystem *const sys) {
+  this->sys = sys;
+}
+
+void SerialInterleavedBandedSolver::cleanup() {
+  this->sys = nullptr;
+}
+
+void SerialInterleavedBandedSolver::iterate(const unsigned iterations) {
+  const unsigned dim = sys->dim;
+  const unsigned bandwidth = sys->bandwidth;
+  auto& x_padded = sys->x_padded;
+  const auto& b = sys->b;
+  const auto& A_data = sys->A_data;
+  const auto& sq_norms = sys->sq_norms;
+
   for (unsigned iter = 0; iter < iterations; iter++) {
-    for (unsigned group_idx = 0; group_idx < 2 * sys.bandwidth + 1;
+    for (unsigned group_idx = 0; group_idx < 2 * bandwidth + 1;
          group_idx++) {
-      for (unsigned row_idx = group_idx; row_idx < sys.dim;
-           row_idx += 2 * sys.bandwidth + 1) {
+      for (unsigned row_idx = group_idx; row_idx < dim;
+           row_idx += 2 * bandwidth + 1) {
         const auto x_iter =
-            sys.x_padded.begin() + sys.bandwidth + row_idx - sys.bandwidth;
+            x_padded.begin() + bandwidth + row_idx - bandwidth;
         const auto row_iter =
-            sys.A_data.begin() + (2 * sys.bandwidth + 1) * row_idx;
+            A_data.begin() + (2 * bandwidth + 1) * row_idx;
         const double dot = std::inner_product(
-            row_iter, row_iter + 2 * sys.bandwidth + 1, x_iter, 0.0);
+            row_iter, row_iter + 2 * bandwidth + 1, x_iter, 0.0);
         const double update_coeff =
-            (sys.b[row_idx] - dot) / sys.sq_norms[row_idx];
-        std::transform(x_iter, x_iter + 2 * sys.bandwidth + 1, row_iter, x_iter,
+            (b[row_idx] - dot) / sq_norms[row_idx];
+        std::transform(x_iter, x_iter + 2 * bandwidth + 1, row_iter, x_iter,
                        [update_coeff](const double xi, const double ai) {
                          return xi + update_coeff * ai;
                        });
       }
     }
   }
-}
-
-void kaczmarz_banded_serial_naive(const BandedLinearSystem& lse,
-                                  Eigen::VectorXd& x,
-                                  const unsigned iterations) {
-  UnpackedBandedSystem sys = unpack_banded_system(lse, x, lse.dim());
-  kaczmarz_banded_serial_naive_impl(sys, iterations);
-  write_back_solution(sys, x);
-}
-
-void kaczmarz_banded_serial_interleaved(const BandedLinearSystem& lse,
-                                        Eigen::VectorXd& x,
-                                        const unsigned iterations) {
-  UnpackedBandedSystem sys = unpack_banded_system(lse, x, lse.dim());
-  kaczmarz_banded_serial_interleaved_impl(sys, iterations);
-  write_back_solution(sys, x);
 }
 
 void kaczmarz_banded_cuda_grouping1(const BandedLinearSystem& lse,
