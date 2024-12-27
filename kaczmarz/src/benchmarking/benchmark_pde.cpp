@@ -365,8 +365,8 @@ double benchmark_banded_cuda(unsigned int numIterations, unsigned int problem_i,
 
     const auto start = std::chrono::high_resolution_clock::now();
 
-    const auto status =
-        kaczmarz_banded_cuda(banded_lse, x_kaczmarz, MAX_IT, PRECISION);
+    const auto status = CUDAGrouping1BandedSolver(16, 125).solve(
+        banded_lse, x_kaczmarz, 1000, MAX_IT, PRECISION);
 
     const auto end = std::chrono::high_resolution_clock::now();
 
@@ -401,8 +401,8 @@ double benchmark_banded_cpu(unsigned int numIterations, unsigned int problem_i,
     Vector x_kaczmarz = Vector::Zero(lse.column_count());
     const auto start = std::chrono::high_resolution_clock::now();
 
-    const auto status = kaczmarz_banded_2_cpu_threads(banded_lse, x_kaczmarz,
-                                                      MAX_IT, PRECISION);
+    const auto status = OpenMPGrouping1IBandedSolver(2).solve(
+        banded_lse, x_kaczmarz, 1000, MAX_IT, PRECISION);
 
     const auto end = std::chrono::high_resolution_clock::now();
 
@@ -440,8 +440,8 @@ double benchmark_banded_serial(unsigned int numIterations,
     Vector x_kaczmarz = Vector::Zero(lse.column_count());
     const auto start = std::chrono::high_resolution_clock::now();
 
-    const auto status =
-        kaczmarz_banded_serial(banded_lse, x_kaczmarz, MAX_IT, PRECISION);
+    const auto status = SerialInterleavedBandedSolver().solve(
+        banded_lse, x_kaczmarz, 1000, MAX_IT, PRECISION);
 
     const auto end = std::chrono::high_resolution_clock::now();
 

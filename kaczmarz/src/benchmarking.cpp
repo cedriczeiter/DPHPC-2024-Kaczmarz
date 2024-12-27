@@ -170,8 +170,8 @@ double benchmark_banded_2_cpu_threads_solver_sparse(const int dim,
     std::vector<int> iterations;
     const auto start = std::chrono::high_resolution_clock::now();
 
-    const auto status =
-        kaczmarz_banded_2_cpu_threads(lse, x_kaczmarz, MAX_IT, PRECISION);
+    const auto status = OpenMPGrouping1IBandedSolver(2).solve(
+        lse, x_kaczmarz, 1000, MAX_IT, PRECISION);
 
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
@@ -205,8 +205,8 @@ double benchmark_banded_cuda_solver_sparse(const int dim,
     std::vector<int> iterations;
     const auto start = std::chrono::high_resolution_clock::now();
 
-    const auto status =
-        kaczmarz_banded_cuda(lse, x_kaczmarz, MAX_IT, PRECISION);
+    const auto status = SerialInterleavedBandedSolver().solve(
+        lse, x_kaczmarz, 1000, MAX_IT, PRECISION);
 
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
@@ -268,7 +268,8 @@ double benchmark_sparsesolver_sparse(const int dim, const int numIterations,
     // sparse_kaczmarz(lse, x_kaczmarz_sparse, MAX_IT, PRECISION,
     // times_residuals,
     //                 residuals, iterations, 1000);
-    kaczmarz_banded_serial(lse, x_kaczmarz_sparse, MAX_IT, PRECISION);
+    SerialInterleavedBandedSolver().solve(lse, x_kaczmarz_sparse, 1000, MAX_IT,
+                                          PRECISION);
 
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
