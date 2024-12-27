@@ -60,23 +60,41 @@ int main() {
       std::shuffle(algorithms_names.begin(), algorithms_names.end(), g);
       unsigned int num_it = 0;
 
-      // Slowly decrease the number of iterations
+      // Slowly decrease the number of iterations. Goal is to not use more than
+      // 10 minutes for each of the lower complexities. To solve each of the
+      // problems for a complexity this should take accross all methods around
+      // 60 minutes (1 hour). So three problems will take around 3 hours per
+      // complexity. This will hold up to around complexity 6, so 18 hours to
+      // get to the end of complexity 6. Then complexity 7 will take around 33
+      // minutes per method, so around 180 minutes per problem, so a total of
+      // around 9 hours. Complexity 8 will take around 166 minutes per method,
+      // so around 1000 minutes per problem = 16 hours. So around 48 hours to
+      // get to the end of complexity 8. (very pessimistic estimate)
       switch (complexity) {
+        // For the first four complexities, we use 200 iterations, because the
+        // worst algorithm takes around 0.1 seconds. 6000*0.1 = 600 seconds = 10
+        // minutes
         case 1:
         case 2:
         case 3:
         case 4:
-          num_it = 200;
+          num_it = 6000;
           break;
+        // For the next complexities, we use 60 iterations, because the worst
+        // algorithm takes around 10 seconds. 60*10 = 600 seconds = 10 minutes
         case 5:
-          num_it = 100;
-          break;
         case 6:
-          num_it = 50;
+          num_it = 60;
           break;
+          // For the the next complexity, we use 20 iterations, because the
+          // worst algorithm takes around 100 seconds 20*100 = 2000 seconds = 33
+          // minutes
         case 7:
           num_it = 20;
           break;
+          // For the last complexity, we use 10 iterations, because the worst
+          // algorithm takes around 1000 seconds 10*1000 = 10000 seconds = 166
+          // minutes
         case 8:
           num_it = 10;
           break;
