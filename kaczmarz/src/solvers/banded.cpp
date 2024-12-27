@@ -105,18 +105,18 @@ inline void row_update(UnpackedBandedSystem& sys, const unsigned row_idx) {
       });
 }
 
+void CPUBandedSolver::setup(UnpackedBandedSystem *const sys) {
+  this->sys = sys;
+}
+
+void CPUBandedSolver::cleanup() {
+  this->sys = nullptr;
+}
+
 unsigned OpenMPGrouping1IBandedSolver::pad_dimension(const unsigned dim, const unsigned bandwidth) {
   const unsigned rows_per_group =
       std::max(2 * bandwidth, ceil_div(dim, 2 * this->thread_count));
   return rows_per_group * 2 * this->thread_count;
-}
-
-void OpenMPGrouping1IBandedSolver::setup(UnpackedBandedSystem *const sys) {
-  this->sys = sys;
-}
-
-void OpenMPGrouping1IBandedSolver::cleanup() {
-  this->sys = nullptr;
 }
 
 void OpenMPGrouping1IBandedSolver::iterate(const unsigned iterations) {
@@ -155,14 +155,6 @@ unsigned OpenMPGrouping2IBandedSolver::pad_dimension(const unsigned dim, const u
   return rows_per_group * group_count;
 }
 
-void OpenMPGrouping2IBandedSolver::setup(UnpackedBandedSystem *const sys) {
-  this->sys = sys;
-}
-
-void OpenMPGrouping2IBandedSolver::cleanup() {
-  this->sys = nullptr;
-}
-
 void OpenMPGrouping2IBandedSolver::iterate(const unsigned iterations) {
   const unsigned dim = sys->dim;
   const unsigned bandwidth = sys->bandwidth;
@@ -198,14 +190,6 @@ unsigned SerialNaiveBandedSolver::pad_dimension(const unsigned dim, const unsign
   return dim;
 }
 
-void SerialNaiveBandedSolver::setup(UnpackedBandedSystem *const sys) {
-  this->sys = sys;
-}
-
-void SerialNaiveBandedSolver::cleanup() {
-  this->sys = nullptr;
-}
-
 void SerialNaiveBandedSolver::iterate(const unsigned iterations) {
   const unsigned dim = sys->dim;
 
@@ -218,14 +202,6 @@ void SerialNaiveBandedSolver::iterate(const unsigned iterations) {
 
 unsigned SerialInterleavedBandedSolver::pad_dimension(const unsigned dim, const unsigned /* bandwidth */) {
   return dim;
-}
-
-void SerialInterleavedBandedSolver::setup(UnpackedBandedSystem *const sys) {
-  this->sys = sys;
-}
-
-void SerialInterleavedBandedSolver::cleanup() {
-  this->sys = nullptr;
 }
 
 void SerialInterleavedBandedSolver::iterate(const unsigned iterations) {

@@ -17,9 +17,18 @@ class BandedSolver {
     void run_iterations(const BandedLinearSystem& lse, Vector& x, const unsigned iterations);
 };
 
-class OpenMPGrouping1IBandedSolver : public BandedSolver {
-  private:
+class CPUBandedSolver : public BandedSolver {
+  protected:
     UnpackedBandedSystem* sys = nullptr;
+
+  public:
+    virtual void setup(UnpackedBandedSystem* sys);
+
+    virtual void cleanup();
+};
+
+class OpenMPGrouping1IBandedSolver : public CPUBandedSolver {
+  private:
     const unsigned thread_count;
 
   public:
@@ -28,16 +37,11 @@ class OpenMPGrouping1IBandedSolver : public BandedSolver {
 
     virtual unsigned pad_dimension(unsigned dim, unsigned bandwidth);
 
-    virtual void setup(UnpackedBandedSystem* sys);
-
-    virtual void cleanup();
-
     virtual void iterate(unsigned iterations);
 };
 
-class OpenMPGrouping2IBandedSolver : public BandedSolver {
+class OpenMPGrouping2IBandedSolver : public CPUBandedSolver {
   private:
-    UnpackedBandedSystem* sys = nullptr;
     const unsigned thread_count;
 
   public:
@@ -46,43 +50,25 @@ class OpenMPGrouping2IBandedSolver : public BandedSolver {
 
     virtual unsigned pad_dimension(unsigned dim, unsigned bandwidth);
 
-    virtual void setup(UnpackedBandedSystem* sys);
-
-    virtual void cleanup();
-
     virtual void iterate(unsigned iterations);
 };
 
-class SerialNaiveBandedSolver : public BandedSolver {
-  private:
-    UnpackedBandedSystem* sys = nullptr;
-
+class SerialNaiveBandedSolver : public CPUBandedSolver {
   public:
     SerialNaiveBandedSolver() {
     }
 
     virtual unsigned pad_dimension(unsigned dim, unsigned bandwidth);
 
-    virtual void setup(UnpackedBandedSystem* sys);
-
-    virtual void cleanup();
-
     virtual void iterate(unsigned iterations);
 };
 
-class SerialInterleavedBandedSolver : public BandedSolver {
-  private:
-    UnpackedBandedSystem* sys = nullptr;
-
+class SerialInterleavedBandedSolver : public CPUBandedSolver {
   public:
     SerialInterleavedBandedSolver() {
     }
 
     virtual unsigned pad_dimension(unsigned dim, unsigned bandwidth);
-
-    virtual void setup(UnpackedBandedSystem* sys);
-
-    virtual void cleanup();
 
     virtual void iterate(unsigned iterations);
 };
