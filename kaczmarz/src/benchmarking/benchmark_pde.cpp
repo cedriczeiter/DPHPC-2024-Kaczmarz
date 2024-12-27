@@ -170,7 +170,7 @@ double benchmark_carpcg(unsigned int numIterations, unsigned int problem_i,
     }
     add_elapsed_time_to_vec(times, start, end);
 
-    inform_user_about_kaczmarz_status(status);
+    // inform_user_about_kaczmarz_status(status);
   }
   return calc_avgtime(times);
 }
