@@ -60,41 +60,49 @@ int main() {
       std::shuffle(algorithms_names.begin(), algorithms_names.end(), g);
       unsigned int num_it = 0;
 
-      // Slowly decrease the number of iterations. Goal is to not use more than
-      // 10 minutes for each of the lower complexities. To solve each of the
-      // problems for a complexity this should take accross all methods around
-      // 60 minutes (1 hour). So three problems will take around 3 hours per
-      // complexity. This will hold up to around complexity 6, so 18 hours to
-      // get to the end of complexity 6. Then complexity 7 will take around 33
-      // minutes per method, so around 180 minutes per problem, so a total of
-      // around 9 hours. Complexity 8 will take around 166 minutes per method,
-      // so around 1000 minutes per problem = 16 hours. So around 48 hours to
-      // get to the end of complexity 8. (very pessimistic estimate)
+      // Slowly decrease the number of iterations (very pessimistic estimates)
+
       switch (complexity) {
-        // For the first four complexities, we use 200 iterations, because the
-        // worst algorithm takes around 0.1 seconds. 6000*0.1 = 600 seconds = 10
-        // minutes
+        // For the first four complexities, we use 1000 iterations, because the
+        // worst algorithm takes around 0.1 seconds. 1000*0.1 = 100 seconds
+        // = 1.5 minutes
+
+        // So up to the end of complexity 4 for 3 problems on around 6
+        // methods, 1.5*6*3*4 = 324 minutes = 5.4 hours
         case 1:
         case 2:
         case 3:
         case 4:
-          num_it = 6000;
+          num_it = 1000;
           break;
         // For the next complexities, we use 60 iterations, because the worst
         // algorithm takes around 10 seconds. 60*10 = 600 seconds = 10 minutes
+
+        // Running complexity 5&6 on 6 methods and 3 problems, 10*6*3*2 = 360
+        // minutes = 6 hours
+
+        // So to the end of complexity 6, 5.4 + 6 = 11.4 hours
         case 5:
         case 6:
           num_it = 60;
           break;
           // For the the next complexity, we use 20 iterations, because the
           // worst algorithm takes around 100 seconds 20*100 = 2000 seconds = 33
-          // minutes
+          // minutes.
+
+          // Running complexity 7 on 6 methods and 3 problems, 33*6*3 = 594
+          // minutes = 9.9 hours
+
+          // So to the end of complexity 7, 11.4 + 9.9 = 21.3 hours
         case 7:
           num_it = 20;
           break;
           // For the last complexity, we use 10 iterations, because the worst
           // algorithm takes around 1000 seconds 10*1000 = 10000 seconds = 166
           // minutes
+
+          // Running complexity 8 on 6 methods and 3 problems, 166*6*3 = 2988
+          // minutes = 49.8 hours
         case 8:
           num_it = 10;
           break;
