@@ -5,6 +5,11 @@
 
 #include "omp.h"
 
+/**
+ * Converts a `BandedLinearSystem` and an initial guess for `x` to an
+ * `UnpackedBandedSystem`. Pads the resulting LSE to have dimension
+ * `target_dim`.
+ */
 UnpackedBandedSystem unpack_banded_system(const BandedLinearSystem& lse,
                                           const Vector& x,
                                           const unsigned target_dim) {

@@ -3,6 +3,10 @@
 
 #include "banded.hpp"
 
+/**
+ * A common subclass for solvers that use the GPU/CUDA.
+ * They share the same setup, flushing, and cleanup procedures.
+ */
 class GPUBandedSolver : public BandedSolver {
  protected:
   UnpackedBandedSystem *sys = nullptr;
@@ -19,6 +23,10 @@ class GPUBandedSolver : public BandedSolver {
   virtual void cleanup();
 };
 
+/**
+ * The "Grouping1" refers to how the rows are scheduled/grouped together for
+ * parallel processing.
+ */
 class CUDAGrouping1BandedSolver : public GPUBandedSolver {
  private:
   const unsigned block_count;
@@ -34,6 +42,10 @@ class CUDAGrouping1BandedSolver : public GPUBandedSolver {
   virtual void iterate(unsigned iterations);
 };
 
+/**
+ * The "Grouping2" refers to how the rows are scheduled/grouped together for
+ * parallel processing.
+ */
 class CUDAGrouping2BandedSolver : public GPUBandedSolver {
  private:
   const unsigned block_count;
