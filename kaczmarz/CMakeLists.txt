@@ -10,7 +10,9 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 20)
 
 # Enable all warnings and extra warnings
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -pthread -fopenmp -g")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -fopenmp -pthread")
+
+set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -lcusparse")
 
 #################################
 ## Download dependencies
@@ -50,14 +52,20 @@ set(NON_CUDA_SOURCES
   ${SOURCE_DIR}/solvers/basic.cpp
   ${SOURCE_DIR}/solvers/common.cpp
   ${SOURCE_DIR}/solvers/random.cpp
+  ${SOURCE_DIR}/solvers/sparse_cg.cpp
 )
 
 # All files that have something that needs cuda inside in here
 set(CUDA_SOURCES
   ${SOURCE_DIR}/solvers/banded.cu
+  ${SOURCE_DIR}/solvers/basic.cpp
   ${SOURCE_DIR}/solvers/banded.cpp
   ${SOURCE_DIR}/solvers/asynchronous.cu
   ${SOURCE_DIR}/solvers/asynchronous.cpp
+  ${SOURCE_DIR}/solvers/carp.cu
+  ${SOURCE_DIR}/solvers/carp.cpp
+  ${SOURCE_DIR}/solvers/carp_utils.cu
+  ${SOURCE_DIR}/solvers/cusolver.cpp
 )
 
 ################################
@@ -81,8 +89,8 @@ add_library(non_cuda_library STATIC ${NON_CUDA_SOURCES})
 target_link_libraries(non_cuda_library PRIVATE Eigen3::Eigen)
 
 # Always build the `testing` target (only with non-CUDA library)
-add_executable(testing ${SOURCE_DIR}/testing.cpp)
-target_link_libraries(testing PRIVATE non_cuda_library linear_systems gtest)
+#add_executable(testing ${SOURCE_DIR}/testing.cpp)
+#target_link_libraries(testing PRIVATE non_cuda_library linear_systems gtest)
 
 ################################
 ## Now stuff that needs Cuda follows
@@ -98,23 +106,36 @@ if (CMAKE_CUDA_COMPILER)
   endif()
   # Allow many relevant CUDA architectures
   set(CUDA_ARCHITECTURES 60 61 70 75 80 86)
+
+  include_directories(${CUDA_INCLUDE_DIRS})
   
   # Create CUDA library
   add_library(cuda_library STATIC ${CUDA_SOURCES})
   set_target_properties(cuda_library PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
-  target_link_libraries(cuda_library PRIVATE Eigen3::Eigen)
+  target_link_libraries(cuda_library PRIVATE Eigen3::Eigen ${CUDA_LIBRARIES} cusparse cusolver)
 
   # CUDA-enabled executables
-  add_executable(benchmark_convergence ${SOURCE_DIR}/benchmarking_convergence.cpp)
+  add_executable(benchmark_convergence ${SOURCE_DIR}/benchmarking/benchmark_convergence.cpp)
   add_executable(benchmark_executable ${SOURCE_DIR}/benchmarking.cpp)
   add_executable(kaczmarz_example ${SOURCE_DIR}/kaczmarz_example.cpp)
-  add_executable(benchmark_one ${SOURCE_DIR}/benchmark_one.cpp)
+  add_executable(benchmark_single_run ${SOURCE_DIR}/benchmarking/benchmark_single_run.cpp)
+  add_executable(benchmark_carp_multiple_run ${SOURCE_DIR}/benchmarking/benchmark_carp_multiple_run.cpp)
+  add_executable(relaxation_parameter_carp_single_run ${SOURCE_DIR}/benchmarking/relaxation_parameter_carp_single_run.cpp)
+  add_executable(relaxation_parameter_carp_multiple_run ${SOURCE_DIR}/benchmarking/relaxation_parameter_carp_multiple_run.cpp)
+  add_executable(benchmark_pde ${SOURCE_DIR}/benchmarking/benchmark_pde.cpp)
+  add_executable(show_convergence ${SOURCE_DIR}/show_convergence.cpp)
 
   # Link the non-CUDA and CUDA libraries to the executables
   target_link_libraries(benchmark_convergence PRIVATE non_cuda_library cuda_library linear_systems)
   target_link_libraries(benchmark_executable PRIVATE non_cuda_library cuda_library linear_systems)
   target_link_libraries(kaczmarz_example PRIVATE non_cuda_library cuda_library linear_systems)
-  target_link_libraries(benchmark_one PRIVATE non_cuda_library cuda_library linear_systems)
+  target_link_libraries(benchmark_single_run PRIVATE non_cuda_library cuda_library linear_systems)
+  target_link_libraries(benchmark_carp_multiple_run PRIVATE non_cuda_library cuda_library linear_systems)
+  target_link_libraries(relaxation_parameter_carp_single_run PRIVATE non_cuda_library cuda_library linear_systems)
+  target_link_libraries(benchmark_pde PRIVATE non_cuda_library cuda_library linear_systems)
+  target_link_libraries(show_convergence PRIVATE non_cuda_library cuda_library linear_systems)
+  target_link_libraries(relaxation_parameter_carp_multiple_run PRIVATE non_cuda_library cuda_library linear_systems)
+
 
 else()
   message(STATUS "No CUDA compiler found, skipping CUDA targets")
@@ -125,9 +146,9 @@ endif()
 ################################
 
 # Configure files
-CONFIGURE_FILE(${SOURCE_DIR}/plot.py ${PATH_TO_BUILD} plot.py COPYONLY)
-CONFIGURE_FILE(${SOURCE_DIR}/plot_convergence.py ${PATH_TO_BUILD} plot_convergence.py COPYONLY)
-CONFIGURE_FILE(${SOURCE_DIR}/plot_dense.py ${PATH_TO_BUILD} plot_dense.py COPYONLY)
-CONFIGURE_FILE(${SOURCE_DIR}/plot_sparse.py ${PATH_TO_BUILD} plot_sparse.py COPYONLY)
-
-
+CONFIGURE_FILE(${SOURCE_DIR}/plotting/plot.py ${PATH_TO_BUILD} plot.py COPYONLY)
+CONFIGURE_FILE(${SOURCE_DIR}/plotting/plot_convergence.py ${PATH_TO_BUILD} plot_convergence.py COPYONLY)
+CONFIGURE_FILE(${SOURCE_DIR}/plotting/plot_dense.py ${PATH_TO_BUILD} plot_dense.py COPYONLY)
+CONFIGURE_FILE(${SOURCE_DIR}/plotting/plot_sparse.py ${PATH_TO_BUILD} plot_sparse.py COPYONLY)
+CONFIGURE_FILE(${SOURCE_DIR}/plotting/plot_sparse_pde.py ${PATH_TO_BUILD} plot_sparse_pde.py COPYONLY)
+CONFIGURE_FILE(${SOURCE_DIR}/plotting/plot_convergence_new.py ${PATH_TO_BUILD} plot_convergence_new.py COPYONLY)

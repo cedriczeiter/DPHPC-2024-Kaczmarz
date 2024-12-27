@@ -65,6 +65,20 @@ class SparseLinearSystem {
   Vector eigen_solve() const;
 
   /**
+   * @brief Solves the sparse linear system using Eigen's iterative method
+   * BiCGSTAB
+   * @return Solution vector of the linear system of type Eigen::VectorXd.
+   */
+  Vector eigen_BiCGSTAB() const;
+
+  /**
+   * @brief Solves the sparse linear system using Eigen's iterative method
+   * Conjugate Gradient
+   * @return Solution vector of the linear system of type Eigen::VectorXd.
+   */
+  Vector eigen_CG() const;
+
+  /**
    * @brief Generates a random banded sparse linear system with full-rank.
    * @param rng Random number generator.
    * @param dim Dimension of the square matrix to generate.
@@ -138,11 +152,11 @@ class BandedLinearSystem {
    */
   Vector _b;
 
+ public:
   BandedLinearSystem(const unsigned dim, const unsigned bandwidth,
                      const std::vector<double> &A_data, const Vector b)
       : _dim(dim), _bandwidth(bandwidth), _A_data(A_data), _b(b) {}
 
- public:
   /**
    * Returns the set bandwidth of the banded matrix that is coefficient matrix
    * of this LSE.

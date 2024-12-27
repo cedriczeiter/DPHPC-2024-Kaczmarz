@@ -1,8 +1,9 @@
 {
-    "dimension": 2,
-    "problem": 1,
-    "selector": 0,
-    "scale": 1,
-    "degree": 2,
-    "refinement": 9
-}
+
+            "dimension": 2,
+            "problem": 3,
+            "selector": 0,
+            "scale": 1,
+            "degree": 3,
+            "refinement": 6
+        }
