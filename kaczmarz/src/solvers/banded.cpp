@@ -82,8 +82,10 @@ void write_back_solution(const UnpackedBandedSystem& sys, Vector& x) {
   std::copy_n(sys.x_padded.begin() + sys.bandwidth, x.size(), x.begin());
 }
 
-void BandedSolver::run_iterations(const BandedLinearSystem& lse, Vector& x, const unsigned iterations) {
-  UnpackedBandedSystem sys = unpack_banded_system(lse, x, this->pad_dimension(lse.dim(), lse.bandwidth()));
+void BandedSolver::run_iterations(const BandedLinearSystem& lse, Vector& x,
+                                  const unsigned iterations) {
+  UnpackedBandedSystem sys = unpack_banded_system(
+      lse, x, this->pad_dimension(lse.dim(), lse.bandwidth()));
   this->setup(&sys);
   this->iterate(iterations);
   this->flush_x();
@@ -93,28 +95,25 @@ void BandedSolver::run_iterations(const BandedLinearSystem& lse, Vector& x, cons
 
 inline void row_update(UnpackedBandedSystem& sys, const unsigned row_idx) {
   const auto x_iter =
-    sys.x_padded.begin() + sys.bandwidth + row_idx - sys.bandwidth;
-  const auto row_iter =
-    sys.A_data.begin() + (2 * sys.bandwidth + 1) * row_idx;
+      sys.x_padded.begin() + sys.bandwidth + row_idx - sys.bandwidth;
+  const auto row_iter = sys.A_data.begin() + (2 * sys.bandwidth + 1) * row_idx;
   const double dot = std::inner_product(
       row_iter, row_iter + 2 * sys.bandwidth + 1, x_iter, 0.0);
-  const double update_coeff =
-    (sys.b[row_idx] - dot) / sys.sq_norms[row_idx];
+  const double update_coeff = (sys.b[row_idx] - dot) / sys.sq_norms[row_idx];
   std::transform(x_iter, x_iter + 2 * sys.bandwidth + 1, row_iter, x_iter,
-      [update_coeff](const double xi, const double ai) {
-      return xi + update_coeff * ai;
-      });
+                 [update_coeff](const double xi, const double ai) {
+                   return xi + update_coeff * ai;
+                 });
 }
 
-void CPUBandedSolver::setup(UnpackedBandedSystem *const sys) {
+void CPUBandedSolver::setup(UnpackedBandedSystem* const sys) {
   this->sys = sys;
 }
 
-void CPUBandedSolver::cleanup() {
-  this->sys = nullptr;
-}
+void CPUBandedSolver::cleanup() { this->sys = nullptr; }
 
-unsigned OpenMPGrouping1IBandedSolver::pad_dimension(const unsigned dim, const unsigned bandwidth) {
+unsigned OpenMPGrouping1IBandedSolver::pad_dimension(const unsigned dim,
+                                                     const unsigned bandwidth) {
   const unsigned rows_per_group =
       std::max(2 * bandwidth, ceil_div(dim, 2 * this->thread_count));
   return rows_per_group * 2 * this->thread_count;
@@ -150,7 +149,8 @@ void OpenMPGrouping1IBandedSolver::iterate(const unsigned iterations) {
   }
 }
 
-unsigned OpenMPGrouping2IBandedSolver::pad_dimension(const unsigned dim, const unsigned bandwidth) {
+unsigned OpenMPGrouping2IBandedSolver::pad_dimension(const unsigned dim,
+                                                     const unsigned bandwidth) {
   const unsigned group_count = 2 * bandwidth + 1;
   const unsigned rows_per_group = ceil_div(dim, group_count);
   return rows_per_group * group_count;
@@ -173,8 +173,7 @@ void OpenMPGrouping2IBandedSolver::iterate(const unsigned iterations) {
     const unsigned row_in_group_to =
         (tid + 1) * rows_per_thread + std::min(tid + 1, extra_rows);
     for (unsigned iter = 0; iter < iterations; iter++) {
-      for (unsigned group_idx = 0; group_idx < 2 * bandwidth + 1;
-           group_idx++) {
+      for (unsigned group_idx = 0; group_idx < 2 * bandwidth + 1; group_idx++) {
         for (unsigned row_in_group_idx = row_in_group_from;
              row_in_group_idx < row_in_group_to; row_in_group_idx++) {
           const unsigned row_idx =
@@ -187,7 +186,8 @@ void OpenMPGrouping2IBandedSolver::iterate(const unsigned iterations) {
   }
 }
 
-unsigned SerialNaiveBandedSolver::pad_dimension(const unsigned dim, const unsigned /* bandwidth */) {
+unsigned SerialNaiveBandedSolver::pad_dimension(
+    const unsigned dim, const unsigned /* bandwidth */) {
   return dim;
 }
 
@@ -201,7 +201,8 @@ void SerialNaiveBandedSolver::iterate(const unsigned iterations) {
   }
 }
 
-unsigned SerialInterleavedBandedSolver::pad_dimension(const unsigned dim, const unsigned /* bandwidth */) {
+unsigned SerialInterleavedBandedSolver::pad_dimension(
+    const unsigned dim, const unsigned /* bandwidth */) {
   return dim;
 }
 
@@ -210,8 +211,7 @@ void SerialInterleavedBandedSolver::iterate(const unsigned iterations) {
   const unsigned bandwidth = sys->bandwidth;
 
   for (unsigned iter = 0; iter < iterations; iter++) {
-    for (unsigned group_idx = 0; group_idx < 2 * bandwidth + 1;
-         group_idx++) {
+    for (unsigned group_idx = 0; group_idx < 2 * bandwidth + 1; group_idx++) {
       for (unsigned row_idx = group_idx; row_idx < dim;
            row_idx += 2 * bandwidth + 1) {
         row_update(*this->sys, row_idx);

@@ -25,7 +25,6 @@ void GPUBandedSolver::setup(UnpackedBandedSystem *const sys) {
   this->b_gpu = gpu_malloc_and_copy(sys->b);
 }
 
-
 void GPUBandedSolver::flush_x() {
   const size_t byte_count = this->sys->x_padded.size() * sizeof(double);
   cudaMemcpy(&this->sys->x_padded[0], x_gpu, byte_count,
@@ -155,10 +154,10 @@ __global__ void kaczmarz_banded_grouping2(double *x, double *A_data,
   }
 }
 
-unsigned CUDAGrouping1BandedSolver::pad_dimension(const unsigned dim, const unsigned bandwidth) {
+unsigned CUDAGrouping1BandedSolver::pad_dimension(const unsigned dim,
+                                                  const unsigned bandwidth) {
   const unsigned thread_count = block_count * threads_per_block;
-  return
-      std::max(dim, bandwidth * 2 * 2 * thread_count);
+  return std::max(dim, bandwidth * 2 * 2 * thread_count);
 }
 
 void CUDAGrouping1BandedSolver::iterate(const unsigned iterations) {
@@ -193,7 +192,8 @@ void CUDAGrouping1BandedSolver::iterate(const unsigned iterations) {
   cudaDeviceSynchronize();
 }
 
-unsigned CUDAGrouping2BandedSolver::pad_dimension(const unsigned dim, const unsigned bandwidth) {
+unsigned CUDAGrouping2BandedSolver::pad_dimension(const unsigned dim,
+                                                  const unsigned bandwidth) {
   const unsigned group_count = 2 * bandwidth + 1;
   const unsigned rows_per_group = ceil_div(dim, group_count);
   return rows_per_group * group_count;
