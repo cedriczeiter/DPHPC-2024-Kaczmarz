@@ -31,7 +31,7 @@ struct UnpackedBandedSystem {
  * non-virtual methods, which call the virtual ones.
  */
 class BandedSolver {
- public:
+ private:
   /**
    * The concrete solver implementation might work only for specific dimensions
    * of the LSE (something like: it must a multiple of the number of threads the
@@ -65,6 +65,7 @@ class BandedSolver {
    */
   virtual void iterate(unsigned iterations) = 0;
 
+ public:
   /**
    * Runs a fixed number of Kaczmarz iterations (Kaczmarz sweeps)
    */
@@ -92,12 +93,12 @@ class CPUBandedSolver : public BandedSolver {
  protected:
   UnpackedBandedSystem* sys = nullptr;
 
- public:
-  virtual void setup(UnpackedBandedSystem* sys);
+ private:
+  virtual void setup(UnpackedBandedSystem* sys) override;
 
-  virtual void flush_x() {}
+  virtual void flush_x() override {}
 
-  virtual void cleanup();
+  virtual void cleanup() override;
 };
 
 /**
@@ -108,13 +109,13 @@ class OpenMPGrouping1BandedSolver : public CPUBandedSolver {
  private:
   const unsigned thread_count;
 
+  virtual unsigned pad_dimension(unsigned dim, unsigned bandwidth) override;
+
+  virtual void iterate(unsigned iterations) override;
+
  public:
   OpenMPGrouping1BandedSolver(const unsigned thread_count)
       : thread_count(thread_count) {}
-
-  virtual unsigned pad_dimension(unsigned dim, unsigned bandwidth);
-
-  virtual void iterate(unsigned iterations);
 };
 
 /**
@@ -125,13 +126,13 @@ class OpenMPGrouping2BandedSolver : public CPUBandedSolver {
  private:
   const unsigned thread_count;
 
+  virtual unsigned pad_dimension(unsigned dim, unsigned bandwidth) override;
+
+  virtual void iterate(unsigned iterations) override;
+
  public:
   OpenMPGrouping2BandedSolver(const unsigned thread_count)
       : thread_count(thread_count) {}
-
-  virtual unsigned pad_dimension(unsigned dim, unsigned bandwidth);
-
-  virtual void iterate(unsigned iterations);
 };
 
 /**
@@ -139,12 +140,13 @@ class OpenMPGrouping2BandedSolver : public CPUBandedSolver {
  * sweep. In this case, it is just all rows top to bottom.
  */
 class SerialNaiveBandedSolver : public CPUBandedSolver {
+ private:
+  virtual unsigned pad_dimension(unsigned dim, unsigned bandwidth) override;
+
+  virtual void iterate(unsigned iterations) override;
+
  public:
   SerialNaiveBandedSolver() {}
-
-  virtual unsigned pad_dimension(unsigned dim, unsigned bandwidth);
-
-  virtual void iterate(unsigned iterations);
 };
 
 /**
@@ -155,12 +157,13 @@ class SerialNaiveBandedSolver : public CPUBandedSolver {
  * performance than the naive order.
  */
 class SerialInterleavedBandedSolver : public CPUBandedSolver {
+ private:
+  virtual unsigned pad_dimension(unsigned dim, unsigned bandwidth) override;
+
+  virtual void iterate(unsigned iterations) override;
+
  public:
   SerialInterleavedBandedSolver() {}
-
-  virtual unsigned pad_dimension(unsigned dim, unsigned bandwidth);
-
-  virtual void iterate(unsigned iterations);
 };
 
 #endif  // BANDED_HPP

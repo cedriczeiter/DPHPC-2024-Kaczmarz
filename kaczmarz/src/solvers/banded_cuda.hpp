@@ -15,7 +15,7 @@ class GPUBandedSolver : public BandedSolver {
   double *sq_norms_gpu = nullptr;
   double *b_gpu = nullptr;
 
- public:
+ private:
   virtual void setup(UnpackedBandedSystem *sys);
 
   virtual void flush_x();
@@ -32,14 +32,14 @@ class CUDAGrouping1BandedSolver : public GPUBandedSolver {
   const unsigned block_count;
   const unsigned threads_per_block;
 
+  virtual unsigned pad_dimension(unsigned dim, unsigned bandwidth);
+
+  virtual void iterate(unsigned iterations);
+
  public:
   CUDAGrouping1BandedSolver(const unsigned block_count,
                             const unsigned threads_per_block)
       : block_count(block_count), threads_per_block(threads_per_block) {}
-
-  virtual unsigned pad_dimension(unsigned dim, unsigned bandwidth);
-
-  virtual void iterate(unsigned iterations);
 };
 
 /**
@@ -51,14 +51,14 @@ class CUDAGrouping2BandedSolver : public GPUBandedSolver {
   const unsigned block_count;
   const unsigned threads_per_block;
 
+  virtual unsigned pad_dimension(unsigned dim, unsigned bandwidth);
+
+  virtual void iterate(unsigned iterations);
+
  public:
   CUDAGrouping2BandedSolver(const unsigned block_count,
                             const unsigned threads_per_block)
       : block_count(block_count), threads_per_block(threads_per_block) {}
-
-  virtual unsigned pad_dimension(unsigned dim, unsigned bandwidth);
-
-  virtual void iterate(unsigned iterations);
 };
 
 #endif  // BANDED_CUDA_HPP
