@@ -93,6 +93,31 @@ void BandedSolver::run_iterations(const BandedLinearSystem& lse, Vector& x,
   this->cleanup();
 }
 
+KaczmarzSolverStatus BandedSolver::solve(const BandedLinearSystem& lse,
+                                         Vector& x,
+                                         const unsigned iterations_step,
+                                         const unsigned max_iterations,
+                                         const double abs_tolerance) {
+  UnpackedBandedSystem sys = unpack_banded_system(
+      lse, x, this->pad_dimension(lse.dim(), lse.bandwidth()));
+  const SparseLinearSystem sparse_lse = lse.to_sparse_system();
+  this->setup(&sys);
+  unsigned iter = 0;
+  while (iter < max_iterations) {
+    this->iterate(iterations_step);
+    iter += iterations_step;
+    this->flush_x();
+    write_back_solution(sys, x);
+    const Vector r = sparse_lse.b() - sparse_lse.A() * x;
+    if (r.lpNorm<2>() < abs_tolerance) {
+      this->cleanup();
+      return KaczmarzSolverStatus::Converged;
+    }
+  }
+  this->cleanup();
+  return KaczmarzSolverStatus::OutOfIterations;
+}
+
 inline void row_update(UnpackedBandedSystem& sys, const unsigned row_idx) {
   const auto x_iter =
       sys.x_padded.begin() + sys.bandwidth + row_idx - sys.bandwidth;

@@ -16,8 +16,13 @@ class BandedSolver {
   virtual void cleanup() = 0;
 
   virtual void iterate(unsigned iterations) = 0;
+
   void run_iterations(const BandedLinearSystem& lse, Vector& x,
-                      const unsigned iterations);
+                      unsigned iterations);
+
+  KaczmarzSolverStatus solve(const BandedLinearSystem& lse, Vector& x,
+                             unsigned iterations_step, unsigned max_iterations,
+                             double abs_tolerance);
 };
 
 class CPUBandedSolver : public BandedSolver {
