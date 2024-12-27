@@ -7,7 +7,7 @@
 #include "omp.h"
 #include "unpacked_banded_system.hpp"
 
-unsigned ceil_div(const unsigned a, const unsigned b) {
+static unsigned ceil_div(const unsigned a, const unsigned b) {
   assert(b != 0);
   if (a == 0) {
     return 0;
@@ -86,6 +86,7 @@ void BandedSolver::run_iterations(const BandedLinearSystem& lse, Vector& x, cons
   UnpackedBandedSystem sys = unpack_banded_system(lse, x, this->pad_dimension(lse.dim(), lse.bandwidth()));
   this->setup(&sys);
   this->iterate(iterations);
+  this->flush_x();
   write_back_solution(sys, x);
   this->cleanup();
 }
@@ -217,32 +218,4 @@ void SerialInterleavedBandedSolver::iterate(const unsigned iterations) {
       }
     }
   }
-}
-
-void kaczmarz_banded_cuda_grouping1(const BandedLinearSystem& lse,
-                                    Eigen::VectorXd& x,
-                                    const unsigned iterations,
-                                    const unsigned block_count,
-                                    const unsigned threads_per_block) {
-  const unsigned thread_count = block_count * threads_per_block;
-  const unsigned dim_padded =
-      std::max(lse.dim(), lse.bandwidth() * 2 * 2 * thread_count);
-  UnpackedBandedSystem sys = unpack_banded_system(lse, x, dim_padded);
-  invoke_kaczmarz_banded_cuda_grouping1(sys, iterations, block_count,
-                                        threads_per_block);
-  write_back_solution(sys, x);
-}
-
-void kaczmarz_banded_cuda_grouping2(const BandedLinearSystem& lse,
-                                    Eigen::VectorXd& x,
-                                    const unsigned iterations,
-                                    const unsigned block_count,
-                                    const unsigned threads_per_block) {
-  const unsigned group_count = 2 * lse.bandwidth() + 1;
-  const unsigned rows_per_group = ceil_div(lse.dim(), group_count);
-  const unsigned dim_padded = rows_per_group * group_count;
-  UnpackedBandedSystem sys = unpack_banded_system(lse, x, dim_padded);
-  invoke_kaczmarz_banded_cuda_grouping2(sys, iterations, block_count,
-                                        threads_per_block);
-  write_back_solution(sys, x);
 }

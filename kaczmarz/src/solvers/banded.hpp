@@ -11,6 +11,8 @@ class BandedSolver {
 
     virtual void setup(UnpackedBandedSystem* sys) = 0;
 
+    virtual void flush_x() = 0;
+
     virtual void cleanup() = 0;
 
     virtual void iterate(unsigned iterations) = 0;
@@ -23,6 +25,8 @@ class CPUBandedSolver : public BandedSolver {
 
   public:
     virtual void setup(UnpackedBandedSystem* sys);
+
+    virtual void flush_x() {}
 
     virtual void cleanup();
 };
@@ -72,13 +76,5 @@ class SerialInterleavedBandedSolver : public CPUBandedSolver {
 
     virtual void iterate(unsigned iterations);
 };
-
-void kaczmarz_banded_cuda_grouping1(const BandedLinearSystem& lse, Vector& x,
-                                    unsigned iterations, unsigned block_count,
-                                    unsigned threads_per_block);
-
-void kaczmarz_banded_cuda_grouping2(const BandedLinearSystem& lse, Vector& x,
-                                    unsigned iterations, unsigned block_count,
-                                    unsigned threads_per_block);
 
 #endif  // BANDED_HPP
