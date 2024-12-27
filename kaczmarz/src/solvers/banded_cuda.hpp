@@ -2,7 +2,6 @@
 #define BANDED_CUDA_HPP
 
 #include "banded.hpp"
-#include "unpacked_banded_system.hpp"
 
 class GPUBandedSolver : public BandedSolver {
  protected:

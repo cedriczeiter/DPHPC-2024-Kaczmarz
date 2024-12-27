@@ -3,17 +3,7 @@
 #include <cassert>
 #include <numeric>
 
-#include "banded_cuda.hpp"
 #include "omp.h"
-#include "unpacked_banded_system.hpp"
-
-static unsigned ceil_div(const unsigned a, const unsigned b) {
-  assert(b != 0);
-  if (a == 0) {
-    return 0;
-  }
-  return (a - 1) / b + 1;
-}
 
 UnpackedBandedSystem unpack_banded_system(const BandedLinearSystem& lse,
                                           const Vector& x,

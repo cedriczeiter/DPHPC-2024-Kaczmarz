@@ -1,9 +1,19 @@
 #ifndef BANDED_HPP
 #define BANDED_HPP
 
+#include <vector>
+
 #include "common.hpp"
 #include "linear_systems/sparse.hpp"
-#include "unpacked_banded_system.hpp"
+
+struct UnpackedBandedSystem {
+  unsigned bandwidth;
+  unsigned dim;
+  std::vector<double> A_data;
+  std::vector<double> x_padded;
+  std::vector<double> sq_norms;
+  std::vector<double> b;
+};
 
 class BandedSolver {
  public:

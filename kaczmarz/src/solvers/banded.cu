@@ -4,6 +4,7 @@
 #include <cassert>
 
 #include "banded_cuda.hpp"
+#include "common.hpp"
 
 namespace cg = cooperative_groups;
 
@@ -49,14 +50,6 @@ void GPUBandedSolver::cleanup() {
     this->b_gpu = nullptr;
   }
   this->sys = nullptr;
-}
-
-static unsigned ceil_div(const unsigned a, const unsigned b) {
-  assert(b != 0);
-  if (a == 0) {
-    return 0;
-  }
-  return (a - 1) / b + 1;
 }
 
 /**
