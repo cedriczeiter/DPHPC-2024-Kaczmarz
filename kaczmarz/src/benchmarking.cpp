@@ -170,7 +170,7 @@ double benchmark_banded_2_cpu_threads_solver_sparse(const int dim,
     std::vector<int> iterations;
     const auto start = std::chrono::high_resolution_clock::now();
 
-    const auto status = OpenMPGrouping1IBandedSolver(2).solve(
+    const auto status = OpenMPGrouping1BandedSolver(2).solve(
         lse, x_kaczmarz, 1000, MAX_IT, PRECISION);
 
     auto end = std::chrono::high_resolution_clock::now();

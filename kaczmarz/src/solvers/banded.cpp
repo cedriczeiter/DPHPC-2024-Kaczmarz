@@ -137,14 +137,14 @@ void CPUBandedSolver::setup(UnpackedBandedSystem* const sys) {
 
 void CPUBandedSolver::cleanup() { this->sys = nullptr; }
 
-unsigned OpenMPGrouping1IBandedSolver::pad_dimension(const unsigned dim,
-                                                     const unsigned bandwidth) {
+unsigned OpenMPGrouping1BandedSolver::pad_dimension(const unsigned dim,
+                                                    const unsigned bandwidth) {
   const unsigned rows_per_group =
       std::max(2 * bandwidth, ceil_div(dim, 2 * this->thread_count));
   return rows_per_group * 2 * this->thread_count;
 }
 
-void OpenMPGrouping1IBandedSolver::iterate(const unsigned iterations) {
+void OpenMPGrouping1BandedSolver::iterate(const unsigned iterations) {
   const unsigned dim = sys->dim;
   const unsigned bandwidth = sys->bandwidth;
 
@@ -174,14 +174,14 @@ void OpenMPGrouping1IBandedSolver::iterate(const unsigned iterations) {
   }
 }
 
-unsigned OpenMPGrouping2IBandedSolver::pad_dimension(const unsigned dim,
-                                                     const unsigned bandwidth) {
+unsigned OpenMPGrouping2BandedSolver::pad_dimension(const unsigned dim,
+                                                    const unsigned bandwidth) {
   const unsigned group_count = 2 * bandwidth + 1;
   const unsigned rows_per_group = ceil_div(dim, group_count);
   return rows_per_group * group_count;
 }
 
-void OpenMPGrouping2IBandedSolver::iterate(const unsigned iterations) {
+void OpenMPGrouping2BandedSolver::iterate(const unsigned iterations) {
   const unsigned dim = sys->dim;
   const unsigned bandwidth = sys->bandwidth;
 

@@ -401,7 +401,7 @@ double benchmark_banded_cpu(unsigned int numIterations, unsigned int problem_i,
     Vector x_kaczmarz = Vector::Zero(lse.column_count());
     const auto start = std::chrono::high_resolution_clock::now();
 
-    const auto status = OpenMPGrouping1IBandedSolver(2).solve(
+    const auto status = OpenMPGrouping1BandedSolver(2).solve(
         banded_lse, x_kaczmarz, 1000, MAX_IT, PRECISION);
 
     const auto end = std::chrono::high_resolution_clock::now();

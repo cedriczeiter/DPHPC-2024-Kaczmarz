@@ -37,12 +37,12 @@ class CPUBandedSolver : public BandedSolver {
   virtual void cleanup();
 };
 
-class OpenMPGrouping1IBandedSolver : public CPUBandedSolver {
+class OpenMPGrouping1BandedSolver : public CPUBandedSolver {
  private:
   const unsigned thread_count;
 
  public:
-  OpenMPGrouping1IBandedSolver(const unsigned thread_count)
+  OpenMPGrouping1BandedSolver(const unsigned thread_count)
       : thread_count(thread_count) {}
 
   virtual unsigned pad_dimension(unsigned dim, unsigned bandwidth);
@@ -50,12 +50,12 @@ class OpenMPGrouping1IBandedSolver : public CPUBandedSolver {
   virtual void iterate(unsigned iterations);
 };
 
-class OpenMPGrouping2IBandedSolver : public CPUBandedSolver {
+class OpenMPGrouping2BandedSolver : public CPUBandedSolver {
  private:
   const unsigned thread_count;
 
  public:
-  OpenMPGrouping2IBandedSolver(const unsigned thread_count)
+  OpenMPGrouping2BandedSolver(const unsigned thread_count)
       : thread_count(thread_count) {}
 
   virtual unsigned pad_dimension(unsigned dim, unsigned bandwidth);
