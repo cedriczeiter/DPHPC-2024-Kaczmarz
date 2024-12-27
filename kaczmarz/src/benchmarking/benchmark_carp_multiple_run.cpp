@@ -117,14 +117,14 @@ int main() {
     const auto iter_start = hrclock::now();
     const auto A = sparse_lse.A();
     const auto b = sparse_lse.b();
-    Eigen::BiCGSTAB<SparseMatrix> lscg(A);
+    /*Eigen::BiCGSTAB<SparseMatrix> lscg(A);
     lscg.setTolerance(precision);
     lscg.setMaxIterations(max_iterations);
     x_iter = lscg.solve(b);
-    const auto iter_end = hrclock::now();
-    /*const auto iter_start = hrclock::now();
-    cusolver(sparse_lse, x_iter, max_iterations, precision);
     const auto iter_end = hrclock::now();*/
+    const auto iter_start = hrclock::now();
+    cusolver(sparse_lse, x_iter, max_iterations, precision);
+    const auto iter_end = hrclock::now();
     const auto iter_time =
         std::chrono::duration_cast<std::chrono::milliseconds>(iter_end -
                                                               iter_start)
