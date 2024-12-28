@@ -10,11 +10,6 @@
 
 #define CUDSS_EXAMPLE_FREE   \
   do {                       \
-    free(csr_offsets_h);     \
-    free(csr_columns_h);     \
-    free(csr_values_h);      \
-    free(x_values_h);        \
-    free(b_values_h);        \
     cudaFree(csr_offsets_d); \
     cudaFree(csr_columns_d); \
     cudaFree(csr_values_d);  \
