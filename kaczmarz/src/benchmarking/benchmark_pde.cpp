@@ -196,7 +196,7 @@ double benchmark_carpcg(unsigned int numIterations, unsigned int problem_i,
     }
     add_elapsed_time_to_vec(times, start, end);
 
-    // inform_user_about_kaczmarz_status(status);
+    inform_user_about_kaczmarz_status(status);
   }
   return calc_avgtime(times);
 }
@@ -435,8 +435,22 @@ double benchmark_cusolver(unsigned int numIterations, unsigned int problem_i,
     KaczmarzSolverStatus status =
         cusolver(lse, x_kaczmarz_sparse, MAX_IT, PRECISION);
 
-    // End timer
-    const auto end = std::chrono::high_resolution_clock::now();
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed = end - start;
+
+    if (status == KaczmarzSolverStatus::Converged) {
+      write_result_to_file("results_cudadirect_sparse_pde.csv", problem_i,
+                           complexity_i, degree_i, elapsed.count(), dimension,
+                           numIterations, i, "Converged");
+    } else if (status == KaczmarzSolverStatus::OutOfIterations) {
+      write_result_to_file("results_cudadirect_sparse_pde.csv", problem_i,
+                           complexity_i, degree_i, elapsed.count(), dimension,
+                           numIterations, i, "SomeError");
+    } else {
+      write_result_to_file("results_cudadirect_sparse_pde.csv", problem_i,
+                           complexity_i, degree_i, elapsed.count(), dimension,
+                           numIterations, i, "Failed");
+    }
 
     add_elapsed_time_to_vec(times, start, end);
 
