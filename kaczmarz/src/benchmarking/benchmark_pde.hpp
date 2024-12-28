@@ -39,6 +39,15 @@
 
 // make sure to change L_RESIDUAL in carp_utils.hpp to 1000
 
+// Define filename
+#define CARP_CG_FILE "benchmark_results_carp_cg.csv"
+#define EIGEN_CG_FILE "benchmark_results_eigen_cg.csv"
+#define EIGEN_BICGSTAB_FILE "eigen_bicgstab.csv"
+#define CGMNC_FILE "benchmark_results_cgmnc.csv"
+#define EIGEN_DIRECT_FILE "benchmark_results_eigen_direct.csv"
+#define BASIC_KACZMARZ_FILE "benchmark_results_basic_kaczmarz.csv"
+#define CUSOLVER_FILE "benchmark_results_cusolver.csv"
+
 // Function declarations
 void write_header(const std::string &file_path);
 void compute_statistics(const std::vector<double> &times, double &avgTime,
@@ -96,7 +105,7 @@ void write_result_to_file(const std::string &file_name, unsigned int problem,
                           unsigned int complexity, unsigned int degree,
                           double time, unsigned int dimension,
                           unsigned int num_it, unsigned int iteration,
-                          const std::string &status);
+                          KaczmarzSolverStatus status_input);
 
 void inform_user_about_kaczmarz_status(KaczmarzSolverStatus status);
 

@@ -15,13 +15,8 @@ int main() {
                 {"CUSolver", benchmark_cusolver}};
 
   std::vector<std::string> file_names = {
-      "results_cudadirect_sparse_pde.csv",
-      "results_sparsesolver_sparse_pde.csv",
-      "results_eigensolver_sparse_pde.csv",
-      "results_sparsesolver_sparse_cg_pde.csv",
-      "results_eigeniterative_2_sparse_pde.csv",
-      "results_eigeniterative_sparse_pde.csv",
-      "results_carp_cuda_sparse_pde.csv"};
+      CARP_CG_FILE,      EIGEN_CG_FILE,       EIGEN_BICGSTAB_FILE, CGMNC_FILE,
+      EIGEN_DIRECT_FILE, BASIC_KACZMARZ_FILE, CUSOLVER_FILE};
 
   // Loop over file names and call write_header
   for (const auto &file_name : file_names) {
@@ -177,23 +172,10 @@ double benchmark_carpcg(unsigned int numIterations, unsigned int problem_i,
     const auto end = std::chrono::high_resolution_clock::now();
 
     std::chrono::duration<double> elapsed = end - start;
-    if (status == KaczmarzSolverStatus::Converged) {
-      write_result_to_file("results_carp_cuda_sparse_pde.csv", problem_i,
-                           complexity_i, degree_i, elapsed.count(), dimension,
-                           numIterations, i, "Converged");
-    } else if (status == KaczmarzSolverStatus::OutOfIterations) {
-      write_result_to_file("results_carp_cuda_sparse_pde.csv", problem_i,
-                           complexity_i, degree_i, elapsed.count(), dimension,
-                           numIterations, i, "OutOfIterations");
-    } else if (status == KaczmarzSolverStatus::ZeroNormRow) {
-      write_result_to_file("results_carp_cuda_sparse_pde.csv", problem_i,
-                           complexity_i, degree_i, elapsed.count(), dimension,
-                           numIterations, i, "ZeroNormRow");
-    } else {
-      write_result_to_file("results_carp_cuda_sparse_pde.csv", problem_i,
-                           complexity_i, degree_i, elapsed.count(), dimension,
-                           numIterations, i, "Failed");
-    }
+
+    write_result_to_file(CARP_CG_FILE, problem_i, complexity_i, degree_i,
+                         elapsed.count(), dimension, numIterations, i, status);
+
     add_elapsed_time_to_vec(times, start, end);
 
     inform_user_about_kaczmarz_status(status);
@@ -227,9 +209,12 @@ double benchmark_eigen_cg(unsigned int numIterations, unsigned int problem_i,
 
     const auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
-    write_result_to_file("results_eigeniterative_sparse_pde.csv", problem_i,
-                         complexity_i, degree_i, elapsed.count(), dimension,
-                         numIterations, i, "Converged");
+
+    // Just placeholder as it always converges
+    KaczmarzSolverStatus status = KaczmarzSolverStatus::Converged;
+
+    write_result_to_file(EIGEN_CG_FILE, problem_i, complexity_i, degree_i,
+                         elapsed.count(), dimension, numIterations, i, status);
     add_elapsed_time_to_vec(times, start, end);
   }
 
@@ -264,10 +249,12 @@ double benchmark_eigen_bicgstab(unsigned int numIterations,
     Vector x_kaczmarz_sparse = solver.solve(b);
 
     const auto end = std::chrono::high_resolution_clock::now();
+
+    // Placeholder as it always converges
+    KaczmarzSolverStatus status = KaczmarzSolverStatus::Converged;
     std::chrono::duration<double> elapsed = end - start;
-    write_result_to_file("results_eigeniterative_2_sparse_pde.csv", problem_i,
-                         complexity_i, degree_i, elapsed.count(), dimension,
-                         numIterations, i, "Converged");
+    write_result_to_file(EIGEN_BICGSTAB_FILE, problem_i, complexity_i, degree_i,
+                         elapsed.count(), dimension, numIterations, i, status);
     add_elapsed_time_to_vec(times, start, end);
   }
 
@@ -298,24 +285,10 @@ double benchmark_cgmnc(unsigned int numIterations, unsigned int problem_i,
     const auto end = std::chrono::high_resolution_clock::now();
 
     std::chrono::duration<double> elapsed = end - start;
-    if (status == KaczmarzSolverStatus::Converged) {
-      write_result_to_file("results_sparsesolver_sparse_cg_pde.csv", problem_i,
-                           complexity_i, degree_i, elapsed.count(), dimension,
-                           numIterations, i, "Converged");
-    } else if (status == KaczmarzSolverStatus::OutOfIterations) {
-      write_result_to_file("results_sparsesolver_sparse_cg_pde.csv", problem_i,
-                           complexity_i, degree_i, elapsed.count(), dimension,
-                           numIterations, i, "OutOfIterations");
-    } else if (status == KaczmarzSolverStatus::ZeroNormRow) {
-      write_result_to_file("results_sparsesolver_sparse_cg_pde.csv", problem_i,
-                           complexity_i, degree_i, elapsed.count(), dimension,
-                           numIterations, i, "ZeroNormRow");
 
-    } else {
-      write_result_to_file("results_sparsesolver_sparse_cg_pde.csv", problem_i,
-                           complexity_i, degree_i, elapsed.count(), dimension,
-                           numIterations, i, "Failed");
-    }
+    write_result_to_file(CGMNC_FILE, problem_i, complexity_i, degree_i,
+                         elapsed.count(), dimension, numIterations, i, status);
+
     add_elapsed_time_to_vec(times, start, end);
 
     inform_user_about_kaczmarz_status(status);
@@ -349,9 +322,12 @@ double benchmark_eigen_direct(unsigned int numIterations,
     const auto end = std::chrono::high_resolution_clock::now();
 
     std::chrono::duration<double> elapsed = end - start;
-    write_result_to_file("results_eigensolver_sparse_pde.csv", problem_i,
-                         complexity_i, degree_i, elapsed.count(), dimension,
-                         numIterations, i, "Converged");
+
+    // Placeholder as it always converges
+    KaczmarzSolverStatus status = KaczmarzSolverStatus::Converged;
+
+    write_result_to_file(EIGEN_DIRECT_FILE, problem_i, complexity_i, degree_i,
+                         elapsed.count(), dimension, numIterations, i, status);
 
     add_elapsed_time_to_vec(times, start, end);
   }
@@ -387,23 +363,10 @@ double benchmark_basic_kaczmarz(unsigned int numIterations,
 
     const auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
-    if (status == KaczmarzSolverStatus::Converged) {
-      write_result_to_file("results_sparsesolver_sparse_pde.csv", problem_i,
-                           complexity_i, degree_i, elapsed.count(), dimension,
-                           numIterations, i, "Converged");
-    } else if (status == KaczmarzSolverStatus::OutOfIterations) {
-      write_result_to_file("results_sparsesolver_sparse_pde.csv", problem_i,
-                           complexity_i, degree_i, elapsed.count(), dimension,
-                           numIterations, i, "OutOfIterations");
-    } else if (status == KaczmarzSolverStatus::ZeroNormRow) {
-      write_result_to_file("results_sparsesolver_sparse_pde.csv", problem_i,
-                           complexity_i, degree_i, elapsed.count(), dimension,
-                           numIterations, i, "ZeroNormRow");
-    } else {
-      write_result_to_file("results_sparsesolver_sparse_pde.csv", problem_i,
-                           complexity_i, degree_i, elapsed.count(), dimension,
-                           numIterations, i, "Failed");
-    }
+
+    write_result_to_file(BASIC_KACZMARZ_FILE, problem_i, complexity_i, degree_i,
+                         elapsed.count(), dimension, numIterations, i, status);
+
     add_elapsed_time_to_vec(times, start, end);
 
     inform_user_about_kaczmarz_status(status);
@@ -438,19 +401,8 @@ double benchmark_cusolver(unsigned int numIterations, unsigned int problem_i,
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
 
-    if (status == KaczmarzSolverStatus::Converged) {
-      write_result_to_file("results_cudadirect_sparse_pde.csv", problem_i,
-                           complexity_i, degree_i, elapsed.count(), dimension,
-                           numIterations, i, "Converged");
-    } else if (status == KaczmarzSolverStatus::OutOfIterations) {
-      write_result_to_file("results_cudadirect_sparse_pde.csv", problem_i,
-                           complexity_i, degree_i, elapsed.count(), dimension,
-                           numIterations, i, "SomeError");
-    } else {
-      write_result_to_file("results_cudadirect_sparse_pde.csv", problem_i,
-                           complexity_i, degree_i, elapsed.count(), dimension,
-                           numIterations, i, "Failed");
-    }
+    write_result_to_file(CUSOLVER_FILE, problem_i, complexity_i, degree_i,
+                         elapsed.count(), dimension, numIterations, i, status);
 
     add_elapsed_time_to_vec(times, start, end);
 
@@ -684,12 +636,24 @@ void write_header(const std::string &file_path) {
   }
 }
 
-// Utility function to write raw times to files
+// Utility function to write raw times to files. Takes KaczmarzSolverStatus and
+// writes it to the file
 void write_result_to_file(const std::string &file_name, unsigned int problem,
                           unsigned int complexity, unsigned int degree,
                           double time, unsigned int dimension,
                           unsigned int num_it, unsigned int iteration,
-                          const std::string &status) {
+                          KaczmarzSolverStatus status_input) {
+  std::string status;
+  if (status_input == KaczmarzSolverStatus::Converged) {
+    status = "Converged";
+  } else if (status_input == KaczmarzSolverStatus::OutOfIterations) {
+    status = "OutOfIterations";
+  } else if (status_input == KaczmarzSolverStatus::ZeroNormRow) {
+    status = "ZeroNormRow";
+  } else {
+    status = "Failed";
+  }
+
   std::ofstream outFile(file_name, std::ios::app);
   if (!outFile.is_open()) {
     std::cerr << "Error: Unable to open file " << file_name
@@ -702,26 +666,6 @@ void write_result_to_file(const std::string &file_name, unsigned int problem,
           << TIME_THRESHOLD << "," << iteration << "," << status << "\n";
   outFile.flush();  // Ensure data is written to the disk immediately
   outFile.close();
-
-  // Alternatively only write into file if the status == "Converged", don't know
-  // what is better, I would rather just write everything and then in the post
-  // processing look at the status, but if you want to only store the converged
-  // ones, uncomment this code and comment the one above
-
-  // if (status == "Converged") {
-  //   std::ofstream outFile(file_name, std::ios::app);
-  //   if (!outFile.is_open()) {
-  //     std::cerr << "Error: Unable to open file " << file_name
-  //               << " for writing.\n";
-  //     return;
-  //   }
-  //   outFile << problem << "," << complexity << "," << degree << "," << time
-  //           << "," << dimension << "," << MAX_IT << "," << PRECISION << ","
-  //           << MAX_COMPLEXITY << "," << MAX_DEGREE << "," << num_it << ","
-  //           << TIME_THRESHOLD << "," << iteration << "," << status << "\n";
-  //   outFile.flush();  // Ensure data is written to the disk immediately
-  //   outFile.close();
-  // }
 }
 
 // Calculates the avg time
