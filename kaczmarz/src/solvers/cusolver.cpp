@@ -45,6 +45,9 @@
 KaczmarzSolverStatus cusolver(const SparseLinearSystem& lse, Vector& x,
                               const unsigned max_iterations,
                               const double precision) {
+  cudaError_t cuda_error = cudaSuccess;
+  cudssStatus_t status = CUDSS_STATUS_SUCCESS;
+
   // Extract matrix data in CSR format
   const auto& A = lse.A();  // Eigen::SparseMatrix
   const auto& b = lse.b();  // Eigen::VectorXd
@@ -65,9 +68,9 @@ KaczmarzSolverStatus cusolver(const SparseLinearSystem& lse, Vector& x,
                       "cudaMalloc for csr_columns");
   CUDA_CALL_AND_CHECK(cudaMalloc(&csr_values_d, nnz * sizeof(double)),
                       "cudaMalloc for csr_values");
-  CUDA_CALL_AND_CHECK(cudaMalloc(&b_values_d, nrhs * n * sizeof(double)),
+  CUDA_CALL_AND_CHECK(cudaMalloc(&b_values_d,  n * sizeof(double)),
                       "cudaMalloc for b_values");
-  CUDA_CALL_AND_CHECK(cudaMalloc(&x_values_d, nrhs * n * sizeof(double)),
+  CUDA_CALL_AND_CHECK(cudaMalloc(&x_values_d, n * sizeof(double)),
                       "cudaMalloc for x_values");
 
   /* Copy host memory to device for A and b */
@@ -77,7 +80,7 @@ KaczmarzSolverStatus cusolver(const SparseLinearSystem& lse, Vector& x,
   CUDA_CALL_AND_CHECK(cudaMemcpy(csr_columns_d, A.innerIndexPtr(),
                                  nnz * sizeof(int), cudaMemcpyHostToDevice),
                       "cudaMemcpy for csr_columns");
-  CUDA_CALL_AND_CHECK(cudaMemcpy(csr_values_d, A.valuesPtr(),
+  CUDA_CALL_AND_CHECK(cudaMemcpy(csr_values_d, A.valuePtr(),
                                  nnz * sizeof(double), cudaMemcpyHostToDevice),
                       "cudaMemcpy for csr_values");
   CUDA_CALL_AND_CHECK(
