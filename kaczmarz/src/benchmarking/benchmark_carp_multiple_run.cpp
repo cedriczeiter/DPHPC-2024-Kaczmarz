@@ -114,7 +114,7 @@ int main() {
     //////////////////////////////////////////
 
     Vector x_iter = Vector::Zero(dim);
-    const auto iter_start = hrclock::now();
+    //const auto iter_start = hrclock::now();
     const auto A = sparse_lse.A();
     const auto b = sparse_lse.b();
     /*Eigen::BiCGSTAB<SparseMatrix> lscg(A);
