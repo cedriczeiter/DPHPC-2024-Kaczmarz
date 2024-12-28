@@ -167,7 +167,7 @@ KaczmarzSolverStatus cusolver(const SparseLinearSystem& lse, Vector& x,
 
   /* Print the solution and compare against the exact solution */
   CUDA_CALL_AND_CHECK(
-      cudaMemcpy(x, x_values_d, nrhs * n * sizeof(double),
+      cudaMemcpy(x.data(), x_values_d, nrhs * n * sizeof(double),
                  cudaMemcpyDeviceToHost),
       "cudaMemcpy for x_values");
 
