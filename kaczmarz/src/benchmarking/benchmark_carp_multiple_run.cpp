@@ -39,7 +39,7 @@ int main() {
 
   // Read in the system from file
   std::ifstream lse_input_stream(
-      "../../generated_bvp_matrices/problem1/problem1_complexity3_degree1.txt");
+      "../../generated_bvp_matrices/problem1/problem1_complexity1_degree1.txt");
 
   const SparseLinearSystem sparse_lse =
       SparseLinearSystem::read_from_stream(lse_input_stream);
@@ -164,7 +164,7 @@ int main() {
     std::cout << "print first 40 elements of each results vector: "
               << std::endl;
     std::cout << "Eigen: " << std::endl;
-    for (int i = 0; i < 40; i++) {
+    for (int i = 0; i < 30; i++) {
       std::cout << x_precise[i] << "   ";
     }
     std::cout << "\nKaczmarz/carp-cg: " << std::endl;
