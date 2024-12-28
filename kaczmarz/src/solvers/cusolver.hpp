@@ -6,8 +6,7 @@
 #include "linear_systems/types.hpp"
 
 /**
- * @brief Solves a sparse linear system using the native CUDA cuSolverSP
- * library.
+ * @brief Solves a sparse linear system using CuDSS.
  *
  * @param lse The sparse linear system to be solved.
  * @param x The vector to store the solution.
