@@ -38,7 +38,7 @@
           "details: " #msg "\n",                                               \
           status);                                                             \
       CUDSS_EXAMPLE_FREE;                                                      \
-      return KaczmarzSolverStatus::OutOfIterations:w;                                                               \
+      return KaczmarzSolverStatus::OutOfIterations;                                                               \
     }                                                                          \
   } while (0);
 
@@ -84,7 +84,7 @@ KaczmarzSolverStatus cusolver(const SparseLinearSystem& lse, Vector& x,
                                  nnz * sizeof(double), cudaMemcpyHostToDevice),
                       "cudaMemcpy for csr_values");
   CUDA_CALL_AND_CHECK(
-      cudaMemcpy(b_values_d, b.data(), nrhs * n * sizeof(double),
+      cudaMemcpy(b_values_d, b.data(), n * sizeof(double),
                  cudaMemcpyHostToDevice),
       "cudaMemcpy for b_values");
 
