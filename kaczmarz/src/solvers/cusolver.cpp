@@ -55,6 +55,7 @@ KaczmarzSolverStatus cusolver(const SparseLinearSystem& lse, Vector& x,
   const unsigned n = A.rows();
   const unsigned cols = A.cols();
   const int nnz = A.nonZeros();  // Number of non-zero entries
+  const unsigned nrhs = 1;
 
   int* csr_offsets_d = NULL;
   int* csr_columns_d = NULL;
@@ -112,49 +113,49 @@ KaczmarzSolverStatus cusolver(const SparseLinearSystem& lse, Vector& x,
 
   /* Create matrix objects for the right-hand side b and solution x (as dense
    * matrices). */
-  cudssMatrix_t x, b;
+  cudssMatrix_t x_matr, b_matr;
 
   int64_t nrows = n, ncols = n;
   int ldb = ncols, ldx = nrows;
-  CUDSS_CALL_AND_CHECK(cudssMatrixCreateDn(&b, ncols, nrhs, ldb, b_values_d,
+  CUDSS_CALL_AND_CHECK(cudssMatrixCreateDn(&b_matr, ncols, nrhs, ldb, b_values_d,
                                            CUDA_R_64F, CUDSS_LAYOUT_COL_MAJOR),
                        status, "cudssMatrixCreateDn for b");
-  CUDSS_CALL_AND_CHECK(cudssMatrixCreateDn(&x, nrows, nrhs, ldx, x_values_d,
+  CUDSS_CALL_AND_CHECK(cudssMatrixCreateDn(&x_matr, nrows, nrhs, ldx, x_values_d,
                                            CUDA_R_64F, CUDSS_LAYOUT_COL_MAJOR),
                        status, "cudssMatrixCreateDn for x");
 
   /* Create a matrix object for the sparse input matrix. */
-  cudssMatrix_t A;
+  cudssMatrix_t A_matr;
   cudssMatrixType_t mtype = CUDSS_MTYPE_SPD;
   cudssMatrixViewType_t mview = CUDSS_MVIEW_UPPER;
   cudssIndexBase_t base = CUDSS_BASE_ZERO;
   CUDSS_CALL_AND_CHECK(
-      cudssMatrixCreateCsr(&A, nrows, ncols, nnz, csr_offsets_d, NULL,
+      cudssMatrixCreateCsr(&A_matr, nrows, ncols, nnz, csr_offsets_d, NULL,
                            csr_columns_d, csr_values_d, CUDA_R_32I, CUDA_R_64F,
                            mtype, mview, base),
       status, "cudssMatrixCreateCsr");
 
   /* Symbolic factorization */
   CUDSS_CALL_AND_CHECK(cudssExecute(handle, CUDSS_PHASE_ANALYSIS, solverConfig,
-                                    solverData, A, x, b),
+                                    solverData, A_matr, x_matr, b_matr),
                        status, "cudssExecute for analysis");
 
   /* Factorization */
   CUDSS_CALL_AND_CHECK(cudssExecute(handle, CUDSS_PHASE_FACTORIZATION,
-                                    solverConfig, solverData, A, x, b),
+                                    solverConfig, solverData, A_matr, x_matr, b_matr),
                        status, "cudssExecute for factor");
 
   /* Solving */
   CUDSS_CALL_AND_CHECK(cudssExecute(handle, CUDSS_PHASE_SOLVE, solverConfig,
-                                    solverData, A, x, b),
+                                    solverData, A_matr, x_matr, b_matr),
                        status, "cudssExecute for solve");
 
   /* Destroying opaque objects, matrix wrappers and the cuDSS library handle */
-  CUDSS_CALL_AND_CHECK(cudssMatrixDestroy(A), status,
+  CUDSS_CALL_AND_CHECK(cudssMatrixDestroy(A_matr), status,
                        "cudssMatrixDestroy for A");
-  CUDSS_CALL_AND_CHECK(cudssMatrixDestroy(b), status,
+  CUDSS_CALL_AND_CHECK(cudssMatrixDestroy(b_matr), status,
                        "cudssMatrixDestroy for b");
-  CUDSS_CALL_AND_CHECK(cudssMatrixDestroy(x), status,
+  CUDSS_CALL_AND_CHECK(cudssMatrixDestroy(x_matr), status,
                        "cudssMatrixDestroy for x");
   CUDSS_CALL_AND_CHECK(cudssDataDestroy(handle, solverData), status,
                        "cudssDataDestroy");
