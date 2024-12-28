@@ -106,8 +106,8 @@ if (CMAKE_CUDA_COMPILER)
   endif()
   # Allow many relevant CUDA architectures
   set(CUDA_ARCHITECTURES 60 61 70 75 80 86)
-  find_package(cudss 0.4.0 REQUIRED)
   include_directories(${CUDA_INCLUDE_DIRS})
+  find_package(cudss REQUIRED)
   
   # Create CUDA library
   add_library(cuda_library STATIC ${CUDA_SOURCES})
