@@ -167,11 +167,11 @@ int main() {
     for (int i = 0; i < 40; i++) {
       std::cout << x_precise[i] << "   ";
     }
-    std::cout << "\nKaczmarz: " << std::endl;
+    std::cout << "\nKaczmarz/carp-cg: " << std::endl;
     for (int i = 0; i < 40; i++) {
       std::cout << x_kaczmarz[i] << "   ";
     }
-    std::cout << "\nIterative: " << std::endl;
+    std::cout << "\nIterative/Cusolver: " << std::endl;
     for (int i = 0; i < 40; i++) {
       std::cout << x_iter[i] << "   ";
     }
