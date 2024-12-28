@@ -3,6 +3,7 @@
 #include <cassert>
 #include <numeric>
 
+#include "banded_cuda.hpp"
 #include "omp.h"
 
 /**
@@ -141,7 +142,6 @@ unsigned OpenMPGrouping1BandedSolver::pad_dimension(const unsigned dim,
 
 void OpenMPGrouping1BandedSolver::iterate(const unsigned iterations) {
   const unsigned dim = sys->dim;
-  const unsigned bandwidth = sys->bandwidth;
 
   assert(dim % (2 * thread_count) == 0);
   const unsigned rows_per_group = dim / (2 * thread_count);
@@ -238,4 +238,87 @@ void SerialInterleavedBandedSolver::iterate(const unsigned iterations) {
       }
     }
   }
+}
+
+template <typename T>
+static T* gpu_malloc_and_copy(const std::vector<T>& v) {
+  const size_t byte_count = v.size() * sizeof(T);
+  T* const gpu_memory = (T*)cuda_malloc(byte_count);
+  cuda_memcpy_host_to_device(gpu_memory, &v[0], byte_count);
+  return gpu_memory;
+}
+
+void GPUBandedSolver::setup(UnpackedBandedSystem* const sys) {
+  this->cleanup();
+  this->sys = sys;
+  this->x_gpu = gpu_malloc_and_copy(sys->x_padded);
+  this->A_data_gpu = gpu_malloc_and_copy(sys->A_data);
+  this->sq_norms_gpu = gpu_malloc_and_copy(sys->sq_norms);
+  this->b_gpu = gpu_malloc_and_copy(sys->b);
+}
+
+void GPUBandedSolver::flush_x() {
+  const size_t byte_count = this->sys->x_padded.size() * sizeof(double);
+  cuda_memcpy_device_to_host(&this->sys->x_padded[0], x_gpu, byte_count);
+}
+
+void GPUBandedSolver::cleanup() {
+  if (this->x_gpu) {
+    cuda_free(this->x_gpu);
+    this->x_gpu = nullptr;
+  }
+  if (this->A_data_gpu) {
+    cuda_free(this->A_data_gpu);
+    this->A_data_gpu = nullptr;
+  }
+  if (this->sq_norms_gpu) {
+    cuda_free(this->sq_norms_gpu);
+    this->sq_norms_gpu = nullptr;
+  }
+  if (this->b_gpu) {
+    cuda_free(this->b_gpu);
+    this->b_gpu = nullptr;
+  }
+  this->sys = nullptr;
+}
+
+unsigned CUDAGrouping1BandedSolver::pad_dimension(const unsigned dim,
+                                                  const unsigned bandwidth) {
+  const unsigned thread_count = block_count * threads_per_block;
+  return std::max(dim, bandwidth * 2 * 2 * thread_count);
+}
+
+void CUDAGrouping1BandedSolver::iterate(const unsigned iterations) {
+  const unsigned dim = this->sys->dim;
+  const unsigned bandwidth = this->sys->bandwidth;
+
+  const unsigned group_count = 2 * block_count * threads_per_block;
+
+  invoke_banded_grouping1_kernel(
+      block_count, threads_per_block, this->x_gpu + bandwidth, this->A_data_gpu,
+      this->sq_norms_gpu, this->b_gpu, iterations, bandwidth, dim / group_count,
+      dim % group_count);
+}
+
+unsigned CUDAGrouping2BandedSolver::pad_dimension(const unsigned dim,
+                                                  const unsigned bandwidth) {
+  const unsigned group_count = 2 * bandwidth + 1;
+  const unsigned rows_per_group = ceil_div(dim, group_count);
+  return rows_per_group * group_count;
+}
+
+void CUDAGrouping2BandedSolver::iterate(const unsigned iterations) {
+  const unsigned dim = this->sys->dim;
+  const unsigned bandwidth = this->sys->bandwidth;
+
+  assert(dim % (2 * bandwidth + 1) == 0);
+
+  const unsigned rows_per_group = dim / (2 * bandwidth + 1);
+
+  const unsigned thread_count = block_count * threads_per_block;
+
+  invoke_banded_grouping2_kernel(
+      block_count, threads_per_block, this->x_gpu + bandwidth, this->A_data_gpu,
+      this->sq_norms_gpu, this->b_gpu, iterations, bandwidth,
+      rows_per_group / thread_count, rows_per_group % thread_count);
 }

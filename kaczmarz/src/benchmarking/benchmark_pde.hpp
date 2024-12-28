@@ -13,7 +13,6 @@
 
 #include "asynchronous.hpp"
 #include "banded.hpp"
-#include "banded_cuda.hpp"
 #include "basic.hpp"
 #include "carp.hpp"
 #include "cusolver.hpp"
