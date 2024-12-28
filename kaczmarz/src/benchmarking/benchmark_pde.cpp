@@ -437,30 +437,127 @@ double benchmark_cusolver(unsigned int numIterations, unsigned int problem_i,
 
     // End timer
     const auto end = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> elapsed = end - start;
-    if (status == KaczmarzSolverStatus::Converged) {
-      write_result_to_file("results_cudadirect_sparse_pde.csv", problem_i,
-                           complexity_i, degree_i, elapsed.count(), dimension,
-                           numIterations, i, "Converged");
-    } else if (status == KaczmarzSolverStatus::OutOfIterations) {
-      write_result_to_file("results_cudadirect_sparse_pde.csv", problem_i,
-                           complexity_i, degree_i, elapsed.count(), dimension,
-                           numIterations, i, "OutOfIterations");
-    } else if (status == KaczmarzSolverStatus::ZeroNormRow) {
-      write_result_to_file("results_cudadirect_sparse_pde.csv", problem_i,
-                           complexity_i, degree_i, elapsed.count(), dimension,
-                           numIterations, i, "ZeroNormRow");
-    } else {
-      write_result_to_file("results_cudadirect_sparse_pde.csv", problem_i,
-                           complexity_i, degree_i, elapsed.count(), dimension,
-                           numIterations, i, "Failed");
-    }
+
     add_elapsed_time_to_vec(times, start, end);
 
     inform_user_about_kaczmarz_status(status);
   }
 
-  return calc_avgtime(times);
+  return write_and_calc_results("results_cudadirect_sparse_pde.csv", problem_i,
+                                complexity_i, degree_i, file_path, times);
+}
+
+double benchmark_banded_cuda(unsigned int numIterations, unsigned int problem_i,
+                             unsigned int complexity_i, unsigned int degree_i) {
+  std::string file_path =
+      generate_file_path_banded(problem_i, complexity_i, degree_i);
+  // Read the precomputed matrix from the file
+  const SparseLinearSystem lse = read_matrix_from_file(file_path);
+
+  std::vector<double> times;
+
+  // Perform benchmarking
+  std::cout << "      Running BANDED CUDA sparse for problem " << problem_i
+            << ", complexity " << complexity_i << ", degree " << degree_i
+            << std::endl;
+
+  unsigned int bandwidth = compute_bandwidth(lse.A());
+  BandedLinearSystem banded_lse = convert_to_banded(lse, bandwidth);
+
+  for (unsigned int i = 0; i < numIterations; ++i) {
+    // Allocate memory to save kaczmarz solution
+    Vector x_kaczmarz = Vector::Zero(lse.column_count());
+
+    const auto start = std::chrono::high_resolution_clock::now();
+
+    const auto status = CUDAGrouping1BandedSolver(16, 125).solve(
+        banded_lse, x_kaczmarz, 1000, MAX_IT, PRECISION);
+
+    const auto end = std::chrono::high_resolution_clock::now();
+
+    add_elapsed_time_to_vec(times, start, end);
+
+    inform_user_about_kaczmarz_status(status);
+  }
+
+  return write_and_calc_results("results_banded_cuda_sparse_pde.csv", problem_i,
+                                complexity_i, degree_i, file_path, times);
+}
+
+double benchmark_banded_cpu(unsigned int numIterations, unsigned int problem_i,
+                            unsigned int complexity_i, unsigned int degree_i) {
+  std::string file_path =
+      generate_file_path_banded(problem_i, complexity_i, degree_i);
+  // Read the precomputed matrix from the file
+  const SparseLinearSystem lse = read_matrix_from_file(file_path);
+
+  std::vector<double> times;
+
+  // Perform benchmarking
+  std::cout << "      Running BANDED CPU 2 threads for problem " << problem_i
+            << ", complexity " << complexity_i << ", degree " << degree_i
+            << std::endl;
+
+  unsigned int bandwidth = compute_bandwidth(lse.A());
+  BandedLinearSystem banded_lse = convert_to_banded(lse, bandwidth);
+
+  for (unsigned int i = 0; i < numIterations; ++i) {
+    // Allocate memory to save kaczmarz solution
+    Vector x_kaczmarz = Vector::Zero(lse.column_count());
+    const auto start = std::chrono::high_resolution_clock::now();
+
+    const auto status = OpenMPGrouping1BandedSolver(2).solve(
+        banded_lse, x_kaczmarz, 1000, MAX_IT, PRECISION);
+
+    const auto end = std::chrono::high_resolution_clock::now();
+
+    add_elapsed_time_to_vec(times, start, end);
+
+    inform_user_about_kaczmarz_status(status);
+  }
+
+  return write_and_calc_results("results_banded_cpu_2_threads_sparse_pde.csv",
+                                problem_i, complexity_i, degree_i, file_path,
+                                times);
+}
+
+double benchmark_banded_serial(unsigned int numIterations,
+                               unsigned int problem_i,
+                               unsigned int complexity_i,
+                               unsigned int degree_i) {
+  std::string file_path =
+      generate_file_path_banded(problem_i, complexity_i, degree_i);
+  // Read the precomputed matrix from the file
+  const SparseLinearSystem lse = read_matrix_from_file(file_path);
+
+  std::vector<double> times;
+
+  // Perform benchmarking
+  std::cout << "      Running BANDED SERIAL sparse for problem " << problem_i
+            << ", complexity " << complexity_i << ", degree " << degree_i
+            << std::endl;
+
+  unsigned int bandwidth = compute_bandwidth(lse.A());
+  BandedLinearSystem banded_lse = convert_to_banded(lse, bandwidth);
+
+  for (unsigned int i = 0; i < numIterations; ++i) {
+    // Allocate memory to save kaczmarz solution
+    Vector x_kaczmarz = Vector::Zero(lse.column_count());
+    const auto start = std::chrono::high_resolution_clock::now();
+
+    const auto status = SerialInterleavedBandedSolver().solve(
+        banded_lse, x_kaczmarz, 1000, MAX_IT, PRECISION);
+
+    const auto end = std::chrono::high_resolution_clock::now();
+
+    add_elapsed_time_to_vec(times, start, end);
+
+    inform_user_about_kaczmarz_status(status);
+  }
+
+  return write_and_calc_results("results_banded_serial_sparse_pde.csv",
+                                problem_i, complexity_i, degree_i, file_path,
+                                times);
 }
 
 ///////////////////////////////////////////
