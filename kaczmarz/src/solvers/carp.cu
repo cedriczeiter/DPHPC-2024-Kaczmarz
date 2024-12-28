@@ -133,10 +133,10 @@ KaczmarzSolverStatus invoke_carp_solver_gpu(
     add_gpu(d_r, d_p, d_p, beta, dim);
   }
 
-  //loop could break for two reasons: it converged, or alpha = inf (which either means it converged too, or solver failed)
-  //we manually check for convergence here, to make sure the solver succeeded
-  residual =
-          get_residual(h_x, h_b, d_x, h_A_outer, h_A_inner, h_A_values, dim);
+  // loop could break for two reasons: it converged, or alpha = inf (which
+  // either means it converged too, or solver failed) we manually check for
+  // convergence here, to make sure the solver succeeded
+  residual = get_residual(h_x, h_b, d_x, h_A_outer, h_A_inner, h_A_values, dim);
   if (residual / b_norm < precision) {
     converged = true;
   }
