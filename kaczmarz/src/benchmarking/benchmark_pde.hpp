@@ -45,6 +45,9 @@ void compute_statistics(const std::vector<double> &times, double &avgTime,
                         double &stdDev);
 unsigned int read_dimension(const std::string &file_path);
 double calc_avgtime(const std::vector<double> &times);
+int compute_bandwidth(const Eigen::SparseMatrix<double> &A);
+BandedLinearSystem convert_to_banded(const SparseLinearSystem &sparse_system,
+                                     unsigned bandwidth);
 
 double benchmark_carpcg(unsigned int numIterations, unsigned int problem_i,
                         unsigned int complexity_i, unsigned int degree_i);

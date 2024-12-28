@@ -558,6 +558,58 @@ double benchmark_banded_serial(unsigned int numIterations,
 // Helper functions
 ///////////////////////////////////////////
 
+BandedLinearSystem convert_to_banded(const SparseLinearSystem &sparse_system,
+                                     unsigned bandwidth) {
+  // Extract dimension
+  unsigned dim = sparse_system.A().rows();
+
+  // Ensure the sparse matrix is compressed
+  Eigen::SparseMatrix<double> A_compressed = sparse_system.A();
+  A_compressed.makeCompressed();
+
+  // Prepare storage for banded matrix data
+  std::vector<double> banded_data;
+  banded_data.reserve(dim * (2 * bandwidth + 1) - bandwidth * (bandwidth + 1));
+
+  // Fill the banded data using InnerIterator
+  for (int k = 0; k < A_compressed.outerSize(); ++k) {
+    for (Eigen::SparseMatrix<double>::InnerIterator it(A_compressed, k); it;
+         ++it) {
+      int i = it.row();                         // Row index
+      int j = it.col();                         // Column index
+      if (std::abs(i - j) <= (int)bandwidth) {  // Check if within bandwidth
+        banded_data.push_back(it.value());
+      }
+    }
+  }
+                                     }
+
+// Function to generate the file path for a given banded problem, complexity,
+// and degree
+std::string generate_file_path_banded(unsigned int problem,
+                                      unsigned int complexity,
+                                      unsigned int degree) {
+  return "../../generated_bvp_matrices/problem" + std::to_string(problem) +
+         "/problem" + std::to_string(problem) + "_complexity" +
+         std::to_string(complexity) + "_degree" + std::to_string(degree) +
+         "_banded.txt";
+}
+
+int compute_bandwidth(const Eigen::SparseMatrix<double> &A) {
+  int bandwidth = 0;
+
+  // Traverse each row (or column) of the sparse matrix
+  for (int i = 0; i < A.outerSize(); ++i) {
+    for (Eigen::SparseMatrix<double>::InnerIterator it(A, i); it; ++it) {
+      int row = it.row();  // Row index of the current nonzero entry
+      int col = it.col();  // Column index of the current nonzero entry
+      bandwidth = std::max(bandwidth, std::abs(row - col));
+    }
+  }
+
+  return bandwidth;
+}
+
 // Function to read the matrix from a file
 SparseLinearSystem read_matrix_from_file(const std::string &file_path) {
   std::ifstream lse_input_stream(file_path);
