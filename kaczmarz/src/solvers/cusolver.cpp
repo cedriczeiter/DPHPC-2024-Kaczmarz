@@ -25,7 +25,7 @@
              "\n",                                                          \
              cuda_error);                                                   \
       CUDSS_EXAMPLE_FREE;                                                   \
-      return -1;                                                            \
+      return KaczmarzSolverStatus::OutOfIterations;                                                            \
     }                                                                       \
   } while (0);
 
@@ -38,7 +38,7 @@
           "details: " #msg "\n",                                               \
           status);                                                             \
       CUDSS_EXAMPLE_FREE;                                                      \
-      return -2;                                                               \
+      return KaczmarzSolverStatus::OutOfIterations:w;                                                               \
     }                                                                          \
   } while (0);
 
