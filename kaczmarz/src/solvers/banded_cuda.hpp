@@ -1,13 +1,64 @@
 #ifndef BANDED_CUDA_HPP
 #define BANDED_CUDA_HPP
 
-#include <vector>
+#include "banded.hpp"
 
-void invoke_kaczmarz_banded_update(const unsigned bandwidth,
-                                   const unsigned thread_count,
-                                   const std::vector<double>& A_data_padded,
-                                   std::vector<double>& x_padded,
-                                   const std::vector<double>& sq_norms_padded,
-                                   const std::vector<double>& b_padded);
+/**
+ * A common subclass for solvers that use the GPU/CUDA.
+ * They share the same setup, flushing, and cleanup procedures.
+ */
+class GPUBandedSolver : public BandedSolver {
+ protected:
+  UnpackedBandedSystem *sys = nullptr;
+  double *x_gpu = nullptr;
+  double *A_data_gpu = nullptr;
+  double *sq_norms_gpu = nullptr;
+  double *b_gpu = nullptr;
+
+ private:
+  virtual void setup(UnpackedBandedSystem *sys);
+
+  virtual void flush_x();
+
+  virtual void cleanup();
+};
+
+/**
+ * The "Grouping1" refers to how the rows are scheduled/grouped together for
+ * parallel processing.
+ */
+class CUDAGrouping1BandedSolver : public GPUBandedSolver {
+ private:
+  const unsigned block_count;
+  const unsigned threads_per_block;
+
+  virtual unsigned pad_dimension(unsigned dim, unsigned bandwidth);
+
+  virtual void iterate(unsigned iterations);
+
+ public:
+  CUDAGrouping1BandedSolver(const unsigned block_count,
+                            const unsigned threads_per_block)
+      : block_count(block_count), threads_per_block(threads_per_block) {}
+};
+
+/**
+ * The "Grouping2" refers to how the rows are scheduled/grouped together for
+ * parallel processing.
+ */
+class CUDAGrouping2BandedSolver : public GPUBandedSolver {
+ private:
+  const unsigned block_count;
+  const unsigned threads_per_block;
+
+  virtual unsigned pad_dimension(unsigned dim, unsigned bandwidth);
+
+  virtual void iterate(unsigned iterations);
+
+ public:
+  CUDAGrouping2BandedSolver(const unsigned block_count,
+                            const unsigned threads_per_block)
+      : block_count(block_count), threads_per_block(threads_per_block) {}
+};
 
 #endif  // BANDED_CUDA_HPP
