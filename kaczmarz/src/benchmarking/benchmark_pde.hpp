@@ -69,6 +69,15 @@ double benchmark_basic_kaczmarz(unsigned int numIterations,
 double benchmark_cusolver(unsigned int numIterations, unsigned int problem_i,
                           unsigned int complexity_i, unsigned int degree_i);
 
+double benchmark_banded_cuda(unsigned int numIterations, unsigned int problem_i,
+                             unsigned int complexity_i, unsigned int degree_i);
+double benchmark_banded_cpu(unsigned int numIterations, unsigned int problem_i,
+                            unsigned int complexity_i, unsigned int degree_i);
+double benchmark_banded_serial(unsigned int numIterations,
+                               unsigned int problem_i,
+                               unsigned int complexity_i,
+                               unsigned int degree_i);
+
 SparseLinearSystem read_matrix_from_file(const std::string &file_path);
 
 std::string generate_file_path(unsigned int problem, unsigned int complexity,

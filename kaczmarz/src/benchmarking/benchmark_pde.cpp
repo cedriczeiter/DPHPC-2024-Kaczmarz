@@ -582,7 +582,7 @@ BandedLinearSystem convert_to_banded(const SparseLinearSystem &sparse_system,
       }
     }
   }
-                                     }
+}
 
 // Function to generate the file path for a given banded problem, complexity,
 // and degree
@@ -642,16 +642,6 @@ std::string generate_file_path(unsigned int problem, unsigned int complexity,
          "/problem" + std::to_string(problem) + "_complexity" +
          std::to_string(complexity) + "_degree" + std::to_string(degree) +
          ".txt";
-}
-
-// Generate file path for banded matrices
-std::string generate_file_path_banded(unsigned int problem,
-                                      unsigned int complexity,
-                                      unsigned int degree) {
-  return "../../generated_bvp_matrices/problem" + std::to_string(problem) +
-         "/problem" + std::to_string(problem) + "_complexity" +
-         std::to_string(complexity) + "_degree" + std::to_string(degree) +
-         "_banded.txt";
 }
 
 // Function to add elapsed time to a vector calculated from start and end time
