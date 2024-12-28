@@ -114,17 +114,17 @@ int main() {
     //////////////////////////////////////////
 
     Vector x_iter = Vector::Zero(dim);
-    const auto iter_start = hrclock::now();
+    // const auto iter_start = hrclock::now();
     const auto A = sparse_lse.A();
     const auto b = sparse_lse.b();
-    Eigen::BiCGSTAB<SparseMatrix> lscg(A);
+    /*Eigen::BiCGSTAB<SparseMatrix> lscg(A);
     lscg.setTolerance(precision);
     lscg.setMaxIterations(max_iterations);
     x_iter = lscg.solve(b);
-    const auto iter_end = hrclock::now();
-    /*const auto iter_start = hrclock::now();
-    cusolver(sparse_lse, x_iter, max_iterations, precision);
     const auto iter_end = hrclock::now();*/
+    const auto iter_start = hrclock::now();
+    cusolver(sparse_lse, x_iter, max_iterations, precision);
+    const auto iter_end = hrclock::now();
     const auto iter_time =
         std::chrono::duration_cast<std::chrono::milliseconds>(iter_end -
                                                               iter_start)
@@ -167,12 +167,12 @@ int main() {
     for (int i = 0; i < 30; i++) {
       std::cout << x_precise[i] << "   ";
     }
-    std::cout << "\nKaczmarz: " << std::endl;
-    for (int i = 0; i < 30; i++) {
+    std::cout << "\nKaczmarz/carp-cg: " << std::endl;
+    for (int i = 0; i < 40; i++) {
       std::cout << x_kaczmarz[i] << "   ";
     }
-    std::cout << "\nIterative: " << std::endl;
-    for (int i = 0; i < 30; i++) {
+    std::cout << "\nIterative/Cusolver: " << std::endl;
+    for (int i = 0; i < 40; i++) {
       std::cout << x_iter[i] << "   ";
     }
     std::cout << std::endl;

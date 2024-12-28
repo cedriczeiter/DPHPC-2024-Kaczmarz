@@ -6,105 +6,173 @@
 #include <iostream>
 
 #include "carp_utils.hpp"
+#include "cudss.h"
+
+#define CUDSS_EXAMPLE_FREE   \
+  do {                       \
+    cudaFree(csr_offsets_d); \
+    cudaFree(csr_columns_d); \
+    cudaFree(csr_values_d);  \
+    cudaFree(x_values_d);    \
+    cudaFree(b_values_d);    \
+  } while (0);
+
+#define CUDA_CALL_AND_CHECK(call, msg)                                      \
+  do {                                                                      \
+    cuda_error = call;                                                      \
+    if (cuda_error != cudaSuccess) {                                        \
+      printf("Example FAILED: CUDA API returned error = %d, details: " #msg \
+             "\n",                                                          \
+             cuda_error);                                                   \
+      CUDSS_EXAMPLE_FREE;                                                   \
+      return KaczmarzSolverStatus::OutOfIterations;                         \
+    }                                                                       \
+  } while (0);
+
+#define CUDSS_CALL_AND_CHECK(call, status, msg)                                \
+  do {                                                                         \
+    status = call;                                                             \
+    if (status != CUDSS_STATUS_SUCCESS) {                                      \
+      printf(                                                                  \
+          "Example FAILED: CUDSS call ended unsuccessfully with status = %d, " \
+          "details: " #msg "\n",                                               \
+          status);                                                             \
+      CUDSS_EXAMPLE_FREE;                                                      \
+      return KaczmarzSolverStatus::OutOfIterations;                            \
+    }                                                                          \
+  } while (0);
 
 KaczmarzSolverStatus cusolver(const SparseLinearSystem& lse, Vector& x,
                               const unsigned max_iterations,
                               const double precision) {
+  cudaError_t cuda_error = cudaSuccess;
+  cudssStatus_t status = CUDSS_STATUS_SUCCESS;
+
   // Extract matrix data in CSR format
   const auto& A = lse.A();  // Eigen::SparseMatrix
   const auto& b = lse.b();  // Eigen::VectorXd
 
-  const unsigned rows = A.rows();
+  const unsigned n = A.rows();
   const unsigned cols = A.cols();
   const int nnz = A.nonZeros();  // Number of non-zero entries
+  const unsigned nrhs = 1;
 
-  // Get CSR pointers from Eigen
-  const int* rowPtr = A.outerIndexPtr();  // Row pointers
-  const int* colInd = A.innerIndexPtr();  // Column indices
-  const double* values = A.valuePtr();    // Non-zero values
+  int* csr_offsets_d = NULL;
+  int* csr_columns_d = NULL;
+  double* csr_values_d = NULL;
+  double *x_values_d = NULL, *b_values_d = NULL;
 
-  // Allocate device memory
-  int *d_rowPtr, *d_colInd;
-  double *d_values, *d_b, *d_x;
+  /* Allocate device memory for A, x and b */
+  CUDA_CALL_AND_CHECK(cudaMalloc(&csr_offsets_d, (n + 1) * sizeof(int)),
+                      "cudaMalloc for csr_offsets");
+  CUDA_CALL_AND_CHECK(cudaMalloc(&csr_columns_d, nnz * sizeof(int)),
+                      "cudaMalloc for csr_columns");
+  CUDA_CALL_AND_CHECK(cudaMalloc(&csr_values_d, nnz * sizeof(double)),
+                      "cudaMalloc for csr_values");
+  CUDA_CALL_AND_CHECK(cudaMalloc(&b_values_d, n * sizeof(double)),
+                      "cudaMalloc for b_values");
+  CUDA_CALL_AND_CHECK(cudaMalloc(&x_values_d, n * sizeof(double)),
+                      "cudaMalloc for x_values");
 
-  CUDA_SAFE_CALL(cudaMalloc((void**)&d_rowPtr, sizeof(int) * (rows + 1)));
-  CUDA_SAFE_CALL(cudaMalloc((void**)&d_colInd, sizeof(int) * nnz));
-  CUDA_SAFE_CALL(cudaMalloc((void**)&d_values, sizeof(double) * nnz));
-  CUDA_SAFE_CALL(cudaMalloc((void**)&d_b, sizeof(double) * rows));
-  CUDA_SAFE_CALL(cudaMalloc((void**)&d_x, sizeof(double) * cols));
+  /* Copy host memory to device for A and b */
+  CUDA_CALL_AND_CHECK(cudaMemcpy(csr_offsets_d, A.outerIndexPtr(),
+                                 (n + 1) * sizeof(int), cudaMemcpyHostToDevice),
+                      "cudaMemcpy for csr_offsets");
+  CUDA_CALL_AND_CHECK(cudaMemcpy(csr_columns_d, A.innerIndexPtr(),
+                                 nnz * sizeof(int), cudaMemcpyHostToDevice),
+                      "cudaMemcpy for csr_columns");
+  CUDA_CALL_AND_CHECK(cudaMemcpy(csr_values_d, A.valuePtr(),
+                                 nnz * sizeof(double), cudaMemcpyHostToDevice),
+                      "cudaMemcpy for csr_values");
+  CUDA_CALL_AND_CHECK(cudaMemcpy(b_values_d, b.data(), n * sizeof(double),
+                                 cudaMemcpyHostToDevice),
+                      "cudaMemcpy for b_values");
 
-  // Copy data to device
-  CUDA_SAFE_CALL(cudaMemcpy(d_rowPtr, rowPtr, sizeof(int) * (rows + 1),
-                            cudaMemcpyHostToDevice));
-  CUDA_SAFE_CALL(
-      cudaMemcpy(d_colInd, colInd, sizeof(int) * nnz, cudaMemcpyHostToDevice));
-  CUDA_SAFE_CALL(cudaMemcpy(d_values, values, sizeof(double) * nnz,
-                            cudaMemcpyHostToDevice));
-  CUDA_SAFE_CALL(
-      cudaMemcpy(d_b, b.data(), sizeof(double) * rows, cudaMemcpyHostToDevice));
+  /* Create a CUDA stream */
+  cudaStream_t stream = NULL;
+  CUDA_CALL_AND_CHECK(cudaStreamCreate(&stream), "cudaStreamCreate");
 
-  // Initialize cuSolverSP handle
-  cusolverSpHandle_t cusolverH = nullptr;
-  cusolverStatus_t status = cusolverSpCreate(&cusolverH);
-  if (status != CUSOLVER_STATUS_SUCCESS) {
-    CUDA_SAFE_CALL(cudaFree(d_rowPtr));
-    CUDA_SAFE_CALL(cudaFree(d_colInd));
-    CUDA_SAFE_CALL(cudaFree(d_values));
-    CUDA_SAFE_CALL(cudaFree(d_b));
-    CUDA_SAFE_CALL(cudaFree(d_x));
-    throw std::runtime_error("Failed to create cuSolverSP handle.");
-  }
+  /* Creating the cuDSS library handle */
+  cudssHandle_t handle;
 
-  // Solve the system using Cholesky factorization
-  int singularity = 0;
+  CUDSS_CALL_AND_CHECK(cudssCreate(&handle), status, "cudssCreate");
 
-  // Declare and initialize the matrix descriptor
-  cusparseMatDescr_t descrA;
-  cusparseCreateMatDescr(&descrA);
-  cusparseSetMatType(descrA, CUSPARSE_MATRIX_TYPE_GENERAL);
-  cusparseSetMatIndexBase(descrA, CUSPARSE_INDEX_BASE_ZERO);
+  /* (optional) Setting the custom stream for the library handle */
+  CUDSS_CALL_AND_CHECK(cudssSetStream(handle, stream), status,
+                       "cudssSetStream");
 
-  // Declare cusolver status variable (once)
-  cusolverStatus_t status_solver;
+  /* Creating cuDSS solver configuration and data objects */
+  cudssConfig_t solverConfig;
+  cudssData_t solverData;
 
-  // Call the cuSolver function
-  status_solver = cusolverSpDcsrlsvqr(cusolverH,  // cuSolver handle
-                                      rows,       // Number of rows
-                                      nnz,        // Number of non-zero elements
-                                      descrA,     // Matrix descriptor
-                                      d_values,   // Matrix values (double*)
-                                      d_rowPtr,   // Row pointers (int*)
-                                      d_colInd,   // Column indices (int*)
-                                      d_b,   // Right-hand side vector (double*)
-                                      1e-7,  // Tolerance
-                                      0,     // Reorder flag
-                                      d_x,   // Solution vector (double*)
-                                      &singularity  // Singular matrix info
-  );
-  // Check solver status
-  if (status_solver != CUSOLVER_STATUS_SUCCESS || singularity >= 0) {
-    cusolverSpDestroy(cusolverH);
-    cudaFree(d_rowPtr);
-    cudaFree(d_colInd);
-    cudaFree(d_values);
-    cudaFree(d_b);
-    cudaFree(d_x);
-    std::cout << "CUDA native solver failed with error code: " << status_solver
-              << std::endl;
-    return KaczmarzSolverStatus::OutOfIterations;
-  }
+  CUDSS_CALL_AND_CHECK(cudssConfigCreate(&solverConfig), status,
+                       "cudssConfigCreate");
+  CUDSS_CALL_AND_CHECK(cudssDataCreate(handle, &solverData), status,
+                       "cudssDataCreate");
 
-  // Copy result back to host
-  CUDA_SAFE_CALL(
-      cudaMemcpy(x.data(), d_x, sizeof(double) * cols, cudaMemcpyDeviceToHost));
+  /* Create matrix objects for the right-hand side b and solution x (as dense
+   * matrices). */
+  cudssMatrix_t x_matr, b_matr;
 
-  // Free resources
-  cusolverSpDestroy(cusolverH);
-  CUDA_SAFE_CALL(cudaFree(d_rowPtr));
-  CUDA_SAFE_CALL(cudaFree(d_colInd));
-  CUDA_SAFE_CALL(cudaFree(d_values));
-  CUDA_SAFE_CALL(cudaFree(d_b));
-  CUDA_SAFE_CALL(cudaFree(d_x));
+  int64_t nrows = n, ncols = n;
+  int ldb = ncols, ldx = nrows;
+  CUDSS_CALL_AND_CHECK(
+      cudssMatrixCreateDn(&b_matr, ncols, nrhs, ldb, b_values_d, CUDA_R_64F,
+                          CUDSS_LAYOUT_COL_MAJOR),
+      status, "cudssMatrixCreateDn for b");
+  CUDSS_CALL_AND_CHECK(
+      cudssMatrixCreateDn(&x_matr, nrows, nrhs, ldx, x_values_d, CUDA_R_64F,
+                          CUDSS_LAYOUT_COL_MAJOR),
+      status, "cudssMatrixCreateDn for x");
 
-  return KaczmarzSolverStatus::Converged;
+  /* Create a matrix object for the sparse input matrix. */
+  cudssMatrix_t A_matr;
+  cudssMatrixType_t mtype = CUDSS_MTYPE_SPD;
+  cudssMatrixViewType_t mview = CUDSS_MVIEW_UPPER;
+  cudssIndexBase_t base = CUDSS_BASE_ZERO;
+  CUDSS_CALL_AND_CHECK(
+      cudssMatrixCreateCsr(&A_matr, nrows, ncols, nnz, csr_offsets_d, NULL,
+                           csr_columns_d, csr_values_d, CUDA_R_32I, CUDA_R_64F,
+                           mtype, mview, base),
+      status, "cudssMatrixCreateCsr");
+
+  /* Symbolic factorization */
+  CUDSS_CALL_AND_CHECK(cudssExecute(handle, CUDSS_PHASE_ANALYSIS, solverConfig,
+                                    solverData, A_matr, x_matr, b_matr),
+                       status, "cudssExecute for analysis");
+
+  /* Factorization */
+  CUDSS_CALL_AND_CHECK(
+      cudssExecute(handle, CUDSS_PHASE_FACTORIZATION, solverConfig, solverData,
+                   A_matr, x_matr, b_matr),
+      status, "cudssExecute for factor");
+
+  /* Solving */
+  CUDSS_CALL_AND_CHECK(cudssExecute(handle, CUDSS_PHASE_SOLVE, solverConfig,
+                                    solverData, A_matr, x_matr, b_matr),
+                       status, "cudssExecute for solve");
+
+  /* Destroying opaque objects, matrix wrappers and the cuDSS library handle */
+  CUDSS_CALL_AND_CHECK(cudssMatrixDestroy(A_matr), status,
+                       "cudssMatrixDestroy for A");
+  CUDSS_CALL_AND_CHECK(cudssMatrixDestroy(b_matr), status,
+                       "cudssMatrixDestroy for b");
+  CUDSS_CALL_AND_CHECK(cudssMatrixDestroy(x_matr), status,
+                       "cudssMatrixDestroy for x");
+  CUDSS_CALL_AND_CHECK(cudssDataDestroy(handle, solverData), status,
+                       "cudssDataDestroy");
+  CUDSS_CALL_AND_CHECK(cudssConfigDestroy(solverConfig), status,
+                       "cudssConfigDestroy");
+  CUDSS_CALL_AND_CHECK(cudssDestroy(handle), status, "cudssHandleDestroy");
+
+  CUDA_CALL_AND_CHECK(cudaStreamSynchronize(stream), "cudaStreamSynchronize");
+
+  /* Print the solution and compare against the exact solution */
+  CUDA_CALL_AND_CHECK(
+      cudaMemcpy(x.data(), x_values_d, nrhs * n * sizeof(double),
+                 cudaMemcpyDeviceToHost),
+      "cudaMemcpy for x_values");
+
+  if (status == CUDSS_STATUS_SUCCESS) return KaczmarzSolverStatus::Converged;
+  return KaczmarzSolverStatus::ZeroNormRow;
 }
