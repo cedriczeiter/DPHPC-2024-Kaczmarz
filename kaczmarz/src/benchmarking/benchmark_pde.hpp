@@ -45,6 +45,9 @@ void compute_statistics(const std::vector<double> &times, double &avgTime,
                         double &stdDev);
 unsigned int read_dimension(const std::string &file_path);
 double calc_avgtime(const std::vector<double> &times);
+int compute_bandwidth(const Eigen::SparseMatrix<double> &A);
+BandedLinearSystem convert_to_banded(const SparseLinearSystem &sparse_system,
+                                     unsigned bandwidth);
 
 double benchmark_carpcg(unsigned int numIterations, unsigned int problem_i,
                         unsigned int complexity_i, unsigned int degree_i);
@@ -66,10 +69,23 @@ double benchmark_basic_kaczmarz(unsigned int numIterations,
 double benchmark_cusolver(unsigned int numIterations, unsigned int problem_i,
                           unsigned int complexity_i, unsigned int degree_i);
 
+double benchmark_banded_cuda(unsigned int numIterations, unsigned int problem_i,
+                             unsigned int complexity_i, unsigned int degree_i);
+double benchmark_banded_cpu(unsigned int numIterations, unsigned int problem_i,
+                            unsigned int complexity_i, unsigned int degree_i);
+double benchmark_banded_serial(unsigned int numIterations,
+                               unsigned int problem_i,
+                               unsigned int complexity_i,
+                               unsigned int degree_i);
+
 SparseLinearSystem read_matrix_from_file(const std::string &file_path);
 
 std::string generate_file_path(unsigned int problem, unsigned int complexity,
                                unsigned int degree);
+
+std::string generate_file_path_banded(unsigned int problem,
+                                      unsigned int complexity,
+                                      unsigned int degree);
 
 void add_elapsed_time_to_vec(
     std::vector<double> &times,
