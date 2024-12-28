@@ -25,7 +25,7 @@
              "\n",                                                          \
              cuda_error);                                                   \
       CUDSS_EXAMPLE_FREE;                                                   \
-      return KaczmarzSolverStatus::OutOfIterations;                                                            \
+      return KaczmarzSolverStatus::OutOfIterations;                         \
     }                                                                       \
   } while (0);
 
@@ -38,7 +38,7 @@
           "details: " #msg "\n",                                               \
           status);                                                             \
       CUDSS_EXAMPLE_FREE;                                                      \
-      return KaczmarzSolverStatus::OutOfIterations;                                                               \
+      return KaczmarzSolverStatus::OutOfIterations;                            \
     }                                                                          \
   } while (0);
 
@@ -69,7 +69,7 @@ KaczmarzSolverStatus cusolver(const SparseLinearSystem& lse, Vector& x,
                       "cudaMalloc for csr_columns");
   CUDA_CALL_AND_CHECK(cudaMalloc(&csr_values_d, nnz * sizeof(double)),
                       "cudaMalloc for csr_values");
-  CUDA_CALL_AND_CHECK(cudaMalloc(&b_values_d,  n * sizeof(double)),
+  CUDA_CALL_AND_CHECK(cudaMalloc(&b_values_d, n * sizeof(double)),
                       "cudaMalloc for b_values");
   CUDA_CALL_AND_CHECK(cudaMalloc(&x_values_d, n * sizeof(double)),
                       "cudaMalloc for x_values");
@@ -84,10 +84,9 @@ KaczmarzSolverStatus cusolver(const SparseLinearSystem& lse, Vector& x,
   CUDA_CALL_AND_CHECK(cudaMemcpy(csr_values_d, A.valuePtr(),
                                  nnz * sizeof(double), cudaMemcpyHostToDevice),
                       "cudaMemcpy for csr_values");
-  CUDA_CALL_AND_CHECK(
-      cudaMemcpy(b_values_d, b.data(), n * sizeof(double),
-                 cudaMemcpyHostToDevice),
-      "cudaMemcpy for b_values");
+  CUDA_CALL_AND_CHECK(cudaMemcpy(b_values_d, b.data(), n * sizeof(double),
+                                 cudaMemcpyHostToDevice),
+                      "cudaMemcpy for b_values");
 
   /* Create a CUDA stream */
   cudaStream_t stream = NULL;
@@ -117,12 +116,14 @@ KaczmarzSolverStatus cusolver(const SparseLinearSystem& lse, Vector& x,
 
   int64_t nrows = n, ncols = n;
   int ldb = ncols, ldx = nrows;
-  CUDSS_CALL_AND_CHECK(cudssMatrixCreateDn(&b_matr, ncols, nrhs, ldb, b_values_d,
-                                           CUDA_R_64F, CUDSS_LAYOUT_COL_MAJOR),
-                       status, "cudssMatrixCreateDn for b");
-  CUDSS_CALL_AND_CHECK(cudssMatrixCreateDn(&x_matr, nrows, nrhs, ldx, x_values_d,
-                                           CUDA_R_64F, CUDSS_LAYOUT_COL_MAJOR),
-                       status, "cudssMatrixCreateDn for x");
+  CUDSS_CALL_AND_CHECK(
+      cudssMatrixCreateDn(&b_matr, ncols, nrhs, ldb, b_values_d, CUDA_R_64F,
+                          CUDSS_LAYOUT_COL_MAJOR),
+      status, "cudssMatrixCreateDn for b");
+  CUDSS_CALL_AND_CHECK(
+      cudssMatrixCreateDn(&x_matr, nrows, nrhs, ldx, x_values_d, CUDA_R_64F,
+                          CUDSS_LAYOUT_COL_MAJOR),
+      status, "cudssMatrixCreateDn for x");
 
   /* Create a matrix object for the sparse input matrix. */
   cudssMatrix_t A_matr;
@@ -141,9 +142,10 @@ KaczmarzSolverStatus cusolver(const SparseLinearSystem& lse, Vector& x,
                        status, "cudssExecute for analysis");
 
   /* Factorization */
-  CUDSS_CALL_AND_CHECK(cudssExecute(handle, CUDSS_PHASE_FACTORIZATION,
-                                    solverConfig, solverData, A_matr, x_matr, b_matr),
-                       status, "cudssExecute for factor");
+  CUDSS_CALL_AND_CHECK(
+      cudssExecute(handle, CUDSS_PHASE_FACTORIZATION, solverConfig, solverData,
+                   A_matr, x_matr, b_matr),
+      status, "cudssExecute for factor");
 
   /* Solving */
   CUDSS_CALL_AND_CHECK(cudssExecute(handle, CUDSS_PHASE_SOLVE, solverConfig,
