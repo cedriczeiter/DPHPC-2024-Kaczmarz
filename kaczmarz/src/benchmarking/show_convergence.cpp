@@ -7,13 +7,13 @@
 #include <iostream>
 #include <random>
 
+#include "asynchronous.hpp"
+#include "banded.hpp"
+#include "basic.hpp"
+#include "carp.hpp"
+#include "cusolver.hpp"
 #include "linear_systems/sparse.hpp"
 #include "linear_systems/types.hpp"
-#include "solvers/asynchronous.hpp"
-#include "solvers/banded.hpp"
-#include "solvers/basic.hpp"
-#include "solvers/carp.hpp"
-#include "solvers/cusolver.hpp"
 
 using hrclock = std::chrono::high_resolution_clock;
 
