@@ -443,8 +443,7 @@ double benchmark_cusolver(unsigned int numIterations, unsigned int problem_i,
     inform_user_about_kaczmarz_status(status);
   }
 
-  return write_and_calc_results("results_cudadirect_sparse_pde.csv", problem_i,
-                                complexity_i, degree_i, file_path, times);
+  return calc_avgtime(times);
 }
 
 double benchmark_banded_cuda(unsigned int numIterations, unsigned int problem_i,
@@ -480,8 +479,7 @@ double benchmark_banded_cuda(unsigned int numIterations, unsigned int problem_i,
     inform_user_about_kaczmarz_status(status);
   }
 
-  return write_and_calc_results("results_banded_cuda_sparse_pde.csv", problem_i,
-                                complexity_i, degree_i, file_path, times);
+  return calc_avgtime(times);
 }
 
 double benchmark_banded_cpu(unsigned int numIterations, unsigned int problem_i,
@@ -516,9 +514,7 @@ double benchmark_banded_cpu(unsigned int numIterations, unsigned int problem_i,
     inform_user_about_kaczmarz_status(status);
   }
 
-  return write_and_calc_results("results_banded_cpu_2_threads_sparse_pde.csv",
-                                problem_i, complexity_i, degree_i, file_path,
-                                times);
+  return calc_avgtime(times);
 }
 
 double benchmark_banded_serial(unsigned int numIterations,
@@ -596,6 +592,16 @@ std::string generate_file_path(unsigned int problem, unsigned int complexity,
          "/problem" + std::to_string(problem) + "_complexity" +
          std::to_string(complexity) + "_degree" + std::to_string(degree) +
          ".txt";
+}
+
+// Generate file path for banded matrices
+std::string generate_file_path_banded(unsigned int problem,
+                                      unsigned int complexity,
+                                      unsigned int degree) {
+  return "../../generated_bvp_matrices/problem" + std::to_string(problem) +
+         "/problem" + std::to_string(problem) + "_complexity" +
+         std::to_string(complexity) + "_degree" + std::to_string(degree) +
+         "_banded.txt";
 }
 
 // Function to add elapsed time to a vector calculated from start and end time
