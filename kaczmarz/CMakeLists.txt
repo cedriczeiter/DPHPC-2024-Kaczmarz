@@ -12,7 +12,7 @@ set(CMAKE_CXX_STANDARD 20)
 # Enable all warnings and extra warnings
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -fopenmp -pthread")
 
-set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -lcusparse")
+set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -lcusparse -lcudss")
 
 #################################
 ## Download dependencies
@@ -106,13 +106,13 @@ if (CMAKE_CUDA_COMPILER)
   endif()
   # Allow many relevant CUDA architectures
   set(CUDA_ARCHITECTURES 60 61 70 75 80 86)
-
   include_directories(${CUDA_INCLUDE_DIRS})
+  find_package(cudss REQUIRED)
   
   # Create CUDA library
   add_library(cuda_library STATIC ${CUDA_SOURCES})
   set_target_properties(cuda_library PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
-  target_link_libraries(cuda_library PRIVATE Eigen3::Eigen ${CUDA_LIBRARIES} cusparse cusolver)
+  target_link_libraries(cuda_library PRIVATE Eigen3::Eigen ${CUDA_LIBRARIES} cusparse cusolver cudss)
 
   # CUDA-enabled executables
   add_executable(benchmark_convergence ${SOURCE_DIR}/benchmarking/benchmark_convergence.cpp)

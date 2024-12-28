@@ -39,7 +39,7 @@ int main() {
 
   // Read in the system from file
   std::ifstream lse_input_stream(
-      "../../generated_bvp_matrices/problem1/problem1_complexity3_degree1.txt");
+      "../../generated_bvp_matrices/problem1/problem1_complexity1_degree1.txt");
 
   const SparseLinearSystem sparse_lse =
       SparseLinearSystem::read_from_stream(lse_input_stream);
@@ -114,17 +114,17 @@ int main() {
     //////////////////////////////////////////
 
     Vector x_iter = Vector::Zero(dim);
-    const auto iter_start = hrclock::now();
+    // const auto iter_start = hrclock::now();
     const auto A = sparse_lse.A();
     const auto b = sparse_lse.b();
-    Eigen::BiCGSTAB<SparseMatrix> lscg(A);
+    /*Eigen::BiCGSTAB<SparseMatrix> lscg(A);
     lscg.setTolerance(precision);
     lscg.setMaxIterations(max_iterations);
     x_iter = lscg.solve(b);
-    const auto iter_end = hrclock::now();
-    /*const auto iter_start = hrclock::now();
-    cusolver(sparse_lse, x_iter, max_iterations, precision);
     const auto iter_end = hrclock::now();*/
+    const auto iter_start = hrclock::now();
+    cusolver(sparse_lse, x_iter, max_iterations, precision);
+    const auto iter_end = hrclock::now();
     const auto iter_time =
         std::chrono::duration_cast<std::chrono::milliseconds>(iter_end -
                                                               iter_start)
@@ -164,14 +164,14 @@ int main() {
     std::cout << "print first 40 elements of each results vector: "
               << std::endl;
     std::cout << "Eigen: " << std::endl;
-    for (int i = 0; i < 40; i++) {
+    for (int i = 0; i < 30; i++) {
       std::cout << x_precise[i] << "   ";
     }
-    std::cout << "\nKaczmarz: " << std::endl;
+    std::cout << "\nKaczmarz/carp-cg: " << std::endl;
     for (int i = 0; i < 40; i++) {
       std::cout << x_kaczmarz[i] << "   ";
     }
-    std::cout << "\nIterative: " << std::endl;
+    std::cout << "\nIterative/Cusolver: " << std::endl;
     for (int i = 0; i < 40; i++) {
       std::cout << x_iter[i] << "   ";
     }
