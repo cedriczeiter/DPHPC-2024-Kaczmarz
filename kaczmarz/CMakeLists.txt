@@ -109,11 +109,8 @@ if (CMAKE_CUDA_COMPILER)
   set(CMAKE_CUDA_RUNTIME_LIBRARY Shared)
 
   # Set CUDA architectures (to avoid CMP0104 warnings)
-  if (CMAKE_CUDA_COMPILER)
-    set(CMAKE_CUDA_ARCHITECTURES 60 61 70 75 80 86)
-  endif()
-  # Allow many relevant CUDA architectures
-  set(CUDA_ARCHITECTURES 60 61 70 75 80 86)
+  set(CMAKE_CUDA_ARCHITECTURES 60 61 70 75 80 86)
+
   include_directories(${CUDA_INCLUDE_DIRS})
   find_package(cudss REQUIRED)
   
