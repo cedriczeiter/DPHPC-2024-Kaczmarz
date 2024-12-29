@@ -100,6 +100,11 @@ target_link_libraries(non_cuda_library PRIVATE Eigen3::Eigen)
 if (CMAKE_CUDA_COMPILER)
   # write out the CUDA compiler
   message(STATUS "CUDA compiler: ${CMAKE_CUDA_COMPILER}")
+
+  # Setting to use dynamic linking of the CUDA runtime library
+  # -> avoids "nvlink warning : Skipping incompatible something_something.a ..." warnings
+  set(CMAKE_CUDA_RUNTIME_LIBRARY Shared)
+
   # Set CUDA architectures (to avoid CMP0104 warnings)
   if (CMAKE_CUDA_COMPILER)
     set(CMAKE_CUDA_ARCHITECTURES 60 61 70 75 80 86)
@@ -112,7 +117,7 @@ if (CMAKE_CUDA_COMPILER)
   # Create CUDA library
   add_library(cuda_library STATIC ${CUDA_SOURCES})
   set_target_properties(cuda_library PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
-  target_link_libraries(cuda_library PRIVATE Eigen3::Eigen ${CUDA_LIBRARIES} cusparse cusolver cudss)
+  target_link_libraries(cuda_library PRIVATE Eigen3::Eigen cusparse cusolver cudss)
 
   # CUDA-enabled executables
   add_executable(benchmark_convergence ${SOURCE_DIR}/benchmarking/benchmark_convergence.cpp)
