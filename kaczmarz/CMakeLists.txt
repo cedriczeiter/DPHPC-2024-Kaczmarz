@@ -1,7 +1,10 @@
 cmake_minimum_required(VERSION 3.10)
 project(kaczmarz LANGUAGES CXX)
-find_package(CUDA)
-if (CUDA_FOUND)
+
+# Enable CUDA only if it is available on the system
+include(CheckLanguage)
+check_language(CUDA)
+if (CMAKE_CUDA_COMPILER)
   enable_language(CUDA)
 endif()
 
