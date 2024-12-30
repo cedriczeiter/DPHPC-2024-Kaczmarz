@@ -30,11 +30,11 @@ for path in file_paths:
 
         # Plotting the violin plot
         plt.figure(figsize=(12, 6))
-        sns.violinplot(x='Dim', y='Time', data=df_filtered)
+        sns.violinplot(x='Problem', y='Time', data=df_filtered)
 
         # Customize the plot
-        plt.title(f'Violin Plot of Time by Dimension (Complexity {complexity}) with {method}')
-        plt.xlabel('Dimension')
+        plt.title(f'Violin Plot of Time by Problem (Complexity {complexity}) with {method}')
+        plt.xlabel('Problem')
         plt.ylabel('Time (seconds)')
 
         # Save plot

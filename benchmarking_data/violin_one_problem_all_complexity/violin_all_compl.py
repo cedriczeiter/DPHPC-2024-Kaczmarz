@@ -23,17 +23,22 @@ for path in file_paths:
     # Extract the method name from the file path
     method = path.split('_')[-1].split('.')[0]
 
-    # Plotting the violin plot
-    plt.figure(figsize=(12, 6))
-    sns.violinplot(x='Dim', y='Time', data=df)
+    # Iterate over the problems
+    for problem in range(1,3):
+        # Filter the data to only include rows with the current problem
+        df_filtered = df[df['Problem'] == problem]
 
-    # Customize the plot
-    plt.xscale('log')
-    plt.yscale('log')
-    plt.title(f'Violin Plot of Time by Dimension with {method} (Log-Log Scale)')
-    plt.xlabel('Dimension (log scale)')
-    plt.ylabel('Time (seconds, log scale)')
+        # Plotting the violin plot
+        plt.figure(figsize=(12, 6))
+        sns.violinplot(x='Dim', y='Time', data=df_filtered)
 
-    # Save plot
-    plt.savefig(f'violin_plot_{method}_loglog.png')
-    plt.close()
+        # Customize the plot
+        plt.title(f'Violin Plot of Time by Dimension (Problem {problem}) with {method}')
+        plt.xlabel('Dimension')
+        plt.ylabel('Time (seconds)')
+
+        plt.yscale('linear')
+
+        # Save plot
+        plt.savefig(f'violin_plot_{method}_problem_{problem}.png')
+        plt.close()
