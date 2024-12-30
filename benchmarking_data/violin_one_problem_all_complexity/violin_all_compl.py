@@ -37,7 +37,8 @@ for path in file_paths:
         plt.xlabel('Dimension')
         plt.ylabel('Time (seconds)')
 
-        plt.yscale('linear')
+        plt.yscale('log')
+
 
         # Save plot
         plt.savefig(f'violin_plot_{method}_problem_{problem}.png')
