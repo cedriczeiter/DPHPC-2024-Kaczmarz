@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 
 # List of file paths
 file_paths = [
-    '../benchmark_results_carp_cg.csv',
+    '../benchmark_results_carp_cg_specific_architecture.csv',
     '../benchmark_results_basic_kaczmarz.csv',
     '../benchmark_results_cgmnc.csv',
     '../benchmark_results_cusolver.csv',
@@ -22,6 +22,18 @@ for path in file_paths:
 
     # Extract the method name from the file path
     method = path.split('_')[-1].split('.')[0]
+
+    #some renaming:
+    if (method == "architecture"):
+        method = "GPU Carp-CG"
+    elif (method == "cg"):
+        method = "Eigen LeastSquaresCG"
+    elif (method == "direct"):
+        method = "Eigen SparseLU"
+    elif (method == "kaczmarz"):
+        method = "Kaczmarz"
+    elif (method == "cusolver"):
+        method = "NVIDIA cuDSS"
 
     # Iterate over all 8 complexities
     for complexity in range(1, 9):
