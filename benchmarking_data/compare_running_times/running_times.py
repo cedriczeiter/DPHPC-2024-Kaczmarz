@@ -5,7 +5,7 @@ import numpy as np
 
 # List of file paths
 file_paths = [
-    '../benchmark_results_carp_cg.csv',
+    '../benchmark_results_carp_cg_specific_architecture.csv',
     '../benchmark_results_basic_kaczmarz.csv',
     '../benchmark_results_cgmnc.csv',
     '../benchmark_results_cusolver.csv',
@@ -48,7 +48,7 @@ for problem, data in problem_data.items():
     # Add trendlines
     for method in data['Method'].unique():
         method_data = data[data['Method'] == method]
-        z = np.polyfit(np.log(method_data['Dim']), np.log(method_data['Time_mean']), 1)
+        z = np.polyfit(np.log(method_data['Dim']), np.log(method_data['Time_mean']), 3)
         p = np.poly1d(z)
         plt.plot(method_data['Dim'], np.exp(p(np.log(method_data['Dim']))), linestyle='--', label=f'{method} Trendline')
 
