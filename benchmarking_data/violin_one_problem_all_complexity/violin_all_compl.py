@@ -39,6 +39,7 @@ for path in file_paths:
 
         plt.yscale('log')
 
+
         # Save plot
         plt.savefig(f'violin_plot_{method}_problem_{problem}.png')
         plt.close()
