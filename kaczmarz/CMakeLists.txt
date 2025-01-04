@@ -1,7 +1,10 @@
 cmake_minimum_required(VERSION 3.10)
 project(kaczmarz LANGUAGES CXX)
-find_package(CUDA)
-if (CUDA_FOUND)
+
+# Enable CUDA only if it is available on the system
+include(CheckLanguage)
+check_language(CUDA)
+if (CMAKE_CUDA_COMPILER)
   enable_language(CUDA)
 endif()
 
@@ -10,9 +13,7 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 20)
 
 # Enable all warnings and extra warnings
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -fopenmp -pthread")
-
-set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -lcusparse -lcudss")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -fopenmp")
 
 #################################
 ## Download dependencies
@@ -100,19 +101,21 @@ target_link_libraries(non_cuda_library PRIVATE Eigen3::Eigen)
 if (CMAKE_CUDA_COMPILER)
   # write out the CUDA compiler
   message(STATUS "CUDA compiler: ${CMAKE_CUDA_COMPILER}")
+
+  # Setting to use dynamic linking of the CUDA runtime library
+  # -> avoids "nvlink warning : Skipping incompatible something_something.a ..." warnings
+  set(CMAKE_CUDA_RUNTIME_LIBRARY Shared)
+
   # Set CUDA architectures (to avoid CMP0104 warnings)
-  if (CMAKE_CUDA_COMPILER)
-    set(CMAKE_CUDA_ARCHITECTURES 86)
-  endif()
-  # Allow many relevant CUDA architectures
-  set(CUDA_ARCHITECTURES 86)
+  set(CMAKE_CUDA_ARCHITECTURES 86)
+
   include_directories(${CUDA_INCLUDE_DIRS})
   find_package(cudss REQUIRED)
   
   # Create CUDA library
   add_library(cuda_library STATIC ${CUDA_SOURCES})
   set_target_properties(cuda_library PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
-  target_link_libraries(cuda_library PRIVATE Eigen3::Eigen ${CUDA_LIBRARIES} cusparse cusolver cudss)
+  target_link_libraries(cuda_library PRIVATE Eigen3::Eigen cusparse cusolver cudss)
 
   # CUDA-enabled executables
   add_executable(benchmark_convergence ${SOURCE_DIR}/benchmarking/benchmark_convergence.cpp)
