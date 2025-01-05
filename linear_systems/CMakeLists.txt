@@ -27,7 +27,7 @@ FetchContent_MakeAvailable(googletest)
 # Print that Gtest now installed
 message(STATUS "Gtest installed")
 
-add_library(linear_systems STATIC src/linear_systems/dense.cpp src/linear_systems/sparse.cpp)
+add_library(linear_systems STATIC src/linear_systems/dense.cpp src/linear_systems/sparse.cpp src/linear_systems/discretization.cpp)
 
 target_link_libraries(linear_systems Eigen3::Eigen)
 

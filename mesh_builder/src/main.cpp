@@ -10,20 +10,11 @@
 #include <Eigen/SparseCore>
 #include <fstream>
 #include <iostream>
-#include <vector>
-#include <utility>
 #include <nlohmann/json.hpp>
+#include <utility>
+#include <vector>
 
-#include "linear_systems/sparse.hpp"
-
-struct PositionHint {
-  double x, y;
-};
-
-struct Discretization {
-  SparseLinearSystem sys;
-  std::vector<PositionHint> position_hints;
-};
+#include "linear_systems/discretization.hpp"
 
 Discretization generate_discretization(nlohmann::json config_data) {
   // set up rhs functions for problems we want to benchmark on
@@ -102,13 +93,13 @@ Discretization generate_discretization(nlohmann::json config_data) {
     fe_space = std::make_shared<lf::uscalfe::FeSpaceLagrangeO3<double>>(mesh_p);
   }
 
-  const lf::assemble::DofHandler& dofh = fe_space->LocGlobMap();
+  const lf::assemble::DofHandler &dofh = fe_space->LocGlobMap();
 
   std::vector<PositionHint> position_hints;
 
   // For each global dof, get the associated entity:
   for (int dof_idx = 0; dof_idx < dofh.NumDofs(); ++dof_idx) {
-    const lf::mesh::Entity& dof_entity = dofh.Entity(dof_idx);
+    const lf::mesh::Entity &dof_entity = dofh.Entity(dof_idx);
 
     // Get the geometry for this entity
     auto geom = dof_entity.Geometry();
@@ -141,7 +132,7 @@ Discretization generate_discretization(nlohmann::json config_data) {
 
   // Assemble the system matrix and right hand side
   Eigen::VectorXd rhs = Eigen::VectorXd::Zero(fe_space->LocGlobMap().NumDofs());
-  //const lf::assemble::DofHandler &dofh = fe_space->LocGlobMap();
+  // const lf::assemble::DofHandler &dofh = fe_space->LocGlobMap();
   lf::assemble::COOMatrix<double> A_COO(dofh.NumDofs(), dofh.NumDofs());
 
   lf::uscalfe::ReactionDiffusionElementMatrixProvider<
@@ -161,7 +152,7 @@ Discretization generate_discretization(nlohmann::json config_data) {
   };
   FixFlaggedSolutionComponents(selector, A_COO, rhs);
 
-  return { SparseLinearSystem(A_COO.makeSparse(), rhs), position_hints };
+  return {SparseLinearSystem(A_COO.makeSparse(), rhs), position_hints};
 }
 
 int main(int argc, char **argv) {

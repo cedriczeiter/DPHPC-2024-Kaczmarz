@@ -61,6 +61,7 @@ set(CUDA_SOURCES
   ${SOURCE_DIR}/solvers/banded.cu
   ${SOURCE_DIR}/solvers/basic.cpp
   ${SOURCE_DIR}/solvers/banded.cpp
+  ${SOURCE_DIR}/solvers/nolpde.cpp
   ${SOURCE_DIR}/solvers/asynchronous.cu
   ${SOURCE_DIR}/solvers/asynchronous.cpp
   ${SOURCE_DIR}/solvers/carp.cu
@@ -120,6 +121,7 @@ if (CMAKE_CUDA_COMPILER)
   # CUDA-enabled executables
   add_executable(benchmark_convergence ${SOURCE_DIR}/benchmarking/benchmark_convergence.cpp)
   add_executable(benchmark_single_run ${SOURCE_DIR}/benchmarking/benchmark_single_run.cpp)
+  add_executable(benchmark_nolpde ${SOURCE_DIR}/benchmarking/benchmark_nolpde.cpp)
   add_executable(benchmark_carp_multiple_run ${SOURCE_DIR}/benchmarking/benchmark_carp_multiple_run.cpp)
   add_executable(relaxation_parameter_carp_single_run ${SOURCE_DIR}/benchmarking/relaxation_parameter_carp_single_run.cpp)
   add_executable(relaxation_parameter_carp_multiple_run ${SOURCE_DIR}/benchmarking/relaxation_parameter_carp_multiple_run.cpp)
@@ -129,6 +131,7 @@ if (CMAKE_CUDA_COMPILER)
   # Link the non-CUDA and CUDA libraries to the executables
   target_link_libraries(benchmark_convergence PRIVATE non_cuda_library cuda_library linear_systems)
   target_link_libraries(benchmark_single_run PRIVATE non_cuda_library cuda_library linear_systems)
+  target_link_libraries(benchmark_nolpde PRIVATE non_cuda_library cuda_library linear_systems)
   target_link_libraries(benchmark_carp_multiple_run PRIVATE non_cuda_library cuda_library linear_systems)
   target_link_libraries(relaxation_parameter_carp_single_run PRIVATE non_cuda_library cuda_library linear_systems)
   target_link_libraries(benchmark_pde PRIVATE non_cuda_library cuda_library linear_systems)
