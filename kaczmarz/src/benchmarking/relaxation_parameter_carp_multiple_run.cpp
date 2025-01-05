@@ -29,7 +29,7 @@ int main() {
   std::cout << "\n \n CARP find relaxation parameter auto on all files"
             << std::endl;
 
-  std::string file_path = "../../generated_bvp_matrices";
+  std::string file_path = "../../benchmarking_data";
 
   double end_relaxation = 0.7;
   double step_relaxation = 0.05;
