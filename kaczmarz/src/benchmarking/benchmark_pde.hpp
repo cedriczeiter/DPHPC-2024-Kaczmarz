@@ -41,7 +41,7 @@
 // Define filename
 #define CARP_CG_FILE "benchmark_results_carp_cg.csv"
 #define EIGEN_CG_FILE "benchmark_results_eigen_cg.csv"
-#define EIGEN_BICGSTAB_FILE "eigen_bicgstab.csv"
+#define EIGEN_BICGSTAB_FILE "benchmark_results_eigen_bicgstab.csv"
 #define CGMNC_FILE "benchmark_results_cgmnc.csv"
 #define EIGEN_DIRECT_FILE "benchmark_results_eigen_direct.csv"
 #define BASIC_KACZMARZ_FILE "benchmark_results_basic_kaczmarz.csv"
