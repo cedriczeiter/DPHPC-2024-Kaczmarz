@@ -56,8 +56,8 @@ class CUDANolPDESolver : public PermutingNolPDESolver {
   double* x_gpu = nullptr;
   double* sq_norms_gpu = nullptr;
   double* b_gpu = nullptr;
-  int* A_outer_gpu = nullptr;
-  int* A_inner_gpu = nullptr;
+  unsigned* A_outer_gpu = nullptr;
+  unsigned* A_inner_gpu = nullptr;
   double* A_values_gpu = nullptr;
 
   virtual unsigned get_blocks_required() override;

@@ -5,6 +5,7 @@
 
 #include "banded_cuda.hpp"
 #include "cuda_common.hpp"
+#include "cuda_utils.hpp"
 #include "omp.h"
 
 /**
@@ -239,14 +240,6 @@ void SerialInterleavedBandedSolver::iterate(const unsigned iterations) {
       }
     }
   }
-}
-
-template <typename T>
-static T* gpu_malloc_and_copy(const std::vector<T>& v) {
-  const size_t byte_count = v.size() * sizeof(T);
-  T* const gpu_memory = (T*)cuda_malloc(byte_count);
-  cuda_memcpy_host_to_device(gpu_memory, &v[0], byte_count);
-  return gpu_memory;
 }
 
 void GPUBandedSolver::setup(UnpackedBandedSystem* const sys) {

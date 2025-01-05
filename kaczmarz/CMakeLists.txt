@@ -59,6 +59,7 @@ set(NON_CUDA_SOURCES
 # All files that have something that needs cuda inside in here
 set(CUDA_SOURCES
   ${SOURCE_DIR}/solvers/cuda_common.cu
+  ${SOURCE_DIR}/solvers/cuda_utils.cpp
   ${SOURCE_DIR}/solvers/banded.cu
   ${SOURCE_DIR}/solvers/basic.cpp
   ${SOURCE_DIR}/solvers/banded.cpp
