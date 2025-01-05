@@ -4,6 +4,7 @@
 #include <numeric>
 
 #include "banded_cuda.hpp"
+#include "cuda_common.hpp"
 #include "omp.h"
 
 /**

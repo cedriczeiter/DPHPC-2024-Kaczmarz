@@ -1,26 +1,9 @@
 #include <cooperative_groups.h>
 #include <stdio.h>
 
+#include "banded_cuda.hpp"
+
 namespace cg = cooperative_groups;
-
-void *cuda_malloc(const size_t size) {
-  void *ptr;
-  cudaMalloc(&ptr, size);
-  return ptr;
-}
-
-void cuda_memcpy_host_to_device(void *const device_ptr,
-                                const void *const host_ptr, const size_t size) {
-  cudaMemcpy(device_ptr, host_ptr, size, cudaMemcpyHostToDevice);
-}
-
-void cuda_memcpy_device_to_host(void *const host_ptr,
-                                const void *const device_ptr,
-                                const size_t size) {
-  cudaMemcpy(host_ptr, device_ptr, size, cudaMemcpyDeviceToHost);
-}
-
-void cuda_free(void *const device_ptr) { cudaFree(device_ptr); }
 
 /**
  * Expects x and A_data padded so that edge cases need not be dealt with.
@@ -52,10 +35,6 @@ __global__ void kaczmarz_banded_grouping1(double *x, double *A_data,
         x[row_idx - bandwidth + i] +=
             update_coeff * A_data[(2 * bandwidth + 1) * row_idx + i];
       }
-      for (int i = 0; i < 2 * bandwidth + 1; i++) {
-        dot += A_data[(2 * bandwidth + 1) * row_idx + i] *
-               x[row_idx - bandwidth + i];
-      }
     }
     grid.sync();
     for (int row_idx = mid_row_idx; row_idx < (int)end_row_idx; row_idx++) {
@@ -68,10 +47,6 @@ __global__ void kaczmarz_banded_grouping1(double *x, double *A_data,
       for (int i = 0; i < 2 * bandwidth + 1; i++) {
         x[row_idx - bandwidth + i] +=
             update_coeff * A_data[(2 * bandwidth + 1) * row_idx + i];
-      }
-      for (int i = 0; i < 2 * bandwidth + 1; i++) {
-        dot += A_data[(2 * bandwidth + 1) * row_idx + i] *
-               x[row_idx - bandwidth + i];
       }
     }
     grid.sync();
@@ -130,10 +105,6 @@ __global__ void kaczmarz_banded_grouping2(double *x, double *A_data,
         for (int i = 0; i < 2 * bandwidth + 1; i++) {
           x[row_idx - bandwidth + i] +=
               update_coeff * A_data[(2 * bandwidth + 1) * row_idx + i];
-        }
-        for (int i = 0; i < 2 * bandwidth + 1; i++) {
-          dot += A_data[(2 * bandwidth + 1) * row_idx + i] *
-                 x[row_idx - bandwidth + i];
         }
       }
       grid.sync();
