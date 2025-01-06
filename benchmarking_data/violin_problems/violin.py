@@ -2,8 +2,8 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-#increase font size
-plt.rcParams.update({'font.size': 14})
+# Increase font size
+plt.rcParams.update({'font.size': 30})
 
 # List of file paths
 file_paths = [
@@ -32,18 +32,14 @@ selected_methods = ["GPU iterative Carp-CG", "GPU direct NVIDIA cuDSS", "CPU ite
 
 # Iterate over each complexity level
 for complexity in range(1, 9):
-    # Create a figure with 4 subplots
-    fig, axes = plt.subplots(1, 4, figsize=(24, 6), sharey=False)
+    # Create a figure with 4 subplots in a 2x2 grid
+    fig, axes = plt.subplots(2, 2, figsize=(24, 18), sharey=False)
+    axes = axes.flatten()  # Flatten the 2D array of axes for easier indexing
 
     # Iterate over each file
     for path in file_paths:
-
-
         # Load the data
         df = pd.read_csv(path)
-
-
-
 
         # Extract the method name from the file path
         method = path.split('_')[-1].split('.')[0]
@@ -51,7 +47,6 @@ for complexity in range(1, 9):
 
         # Check if the method is one of the selected methods
         if method in selected_methods:
-
             # Filter the data to only include rows with the current complexity and status "Converged"
             df_filtered = df[(df['Complexity'] == complexity) & (df['Status'] == 'Converged')].copy()
 
