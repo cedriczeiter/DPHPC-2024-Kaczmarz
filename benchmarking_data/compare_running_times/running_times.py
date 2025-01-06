@@ -3,15 +3,30 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import numpy as np
 
+#increase font size
+plt.rcParams.update({'font.size': 14})
+
 # List of file paths
 file_paths = [
-    '../benchmark_results_carp_cg_specific_architecture.csv',
+    '../benchmark_results_carp_cgspecificarchitecture.csv',
     '../benchmark_results_basic_kaczmarz.csv',
     '../benchmark_results_cgmnc.csv',
-    '../benchmark_results_cusolver.csv',
+    '../benchmark_results_cusolverspecificarchitecture.csv',
     '../benchmark_results_eigen_cg.csv',
-    '../benchmark_results_eigen_direct.csv'
+    '../benchmark_results_eigen_direct.csv',
+    '../benchmark_results_eigen_bicgstab.csv'
 ]
+
+# Method mapping
+method_mapping = {
+    "cgspecificarchitecture": "GPU iterative Carp-CG",
+    "kaczmarz": "CPU iterative Kaczmarz",
+    "cgmnc": "CPU iterative cgmnc",
+    "cusolverspecificarchitecture": "GPU direct NVIDIA cuDSS",
+    "cg": "CPU iterative Eigen CG",
+    "direct": "CPU direct Eigen SparseLU",
+    "bicgstab": "CPU iterative Eigen BiCGSTAB"
+}
 
 # Dictionary to store data for each problem
 problem_data = {}
@@ -27,7 +42,7 @@ for path in file_paths:
     # Iterate over each problem
     for problem in df['Problem'].unique():
         # Filter the data to only include rows with the current problem
-        df_filtered = df[df['Problem'] == problem]
+        df_filtered = df[df['Problem'] == problem & (df['Status'] == 'Converged')].copy()
 
         # Group by dimension and calculate mean and variance of time
         df_grouped = df_filtered.groupby('Dim').agg({'Time': ['median', 'var']}).reset_index()
