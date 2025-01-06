@@ -76,7 +76,7 @@ for problem, data in problem_data.items():
 
     # Plot for all iterative solvers
     fig, ax2 = plt.subplots(figsize=(12, 6))
-    sns.scatterplot(x='Dim', y='Time_mean', hue='Method', style='Method', palette=color_map, data=data[data['Method'].isin(['GPU iterative CARP-CG', 'CPU iterative CGMNC', 'CPU iterative Eigen CG', 'CPU iterative Eigen BiCGSTAB'])], ax=ax2)
+    sns.scatterplot(x='Dim', y='Time_mean', hue='Method', style='Method', palette=color_map, data=data[data['Method'].isin(['GPU iterative CARP-CG', 'CPU iterative CGMNC', 'CPU iterative Eigen BiCGSTAB'])], ax=ax2)
     ax2.set_xscale('log')
     ax2.set_yscale('log')
     ax2.set_title(f'Running Time vs Dimension for Problem {problem} (CARP-CG against iterative solvers)')
