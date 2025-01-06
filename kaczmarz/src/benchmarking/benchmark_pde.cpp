@@ -29,7 +29,7 @@ int main() {
         skip_algorithm;
 
     // Loop over complexities
-    for (unsigned int complexity = 1; complexity <= MAX_COMPLEXITY;
+    for (unsigned int complexity = 6; complexity <= 6;
          ++complexity) {
       std::cout << "  Processing complexity: " << complexity << std::endl;
 
@@ -39,14 +39,15 @@ int main() {
 
       if (complexity <= 4) {
         // These algorithms are used for benchmarking
-        algorithms_names = {"CARP_CG", "Eigen_CG",     "Eigen_BiCGSTAB",
-                            "CGMNC",   "Eigen_Direct", "Basic_Kaczmarz",
+        algorithms_names = {"CARP_CG",     "Eigen_BiCGSTAB",
+                            "CGMNC",   "Eigen_Direct", 
                             "CUSolver"};
       } else {
         // These algorithms are used for benchmarking, we don't benchmark Basic
         // Kaczmarz anymore, if higher complexity than 4
-        algorithms_names = {"CARP_CG", "Eigen_CG",     "Eigen_BiCGSTAB",
-                            "CGMNC",   "Eigen_Direct", "CUSolver"};
+        algorithms_names = {"CARP_CG",     "Eigen_BiCGSTAB",
+                            "CGMNC",   "Eigen_Direct", 
+                            "CUSolver"};
       }
 
       // Randomize algorithm order for this complexity
@@ -79,7 +80,7 @@ int main() {
         // So to the end of complexity 6, 5.4 + 6 = 11.4 hours
         case 5:
         case 6:
-          num_it = 60;
+          num_it = 201;
           break;
           // For the the next complexity, we use 20 iterations, because the
           // worst algorithm takes around 100 seconds 20*100 = 2000 seconds = 33
