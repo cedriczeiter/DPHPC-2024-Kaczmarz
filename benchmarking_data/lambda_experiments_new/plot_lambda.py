@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 from matplotlib.lines import Line2D
 
-plt.rcParams.update({'font.size': 12})
+plt.rcParams.update({'font.size': 16})
 
 # Get all files out of the folder data
 files = glob.glob('data/*.csv')
@@ -82,29 +82,29 @@ interval_hor_size = 0.005
 # Draw an interval for problem 1
 interval_x = [x_coord, x_coord]
 interval_y = [0, 2000]
-plt.plot(interval_x, interval_y, color='red', lw=2)
-plt.plot([interval_x[0] - interval_hor_size, interval_x[0] + interval_hor_size], [interval_y[0], interval_y[0]], color='red', lw=2)
-plt.plot([interval_x[1] - interval_hor_size, interval_x[1] + interval_hor_size], [interval_y[1], interval_y[1]], color='red', lw=2)
-# Add a big red three to the plot
-plt.text(x_coord_number, 0, 'P1', fontsize=20, color='red')
+plt.plot(interval_x, interval_y, color='magenta', lw=2)
+plt.plot([interval_x[0] - interval_hor_size, interval_x[0] + interval_hor_size], [interval_y[0], interval_y[0]], color='magenta', lw=2)
+plt.plot([interval_x[1] - interval_hor_size, interval_x[1] + interval_hor_size], [interval_y[1], interval_y[1]], color='magenta', lw=2)
+# Add a big magenta three to the plot
+plt.text(x_coord_number, 0, 'P1', fontsize=20, color='magenta')
 
 # Draw an interval for problem 2
 interval_x = [x_coord, x_coord]
 interval_y = [3500, 6500]
-plt.plot(interval_x, interval_y, color='red', lw=2)
-plt.plot([interval_x[0] - interval_hor_size, interval_x[0] + interval_hor_size], [interval_y[0], interval_y[0]], color='red', lw=2)
-plt.plot([interval_x[1] - interval_hor_size, interval_x[1] + interval_hor_size], [interval_y[1], interval_y[1]], color='red', lw=2)
-# Add a big red three to the plot
-plt.text(x_coord_number, 4000, 'P2', fontsize=20, color='red')
+plt.plot(interval_x, interval_y, color='magenta', lw=2)
+plt.plot([interval_x[0] - interval_hor_size, interval_x[0] + interval_hor_size], [interval_y[0], interval_y[0]], color='magenta', lw=2)
+plt.plot([interval_x[1] - interval_hor_size, interval_x[1] + interval_hor_size], [interval_y[1], interval_y[1]], color='magenta', lw=2)
+# Add a big magenta three to the plot
+plt.text(x_coord_number, 4000, 'P2', fontsize=20, color='magenta')
 
 # Draw an interval for problem 3
 interval_x = [x_coord, x_coord]
 interval_y = [14500, 26000]
-plt.plot(interval_x, interval_y, color='red', lw=2)
-plt.plot([interval_x[0] - interval_hor_size, interval_x[0] + interval_hor_size], [interval_y[0], interval_y[0]], color='red', lw=2)
-plt.plot([interval_x[1] - interval_hor_size, interval_x[1] + interval_hor_size], [interval_y[1], interval_y[1]], color='red', lw=2)
-# Add a big red three to the plot
-plt.text(x_coord_number, 19500, 'P3', fontsize=20, color='red')
+plt.plot(interval_x, interval_y, color='magenta', lw=2)
+plt.plot([interval_x[0] - interval_hor_size, interval_x[0] + interval_hor_size], [interval_y[0], interval_y[0]], color='magenta', lw=2)
+plt.plot([interval_x[1] - interval_hor_size, interval_x[1] + interval_hor_size], [interval_y[1], interval_y[1]], color='magenta', lw=2)
+# Add a big magenta three to the plot
+plt.text(x_coord_number, 19500, 'P3', fontsize=20, color='magenta')
 
 
 
@@ -118,7 +118,7 @@ handles = marker_handles + color_handles + minima_handle
 labels = [f'Complexity {k}' for k in complexity_markers.keys()] + [f'Degree {k}' for k in degree_colors.keys()] + ['Minima']
 
 # Create combined legend
-plt.legend(handles, labels, loc='center left', bbox_to_anchor=(1, 0.5), title='Legend')
+plt.legend(handles, labels, loc='upper right', title='', framealpha=1.0)
 
 plt.savefig('lambda_experiments.eps', format='eps', bbox_inches='tight')
 plt.savefig('lambda_experiments.png', format='png', bbox_inches='tight')
