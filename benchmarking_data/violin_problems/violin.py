@@ -28,7 +28,7 @@ method_mapping = {
 }
 
 # Selected methods for plotting
-selected_methods = ["GPU iterative Carp-CG", "GPU direct NVIDIA cuDSS", "CPU iterative cgmnc", "CPU direct Eigen SparseLU"]
+selected_methods = ["GPU iterative Carp-CG", "CPU iterative Eigen BiCGSTAB", "CPU iterative cgmnc", "CPU direct Eigen SparseLU"]
 
 # Iterate over each complexity level
 for complexity in range(1, 9):
@@ -47,20 +47,24 @@ for complexity in range(1, 9):
 
         # Check if the method is one of the selected methods
         if method in selected_methods:
-            # Filter the data to only include rows with the current complexity and status "Converged"
-            df_filtered = df[(df['Complexity'] == complexity) & (df['Status'] == 'Converged')].copy()
+            
+            #get median for each problem
+            for problem in df['Problem'].unique():
+                # Filter the data to only include rows with the current complexity and status "Converged"
+                df_filtered = df[(df['Complexity'] == complexity) & (df['Status'] == 'Converged') & (df['Problem'] == problem)].copy()
+                
+                #get median time for specific problem
+                median_time = df_filtered['Time'].median()\
 
-            # Calculate the median time for normalization
-            median_time = df_filtered['Time'].median()
+                # Normalize the 'Time' values by the median
+                df_filtered.loc[:, 'NormalizedTime'] = df_filtered['Time'] / median_time
 
-            # Normalize the 'Time' values by the median
-            df_filtered.loc[:, 'NormalizedTime'] = df_filtered['Time'] / median_time
+                # Get the index of the subplot
+                index = selected_methods.index(method)
 
-            # Get the index of the subplot
-            index = selected_methods.index(method)
+                # Plotting the violin plot
+                sns.violinplot(x='Problem', y='NormalizedTime', data=df_filtered, ax=axes[index])
 
-            # Plotting the violin plot
-            sns.violinplot(x='Problem', y='NormalizedTime', data=df_filtered, ax=axes[index])
 
             # Customize the plot
             axes[index].set_title(f'{method}')
