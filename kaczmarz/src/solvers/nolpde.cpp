@@ -1,12 +1,19 @@
 #include "nolpde.hpp"
 
+#include <limits>
+
+#include "Eigen/src/Core/PermutationMatrix.h"
+#include "Eigen/src/Core/util/Constants.h"
 #include "cuda_common.hpp"
 #include "cuda_utils.hpp"
 #include "nolpde_cuda.hpp"
 
-void NolPDESolver::run_iterations(const Discretization& /* d */,
-                                  Vector& /* x */, unsigned /* iterations */) {
-  throw "TODO: implement";
+void NolPDESolver::run_iterations(const Discretization& d, Vector& x,
+                                  const unsigned iterations) {
+  this->setup(&d, &x);
+  this->iterate(iterations);
+  this->flush_x();
+  this->cleanup();
 }
 
 KaczmarzSolverStatus NolPDESolver::solve(const Discretization& /* lse */,
@@ -17,14 +24,163 @@ KaczmarzSolverStatus NolPDESolver::solve(const Discretization& /* lse */,
   throw "TODO: implement";
 }
 
-void PermutingNolPDESolver::setup(const Discretization* const /* d */,
-                                  Vector* const /* x */) {
-  throw "TODO: implement";
+struct BlockFactorization {
+  unsigned x_block_count, y_block_count;
+};
+
+static BlockFactorization optimal_thread_factorization(
+    const unsigned block_count, const unsigned max_x_block_count,
+    const unsigned max_y_block_count, const double square_affinity) {
+  if (block_count >= max_x_block_count * max_y_block_count) {
+    // round down to multiples of two
+    return {max_x_block_count & (-2), max_y_block_count & (-2)};
+  }
+  BlockFactorization best_factorization;
+  double best_cost = std::numeric_limits<double>::infinity();
+
+  const auto consider_factorization = [&](const unsigned x_block_count,
+                                          const unsigned y_block_count) {
+    if (x_block_count <= max_x_block_count &&
+        y_block_count <= max_y_block_count) {
+      const double non_squareness =
+          std::abs(std::log((x_block_count / (double)max_x_block_count) /
+                            (y_block_count / (double)max_y_block_count)));
+      const double cost =
+          non_squareness * square_affinity +
+          (block_count - x_block_count * y_block_count) / (double)block_count;
+      if (cost < best_cost) {
+        best_cost = cost;
+        best_factorization = {x_block_count, y_block_count};
+      }
+    }
+  };
+
+  for (unsigned blocks_available = block_count; blocks_available >= 1;
+       blocks_available--) {
+    for (unsigned div1 = 1; div1 * div1 <= blocks_available; div1++) {
+      if (blocks_available % div1 == 0) {
+        const unsigned div2 = blocks_available / div1;
+        if (div1 % 2 == 0 && div2 % 2 == 0) {
+          consider_factorization(div1, div2);
+          consider_factorization(div2, div1);
+        }
+      }
+    }
+  }
+  return best_factorization;
 }
 
-void PermutingNolPDESolver::flush_x() { throw "TODO: implement"; }
+void PermutingNolPDESolver::setup(const Discretization* const d,
+                                  Vector* const x) {
+  const unsigned dim = d->position_hints.size();
 
-unsigned CUDANolPDESolver::get_blocks_required() {
+  const unsigned block_count = this->get_block_count_required();
+
+  double x_min = std::numeric_limits<double>::infinity();
+  double x_max = -std::numeric_limits<double>::infinity();
+  double y_min = std::numeric_limits<double>::infinity();
+  double y_max = -std::numeric_limits<double>::infinity();
+  for (const auto& hint : d->position_hints) {
+    x_min = std::min(x_min, hint.x);
+    x_max = std::max(x_max, hint.x);
+    y_min = std::min(y_min, hint.y);
+    y_max = std::max(y_max, hint.y);
+  }
+
+  double max_x_sep = 0.0;
+  double max_y_sep = 0.0;
+  const SparseMatrix& A = d->sys.A();
+  for (unsigned row = 0; row < dim; row++) {
+    for (SparseMatrix::InnerIterator it(A, row); it; ++it) {
+      const PositionHint h1 = d->position_hints[it.col()];
+      const PositionHint h2 = d->position_hints[it.row()];
+      max_x_sep = std::max(max_x_sep, std::abs(h1.x - h2.x));
+      max_y_sep = std::max(max_y_sep, std::abs(h1.y - h2.y));
+    }
+  }
+
+  const double min_x_block_size = max_x_sep * 1.01;
+  const double min_y_block_size = max_y_sep * 1.01;
+
+  const unsigned max_x_block_count = (x_max - x_min) / min_x_block_size;
+  const unsigned max_y_block_count = (y_max - y_min) / min_y_block_size;
+
+  const BlockFactorization factorization = optimal_thread_factorization(
+      block_count, max_x_block_count, max_y_block_count, 1e-3);
+
+  assert(factorization.x_block_count % 2 == 0);
+  assert(factorization.y_block_count % 2 == 0);
+
+  std::vector<std::vector<std::vector<unsigned>>> blocks(
+      factorization.x_block_count,
+      std::vector<std::vector<unsigned>>(factorization.y_block_count));
+
+  for (unsigned i = 0; i < dim; i++) {
+    const PositionHint hint = d->position_hints[i];
+    const unsigned x_unit_coor = (hint.x - x_min) / (x_max - x_min);
+    const unsigned x_block_coor =
+        x_unit_coor == 1.0 ? factorization.x_block_count - 1
+                           : x_unit_coor * factorization.x_block_count;
+    const unsigned y_unit_coor = (hint.y - y_min) / (y_max - y_min);
+    const unsigned y_block_coor =
+        y_unit_coor == 1.0 ? factorization.y_block_count - 1
+                           : y_unit_coor * factorization.y_block_count;
+    blocks[x_block_coor][y_block_coor].push_back(i);
+  }
+
+  this->permutation = std::vector<unsigned>(dim);
+  unsigned next_in_permutation = 0;
+  for (unsigned block_x = 0; block_x < factorization.x_block_count;
+       block_x += 2) {
+    for (unsigned block_y = 0; block_x < factorization.x_block_count;
+         block_x += 2) {
+      for (unsigned block_x_inner = block_x; block_x_inner < block_x + 2;
+           block_x++) {
+        for (unsigned block_y_inner = block_y; block_y_inner < block_y + 2;
+             block_y++) {
+          this->block_boundaries.push_back(next_in_permutation);
+          for (const unsigned i : blocks[block_x_inner][block_y_inner]) {
+            this->permutation[next_in_permutation++] = i;
+          }
+        }
+      }
+    }
+  }
+  assert(next_in_permutation == dim);
+  while (this->block_boundaries.size() < block_count + 1) {
+    this->block_boundaries.push_back(dim);
+  }
+
+  this->inv_permutation = std::vector<unsigned>(dim);
+  for (unsigned i = 0; i < dim; i++) {
+    this->inv_permutation[this->permutation[i]] = i;
+  }
+
+  Eigen::PermutationMatrix<Eigen::Dynamic, Eigen::Dynamic> permutation_matrix(
+      dim);
+  for (unsigned i = 0; i < dim; i++) {
+    permutation_matrix.indices()(i) = this->permutation[i];
+  }
+
+  this->post_permute_x = permutation_matrix * *x;
+  const Vector post_permute_b = permutation_matrix * d->sys.b();
+  const SparseMatrix post_permute_A = permutation_matrix * d->sys.A();
+  this->post_permute_sys =
+      std::make_unique<SparseLinearSystem>(post_permute_A, post_permute_b);
+  this->x = x;
+}
+
+void PermutingNolPDESolver::flush_x() {
+  const unsigned dim = this->post_permute_sys->b().size();
+  Eigen::PermutationMatrix<Eigen::Dynamic, Eigen::Dynamic> permutation_matrix(
+      dim);
+  for (unsigned i = 0; i < dim; i++) {
+    permutation_matrix.indices()(i) = this->inv_permutation[i];
+  }
+  *this->x = permutation_matrix * this->post_permute_x;
+}
+
+unsigned CUDANolPDESolver::get_block_count_required() {
   return this->block_count * this->threads_per_block * 4;
 }
 
