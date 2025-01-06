@@ -63,10 +63,10 @@ color_map = {method: palette[i] for i, method in enumerate(method_mapping.values
 for problem, data in problem_data.items():
     # Plot for Carp-CG, cuDSS, and SparseLU
     fig, ax1 = plt.subplots(figsize=(12, 6))
-    sns.scatterplot(x='Dim', y='Time_mean', hue='Method', style='Method', palette=color_map, data=data[data['Method'].isin(['GPU iterative Carp-CG', 'GPU direct NVIDIA cuDSS', 'CPU direct Eigen SparseLU'])], ax=ax1)
+    sns.scatterplot(x='Dim', y='Time_mean', hue='Method', style='Method', palette=color_map, data=data[data['Method'].isin(['GPU iterative CARP-CG', 'GPU direct NVIDIA cuDSS', 'CPU direct Eigen SparseLU'])], ax=ax1)
     ax1.set_xscale('log')
     ax1.set_yscale('log')
-    ax1.set_title(f'Running Time vs Dimension for Problem {problem} (Carp-CG against direct solvers)')
+    ax1.set_title(f'Running Time vs Dimension for Problem {problem} (CARP-CG against direct solvers)')
     ax1.set_xlabel('Dimension')
     ax1.set_ylabel('Time (seconds)')
     ax1.legend(loc='lower right')
@@ -76,10 +76,10 @@ for problem, data in problem_data.items():
 
     # Plot for all iterative solvers
     fig, ax2 = plt.subplots(figsize=(12, 6))
-    sns.scatterplot(x='Dim', y='Time_mean', hue='Method', palette=color_map, data=data[data['Method'].isin(['GPU iterative Carp-CG', 'CPU iterative cgmnc', 'CPU iterative Eigen CG', 'CPU iterative Eigen BiCGSTAB'])], ax=ax2)
+    sns.scatterplot(x='Dim', y='Time_mean', hue='Method', style='Method', palette=color_map, data=data[data['Method'].isin(['GPU iterative CARP-CG', 'CPU iterative CGMNC', 'CPU iterative Eigen CG', 'CPU iterative Eigen BiCGSTAB'])], ax=ax2)
     ax2.set_xscale('log')
     ax2.set_yscale('log')
-    ax2.set_title(f'Running Time vs Dimension for Problem {problem} (Carp-CG against iterative solvers)')
+    ax2.set_title(f'Running Time vs Dimension for Problem {problem} (CARP-CG against iterative solvers)')
     ax2.set_xlabel('Dimension')
     ax2.set_ylabel('Time (seconds)')
     ax2.legend(loc='lower right')
