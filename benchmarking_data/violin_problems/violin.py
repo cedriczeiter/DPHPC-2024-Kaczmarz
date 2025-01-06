@@ -2,53 +2,83 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 
+#increase font size
+plt.rcParams.update({'font.size': 14})
+
 # List of file paths
 file_paths = [
-    '../benchmark_results_carp_cg_specific_architecture.csv',
+    '../benchmark_results_carp_cgspecificarchitecture.csv',
     '../benchmark_results_basic_kaczmarz.csv',
     '../benchmark_results_cgmnc.csv',
-    '../benchmark_results_cusolver.csv',
+    '../benchmark_results_cusolverspecificarchitecture.csv',
     '../benchmark_results_eigen_cg.csv',
-    '../benchmark_results_eigen_direct.csv'
+    '../benchmark_results_eigen_direct.csv',
+    '../benchmark_results_eigen_bicgstab.csv'
 ]
 
-# Iterate over each file
-for path in file_paths:
-    # Load the data
-    df = pd.read_csv(path)
+# Method mapping
+method_mapping = {
+    "cgspecificarchitecture": "GPU iterative Carp-CG",
+    "kaczmarz": "CPU iterative Kaczmarz",
+    "cgmnc": "CPU iterative cgmnc",
+    "cusolverspecificarchitecture": "GPU direct NVIDIA cuDSS",
+    "cg": "CPU iterative Eigen CG",
+    "direct": "CPU direct Eigen SparseLU",
+    "bicgstab": "CPU iterative Eigen BiCGSTAB"
+}
 
-    # Display the first few rows of the DataFrame to understand its structure
-    print(df.head())
+# Selected methods for plotting
+selected_methods = ["GPU iterative Carp-CG", "GPU direct NVIDIA cuDSS", "CPU iterative cgmnc", "CPU direct Eigen SparseLU"]
 
-    # Extract the method name from the file path
-    method = path.split('_')[-1].split('.')[0]
+# Iterate over each complexity level
+for complexity in range(1, 9):
+    # Create a figure with 4 subplots
+    fig, axes = plt.subplots(1, 4, figsize=(24, 6), sharey=False)
 
-    #some renaming:
-    if (method == "architecture"):
-        method = "GPU Carp-CG"
-    elif (method == "cg"):
-        method = "Eigen LeastSquaresCG"
-    elif (method == "direct"):
-        method = "Eigen SparseLU"
-    elif (method == "kaczmarz"):
-        method = "Kaczmarz"
-    elif (method == "cusolver"):
-        method = "NVIDIA cuDSS"
+    # Iterate over each file
+    for path in file_paths:
 
-    # Iterate over all 8 complexities
-    for complexity in range(1, 9):
-        # Filter the data to only include rows with the current complexity
-        df_filtered = df[df['Complexity'] == complexity]
 
-        # Plotting the violin plot
-        plt.figure(figsize=(12, 6))
-        sns.violinplot(x='Problem', y='Time', data=df_filtered)
+        # Load the data
+        df = pd.read_csv(path)
 
-        # Customize the plot
-        plt.title(f'Violin Plot of Time by Problem (Complexity {complexity}) with {method}')
-        plt.xlabel('Problem')
-        plt.ylabel('Time (seconds)')
 
-        # Save plot
-        plt.savefig(f'violin_plot_{method}_complexity_{complexity}.png')
-        plt.close()
+
+
+        # Extract the method name from the file path
+        method = path.split('_')[-1].split('.')[0]
+        method = method_mapping.get(method, method)
+
+        # Check if the method is one of the selected methods
+        if method in selected_methods:
+
+            # Filter the data to only include rows with the current complexity and status "Converged"
+            df_filtered = df[(df['Complexity'] == complexity) & (df['Status'] == 'Converged')].copy()
+
+            # Calculate the median time for normalization
+            median_time = df_filtered['Time'].median()
+
+            # Normalize the 'Time' values by the median
+            df_filtered.loc[:, 'NormalizedTime'] = df_filtered['Time'] / median_time
+
+            # Get the index of the subplot
+            index = selected_methods.index(method)
+
+            # Plotting the violin plot
+            sns.violinplot(x='Problem', y='NormalizedTime', data=df_filtered, ax=axes[index])
+
+            # Customize the plot
+            axes[index].set_title(f'{method}')
+            axes[index].set_xlabel('Problem')
+            axes[index].set_ylabel('Normalized Time by Median')
+
+    # Set the overall title
+    fig.suptitle(f'Normalized Violin Plots of Time by Problem (Complexity {complexity})')
+
+    # Adjust layout to reduce whitespace
+    plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+
+    # Save the figure
+    plt.savefig(f'normalized_violin_plots_complexity_{complexity}.eps', bbox_inches='tight')
+    plt.savefig(f'normalized_violin_plots_complexity_{complexity}.png', bbox_inches='tight')
+    plt.close()
