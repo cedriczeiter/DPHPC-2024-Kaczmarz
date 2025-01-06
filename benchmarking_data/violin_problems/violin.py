@@ -18,9 +18,9 @@ file_paths = [
 
 # Method mapping
 method_mapping = {
-    "cgspecificarchitecture": "GPU iterative Carp-CG",
+    "cgspecificarchitecture": "GPU iterative CARP-CG",
     "kaczmarz": "CPU iterative Kaczmarz",
-    "cgmnc": "CPU iterative cgmnc",
+    "cgmnc": "CPU iterative CGMNC",
     "cusolverspecificarchitecture": "GPU direct NVIDIA cuDSS",
     "cg": "CPU iterative Eigen CG",
     "direct": "CPU direct Eigen SparseLU",
@@ -54,7 +54,9 @@ for complexity in range(1, 9):
                 df_filtered = df[(df['Complexity'] == complexity) & (df['Status'] == 'Converged') & (df['Problem'] == problem)].copy()
                 
                 #get median time for specific problem
-                median_time = df_filtered['Time'].median()\
+                median_time = df_filtered['Time'].median()
+                if (complexity == 6):
+                    print(df_filtered['Time'].median())
 
                 # Normalize the 'Time' values by the median
                 df_filtered.loc[:, 'NormalizedTime'] = df_filtered['Time'] / median_time
@@ -70,6 +72,7 @@ for complexity in range(1, 9):
             axes[index].set_title(f'{method}')
             axes[index].set_xlabel('Problem')
             axes[index].set_ylabel('Normalized Time by Median')
+            #axes[index].set_ylim([0.6, 2])
 
     # Set the overall title
     fig.suptitle(f'Normalized Violin Plots of Time by Problem (Complexity {complexity})')

@@ -19,9 +19,9 @@ file_paths = [
 
 # Method mapping
 method_mapping = {
-    "cgspecificarchitecture": "GPU iterative Carp-CG",
+    "cgspecificarchitecture": "GPU iterative CARP-CG",
     "kaczmarz": "CPU iterative Kaczmarz",
-    "cgmnc": "CPU iterative cgmnc",
+    "cgmnc": "CPU iterative CGMNC",
     "cusolverspecificarchitecture": "GPU direct NVIDIA cuDSS",
     "cg": "CPU iterative Eigen CG",
     "direct": "CPU direct Eigen SparseLU",
