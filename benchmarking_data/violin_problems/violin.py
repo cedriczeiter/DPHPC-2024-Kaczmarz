@@ -28,7 +28,7 @@ method_mapping = {
 }
 
 # Selected methods for plotting
-selected_methods = ["GPU iterative Carp-CG", "CPU iterative Eigen BiCGSTAB", "CPU iterative cgmnc", "CPU direct Eigen SparseLU"]
+selected_methods = ["GPU iterative CARP-CG", "CPU iterative Eigen BiCGSTAB", "CPU iterative CGMNC", "CPU direct Eigen SparseLU"]
 
 # Iterate over each complexity level
 for complexity in range(1, 9):

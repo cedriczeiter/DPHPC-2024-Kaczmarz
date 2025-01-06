@@ -63,7 +63,7 @@ color_map = {method: palette[i] for i, method in enumerate(method_mapping.values
 for problem, data in problem_data.items():
     # Plot for Carp-CG, cuDSS, and SparseLU
     fig, ax1 = plt.subplots(figsize=(12, 6))
-    sns.scatterplot(x='Dim', y='Time_mean', hue='Method', palette=color_map, data=data[data['Method'].isin(['GPU iterative Carp-CG', 'GPU direct NVIDIA cuDSS', 'CPU direct Eigen SparseLU'])], ax=ax1)
+    sns.scatterplot(x='Dim', y='Time_mean', hue='Method', style='Method', palette=color_map, data=data[data['Method'].isin(['GPU iterative Carp-CG', 'GPU direct NVIDIA cuDSS', 'CPU direct Eigen SparseLU'])], ax=ax1)
     ax1.set_xscale('log')
     ax1.set_yscale('log')
     ax1.set_title(f'Running Time vs Dimension for Problem {problem} (Carp-CG against direct solvers)')
