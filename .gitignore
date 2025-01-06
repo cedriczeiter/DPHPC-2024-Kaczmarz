@@ -74,3 +74,7 @@ venv/
 # The too big files for git
 *complexity7*
 *complexity8*
+
+#weird cmake and macos temp files I think
+._*
+
