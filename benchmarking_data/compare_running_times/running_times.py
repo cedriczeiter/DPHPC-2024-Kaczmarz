@@ -63,10 +63,12 @@ color_map = {method: palette[i] for i, method in enumerate(method_mapping.values
 for problem, data in problem_data.items():
     # Plot for Carp-CG, cuDSS, and SparseLU
     fig, ax1 = plt.subplots(figsize=(12, 6))
-    sns.scatterplot(x='Dim', y='Time_mean', hue='Method', style='Method', palette=color_map, data=data[data['Method'].isin(['GPU iterative CARP-CG', 'GPU direct NVIDIA cuDSS', 'CPU direct Eigen SparseLU'])], ax=ax1)
+    sns.scatterplot(x='Dim', y='Time_mean', hue='Method', style='Method', palette=color_map, data=data[data['Method'].isin(['GPU iterative CARP-CG', 'GPU direct NVIDIA cuDSS', 'CPU direct Eigen SparseLU'])], ax=ax1, s=100)
     ax1.set_xscale('log')
     ax1.set_yscale('log')
-    ax1.set_title(f'Running Time vs Dimension for Problem {problem} (CARP-CG against direct solvers)')
+    ax1.set_ylim(1e-6, 5000)
+    ax1.set_xlim(10, 1e6)
+    ax1.set_title(f'Running Time vs Dimension, Problem {problem}\n(CARP-CG against direct solvers)')
     ax1.set_xlabel('Dimension')
     ax1.set_ylabel('Time (seconds)')
     ax1.legend(loc='lower right')
@@ -76,10 +78,12 @@ for problem, data in problem_data.items():
 
     # Plot for all iterative solvers
     fig, ax2 = plt.subplots(figsize=(12, 6))
-    sns.scatterplot(x='Dim', y='Time_mean', hue='Method', style='Method', palette=color_map, data=data[data['Method'].isin(['GPU iterative CARP-CG', 'CPU iterative CGMNC', 'CPU iterative Eigen BiCGSTAB'])], ax=ax2)
+    sns.scatterplot(x='Dim', y='Time_mean', hue='Method', style='Method', palette=color_map, data=data[data['Method'].isin(['GPU iterative CARP-CG', 'CPU iterative CGMNC', 'CPU iterative Eigen BiCGSTAB'])], ax=ax2, s=100)
     ax2.set_xscale('log')
     ax2.set_yscale('log')
-    ax2.set_title(f'Running Time vs Dimension for Problem {problem} (CARP-CG against iterative solvers)')
+    ax2.set_ylim(1e-6, 5000)
+    ax2.set_xlim(10, 1e6)
+    ax2.set_title(f'Running Time vs Dimension, Problem {problem}\n(CARP-CG against iterative solvers)')
     ax2.set_xlabel('Dimension')
     ax2.set_ylabel('Time (seconds)')
     ax2.legend(loc='lower right')
