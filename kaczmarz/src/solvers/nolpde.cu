@@ -5,10 +5,13 @@
 
 namespace cg = cooperative_groups;
 
-__global__ void nolpde(double *x, const unsigned *A_outer,
-                       const unsigned *A_inner, const double *A_values,
-                       const unsigned *block_boundaries, const double *sq_norms,
-                       const double *b, unsigned iterations) {
+__global__ void nolpde(double *__restrict__ x,
+                       const unsigned *__restrict__ A_outer,
+                       const unsigned *__restrict__ A_inner,
+                       const double *__restrict__ A_values,
+                       const unsigned *__restrict__ block_boundaries,
+                       const double *__restrict__ sq_norms,
+                       const double *__restrict__ b, unsigned iterations) {
   cg::grid_group grid = cg::this_grid();
   const unsigned tid = blockIdx.x * blockDim.x + threadIdx.x;
   for (unsigned iter = 0; iter < iterations; iter++) {

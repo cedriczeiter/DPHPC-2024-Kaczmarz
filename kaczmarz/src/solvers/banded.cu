@@ -8,12 +8,11 @@ namespace cg = cooperative_groups;
 /**
  * Expects x and A_data padded so that edge cases need not be dealt with.
  */
-__global__ void kaczmarz_banded_grouping1(double *x, double *A_data,
-                                          double *sq_norms, double *b,
-                                          const unsigned iterations,
-                                          int bandwidth,
-                                          const unsigned rows_per_group,
-                                          const unsigned extra_rows) {
+__global__ void kaczmarz_banded_grouping1(
+    double *__restrict__ x, const double *__restrict__ A_data,
+    const double *__restrict__ sq_norms, const double *__restrict__ b,
+    const unsigned iterations, int bandwidth, const unsigned rows_per_group,
+    const unsigned extra_rows) {
   bandwidth = 2;
   cg::grid_group grid = cg::this_grid();
   const unsigned tid = blockIdx.x * blockDim.x + threadIdx.x;
@@ -77,12 +76,11 @@ void invoke_banded_grouping1_kernel(
   cudaDeviceSynchronize();
 }
 
-__global__ void kaczmarz_banded_grouping2(double *x, double *A_data,
-                                          double *sq_norms, double *b,
-                                          const unsigned iterations,
-                                          int bandwidth,
-                                          const unsigned rows_per_thread,
-                                          const unsigned extra_rows) {
+__global__ void kaczmarz_banded_grouping2(
+    double *__restrict__ x, const double *__restrict__ A_data,
+    const double *__restrict__ sq_norms, const double *__restrict__ b,
+    const unsigned iterations, int bandwidth, const unsigned rows_per_thread,
+    const unsigned extra_rows) {
   bandwidth = 2;
   cg::grid_group grid = cg::this_grid();
   const unsigned tid = blockIdx.x * blockDim.x + threadIdx.x;
