@@ -18,7 +18,7 @@ file_paths = [
 
 # Method mapping
 method_mapping = {
-    "cgspecificarchitecture": "GPU iterative CARP-CG",
+    "cgspecificarchitecture": "GPU-acc. iterative CARP-CG",
     "kaczmarz": "CPU iterative Kaczmarz",
     "cgmnc": "CPU iterative CGMNC",
     "cusolverspecificarchitecture": "GPU direct NVIDIA cuDSS",
@@ -28,7 +28,7 @@ method_mapping = {
 }
 
 # Selected methods for plotting
-selected_methods = ["GPU iterative CARP-CG", "CPU iterative Eigen BiCGSTAB", "CPU iterative CGMNC", "CPU direct Eigen SparseLU"]
+selected_methods = ["GPU-acc. iterative CARP-CG", "GPU direct NVIDIA cuDSS", "CPU iterative CGMNC", "CPU direct Eigen SparseLU"]
 
 # Iterate over each complexity level
 for complexity in range(1, 9):
