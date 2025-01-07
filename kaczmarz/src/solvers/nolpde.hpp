@@ -33,13 +33,13 @@ class PermutingNolPDESolver : public NolPDESolver {
   Vector post_permute_x;
   std::unique_ptr<SparseLinearSystem> post_permute_sys;
 
+  // block count = length of `block_boundaries` - 1
+  std::vector<unsigned> block_boundaries;
+
  private:
   Vector* x;
   std::vector<unsigned> permutation;
   std::vector<unsigned> inv_permutation;
-
-  // block count = length of `block_boundaries` - 1
-  std::vector<unsigned> block_boundaries;
 
   // if this returns a too large of a number or somehow can't be divided nicely,
   // some blocks might end up with no work
@@ -65,6 +65,7 @@ class CUDANolPDESolver : public PermutingNolPDESolver {
   unsigned* A_outer_gpu = nullptr;
   unsigned* A_inner_gpu = nullptr;
   double* A_values_gpu = nullptr;
+  unsigned* block_boundaries_gpu = nullptr;
 
   virtual unsigned get_block_count_required() override;
 
@@ -79,6 +80,20 @@ class CUDANolPDESolver : public PermutingNolPDESolver {
  public:
   CUDANolPDESolver(const unsigned block_count, const unsigned threads_per_block)
       : block_count(block_count), threads_per_block(threads_per_block) {}
+};
+
+class BasicSerialNolPDESolver : public NolPDESolver {
+ private:
+  const Discretization* d = nullptr;
+  Vector* x = nullptr;
+
+  virtual void setup(const Discretization* d, Vector* x) override;
+
+  virtual void flush_x() override;
+
+  virtual void iterate(unsigned iterations) override;
+
+  virtual void cleanup() override;
 };
 
 #endif  // NOLPDE_HPP

@@ -1,6 +1,8 @@
 #include "nolpde.hpp"
 
+#include <iostream>
 #include <limits>
+#include <unordered_set>
 
 #include "Eigen/src/Core/PermutationMatrix.h"
 #include "Eigen/src/Core/util/Constants.h"
@@ -28,7 +30,7 @@ struct BlockFactorization {
   unsigned x_block_count, y_block_count;
 };
 
-static BlockFactorization optimal_thread_factorization(
+static BlockFactorization optimal_block_factorization(
     const unsigned block_count, const unsigned max_x_block_count,
     const unsigned max_y_block_count, const double square_affinity) {
   if (block_count >= max_x_block_count * max_y_block_count) {
@@ -99,14 +101,24 @@ void PermutingNolPDESolver::setup(const Discretization* const d,
     }
   }
 
+  // safety margin
   const double min_x_block_size = max_x_sep * 1.01;
   const double min_y_block_size = max_y_sep * 1.01;
 
   const unsigned max_x_block_count = (x_max - x_min) / min_x_block_size;
   const unsigned max_y_block_count = (y_max - y_min) / min_y_block_size;
 
-  const BlockFactorization factorization = optimal_thread_factorization(
+  const BlockFactorization factorization = optimal_block_factorization(
       block_count, max_x_block_count, max_y_block_count, 1e-3);
+
+  /*
+  // uncomment if needed for debug
+  std::cout << "block_count = " << block_count << std::endl;
+  std::cout << "max_x_block_count = " << max_x_block_count << std::endl;
+  std::cout << "max_y_block_count = " << max_y_block_count << std::endl;
+  std::cout << "x_block_count = " << factorization.x_block_count << std::endl;
+  std::cout << "y_block_count = " << factorization.y_block_count << std::endl;
+  */
 
   assert(factorization.x_block_count % 2 == 0);
   assert(factorization.y_block_count % 2 == 0);
@@ -117,14 +129,16 @@ void PermutingNolPDESolver::setup(const Discretization* const d,
 
   for (unsigned i = 0; i < dim; i++) {
     const PositionHint hint = d->position_hints[i];
-    const unsigned x_unit_coor = (hint.x - x_min) / (x_max - x_min);
+    const double x_unit_coor = (hint.x - x_min) / (x_max - x_min);
     const unsigned x_block_coor =
         x_unit_coor == 1.0 ? factorization.x_block_count - 1
                            : x_unit_coor * factorization.x_block_count;
-    const unsigned y_unit_coor = (hint.y - y_min) / (y_max - y_min);
+    const double y_unit_coor = (hint.y - y_min) / (y_max - y_min);
     const unsigned y_block_coor =
         y_unit_coor == 1.0 ? factorization.y_block_count - 1
                            : y_unit_coor * factorization.y_block_count;
+    assert(x_block_coor < factorization.x_block_count);
+    assert(y_block_coor < factorization.y_block_count);
     blocks[x_block_coor][y_block_coor].push_back(i);
   }
 
@@ -132,14 +146,15 @@ void PermutingNolPDESolver::setup(const Discretization* const d,
   unsigned next_in_permutation = 0;
   for (unsigned block_x = 0; block_x < factorization.x_block_count;
        block_x += 2) {
-    for (unsigned block_y = 0; block_x < factorization.x_block_count;
-         block_x += 2) {
+    for (unsigned block_y = 0; block_y < factorization.y_block_count;
+         block_y += 2) {
       for (unsigned block_x_inner = block_x; block_x_inner < block_x + 2;
-           block_x++) {
+           block_x_inner++) {
         for (unsigned block_y_inner = block_y; block_y_inner < block_y + 2;
-             block_y++) {
+             block_y_inner++) {
           this->block_boundaries.push_back(next_in_permutation);
           for (const unsigned i : blocks[block_x_inner][block_y_inner]) {
+            assert(next_in_permutation < dim);
             this->permutation[next_in_permutation++] = i;
           }
         }
@@ -159,7 +174,7 @@ void PermutingNolPDESolver::setup(const Discretization* const d,
   Eigen::PermutationMatrix<Eigen::Dynamic, Eigen::Dynamic> permutation_matrix(
       dim);
   for (unsigned i = 0; i < dim; i++) {
-    permutation_matrix.indices()(i) = this->permutation[i];
+    permutation_matrix.indices()(i) = this->inv_permutation[i];
   }
 
   this->post_permute_x = permutation_matrix * *x;
@@ -168,14 +183,59 @@ void PermutingNolPDESolver::setup(const Discretization* const d,
   this->post_permute_sys =
       std::make_unique<SparseLinearSystem>(post_permute_A, post_permute_b);
   this->x = x;
+
+  // (debug) checking that the blocks that need to be non-overlapping actually
+  // are non-overlapping
+  assert(block_count % 4 == 0);
+  for (unsigned m4 = 0; m4 < 4; m4++) {  // `m4` for "modulus mod 4"
+    // for each of modulus mod 4, we require that any two rows in different
+    // blocks with the same modulus are non-overlapping
+
+    // accumulates column indices that appeared in previous blocks
+    std::unordered_set<unsigned> in_prev_blocks;
+
+    const unsigned thread_count = block_count / 4;
+    for (unsigned i = 0; i < thread_count; i++) {
+      const unsigned block_idx = 4 * i + m4;
+
+      // column indicies in this block
+      const auto block = [&]() {
+        std::unordered_set<unsigned> block;
+        const unsigned row_idx_from = this->block_boundaries[block_idx];
+        const unsigned row_idx_to = this->block_boundaries[block_idx + 1];
+        for (unsigned row_idx = row_idx_from; row_idx < row_idx_to; row_idx++) {
+          const SparseMatrix& post_A = this->post_permute_sys->A();
+          const unsigned entry_idx_from = post_A.outerIndexPtr()[row_idx];
+          const unsigned entry_idx_to = post_A.outerIndexPtr()[row_idx + 1];
+          for (unsigned entry_idx = entry_idx_from; entry_idx < entry_idx_to;
+               entry_idx++) {
+            block.insert(post_A.innerIndexPtr()[entry_idx]);
+          }
+        }
+        return block;
+      }();
+
+      // this block may not share a column index with any of the previous blocks
+      for (const unsigned e : block) {
+        assert(in_prev_blocks.find(e) == in_prev_blocks.end());
+      }
+
+      // accumulate column indices for comparison with coming blocks
+      in_prev_blocks.insert(block.begin(), block.end());
+    }
+  }
+
+  this->post_permute_setup();
 }
 
 void PermutingNolPDESolver::flush_x() {
+  this->post_permute_flush_x();
+
   const unsigned dim = this->post_permute_sys->b().size();
   Eigen::PermutationMatrix<Eigen::Dynamic, Eigen::Dynamic> permutation_matrix(
       dim);
   for (unsigned i = 0; i < dim; i++) {
-    permutation_matrix.indices()(i) = this->inv_permutation[i];
+    permutation_matrix.indices()(i) = this->permutation[i];
   }
   *this->x = permutation_matrix * this->post_permute_x;
 }
@@ -204,6 +264,7 @@ void CUDANolPDESolver::post_permute_setup() {
   this->A_inner_gpu =
       (unsigned*)gpu_malloc_and_copy(A.innerIndexPtr(), A.nonZeros());
   this->A_values_gpu = gpu_malloc_and_copy(A.valuePtr(), A.nonZeros());
+  this->block_boundaries_gpu = gpu_malloc_and_copy(this->block_boundaries);
 }
 
 void CUDANolPDESolver::post_permute_flush_x() {
@@ -214,7 +275,8 @@ void CUDANolPDESolver::post_permute_flush_x() {
 void CUDANolPDESolver::iterate(unsigned iterations) {
   invoke_nolpde_kernel(this->block_count, this->threads_per_block, this->x_gpu,
                        this->A_outer_gpu, this->A_inner_gpu, this->A_values_gpu,
-                       this->sq_norms_gpu, this->b_gpu, iterations);
+                       this->block_boundaries_gpu, this->sq_norms_gpu,
+                       this->b_gpu, iterations);
 }
 
 void CUDANolPDESolver::cleanup() {
@@ -234,6 +296,10 @@ void CUDANolPDESolver::cleanup() {
     cuda_free(this->A_values_gpu);
     this->A_values_gpu = nullptr;
   }
+  if (this->block_boundaries_gpu) {
+    cuda_free(this->block_boundaries_gpu);
+    this->block_boundaries_gpu = nullptr;
+  }
   if (this->sq_norms_gpu) {
     cuda_free(this->sq_norms_gpu);
     this->sq_norms_gpu = nullptr;
@@ -242,4 +308,34 @@ void CUDANolPDESolver::cleanup() {
     cuda_free(this->b_gpu);
     this->b_gpu = nullptr;
   }
+}
+
+void BasicSerialNolPDESolver::setup(const Discretization* const d,
+                                    Vector* const x) {
+  this->d = d;
+  this->x = x;
+}
+
+void BasicSerialNolPDESolver::flush_x() {}
+
+void BasicSerialNolPDESolver::iterate(const unsigned iterations) {
+  const SparseMatrix& A = this->d->sys.A();
+  const Vector& b = this->d->sys.b();
+  const unsigned dim = b.size();
+  Vector sq_norms(dim);
+  for (unsigned i = 0; i < dim; i++) {
+    sq_norms[i] = A.row(i).dot(A.row(i));
+  }
+  for (unsigned iter = 0; iter < iterations; iter++) {
+    for (unsigned i = 0; i < dim; i++) {
+      const auto row = A.row(i);
+      const double update_coeff = (b[i] - row.dot(*x)) / sq_norms[i];
+      *x += update_coeff * row;
+    }
+  }
+}
+
+void BasicSerialNolPDESolver::cleanup() {
+  this->d = nullptr;
+  this->x = nullptr;
 }

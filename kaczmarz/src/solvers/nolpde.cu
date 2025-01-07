@@ -35,12 +35,13 @@ __global__ void nolpde(double *x, const unsigned *A_outer,
 void invoke_nolpde_kernel(unsigned block_count, unsigned threads_per_block,
                           double *x, const unsigned *A_outer,
                           const unsigned *A_inner, const double *A_values,
+                          const unsigned *block_boundaries,
                           const double *sq_norms, const double *b,
                           unsigned iterations) {
-  void *kernel_args[] = {(void *)&x,         (void *)&A_outer,
-                         (void *)&A_inner,   (void *)&A_values,
-                         (void *)&sq_norms,  (void *)&b,
-                         (void *)&iterations};
+  void *kernel_args[] = {
+      (void *)&x,        (void *)&A_outer,          (void *)&A_inner,
+      (void *)&A_values, (void *)&block_boundaries, (void *)&sq_norms,
+      (void *)&b,        (void *)&iterations};
 
   cudaError_t err = cudaLaunchCooperativeKernel((void *)nolpde, block_count,
                                                 threads_per_block, kernel_args);

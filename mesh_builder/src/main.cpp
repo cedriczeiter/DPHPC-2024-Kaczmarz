@@ -177,9 +177,7 @@ int main(int argc, char **argv) {
   }
 
   // Output the LSE to use Kaczmarz solver
-  generate_discretization(config_data).sys.write_to_stream(std::cout);
-
-  // TODO: output the position hints
+  generate_discretization(config_data).write_to_stream(std::cout);
 
   return 0;
 }
