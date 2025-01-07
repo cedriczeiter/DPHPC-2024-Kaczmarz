@@ -64,7 +64,7 @@ plt.figure(figsize=(10, 6))
 for key, df in data.items():
     degree = key.split(', ')[2][-1]
     complexity = key.split(', ')[1][-1]
-    if not (complexity == '1' or complexity == '2' or complexity == '3'):
+    if true '''not (complexity == '1' or complexity == '2' or complexity == '3')''':
         if degree not in degree_colors:
             degree_colors[degree] = colormap(len(degree_colors) / 10.0)
         plt.plot(df['Relaxation'], df['Carp_steps']/df['Carp_steps'].min(), marker=complexity_markers[complexity], linestyle='--', label=key, color=degree_colors[degree], linewidth=1)  # Set linewidth to 1
