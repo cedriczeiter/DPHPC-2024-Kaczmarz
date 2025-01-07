@@ -47,6 +47,7 @@ for path in file_paths:
         # Group by dimension and calculate median and confidence interval
         df_grouped = df_filtered.groupby('Dim').agg({'Time': ['median', 'var']}).reset_index()
         df_grouped.columns = ['Dim', 'Time_mean', 'Time_var']
+        df_grouped['Time_std'] = np.sqrt(df_grouped['Time_var'])
         df_grouped['Method'] = method_mapping.get(method, method)
 
         # Store the data in the dictionary
@@ -65,12 +66,26 @@ color_map = {
     "CPU direct Eigen SparseLU": "#00ff00",   # green
     "CPU iterative Eigen BiCGSTAB": "#ff00ff" # Pink
 }
+# Define a style palette 
+style_map = {
+    "GPU-acc. iterative CARP-CG": "o",  # Blue
+    "CPU iterative Kaczmarz": "+",      # Orange
+    "CPU iterative CGMNC": "v",         # Brown
+    "GPU direct NVIDIA cuDSS": "^",     # Red
+    "CPU iterative Eigen CG": "p",      # Purple
+    "CPU direct Eigen SparseLU": "s",   # green
+    "CPU iterative Eigen BiCGSTAB": "D" # Pink
+}
 
 # Plotting
 for problem, data in problem_data.items():
     # Plot for Carp-CG, cuDSS, and SparseLU
     fig, ax1 = plt.subplots(figsize=(12, 6))
-    sns.scatterplot(x='Dim', y='Time_mean', hue='Method', style='Method', palette=color_map, data=data[data['Method'].isin(['GPU-acc. iterative CARP-CG', 'GPU direct NVIDIA cuDSS', 'CPU direct Eigen SparseLU'])], ax=ax1, s=200)
+    #sns.scatterplot(x='Dim', y='Time_mean', hue='Method', style='Method', palette=color_map, data=data[data['Method'].isin(['GPU-acc. iterative CARP-CG', 'GPU direct NVIDIA cuDSS', 'CPU direct Eigen SparseLU'])], ax=ax1, s=200)
+    for method in ['GPU-acc. iterative CARP-CG', 'GPU direct NVIDIA cuDSS', 'CPU direct Eigen SparseLU']:
+        subset = data[data['Method'] == method]
+        ax1.errorbar(subset['Dim'], subset['Time_mean'], yerr=1.96 * subset['Time_std'], 
+                     label=method, fmt = style_map[method], color=color_map[method], markersize=8, capsize=5, ecolor='black')    
     ax1.set_xscale('log')
     ax1.set_yscale('log')
     ax1.set_ylim(1e-6, 5000)
@@ -86,7 +101,10 @@ for problem, data in problem_data.items():
 
     # Plot for all iterative solvers
     fig, ax2 = plt.subplots(figsize=(12, 6))
-    sns.scatterplot(x='Dim', y='Time_mean', hue='Method', style='Method', palette=color_map, data=data[data['Method'].isin(['GPU-acc. iterative CARP-CG', 'CPU iterative CGMNC', 'CPU iterative Eigen BiCGSTAB'])], ax=ax2, s=200)
+    for method in ['GPU-acc. iterative CARP-CG', 'CPU iterative CGMNC', 'CPU iterative Eigen BiCGSTAB']:
+        subset = data[data['Method'] == method]
+        ax2.errorbar(subset['Dim'], subset['Time_mean'], yerr=1.96 * subset['Time_std'], 
+                     label=method, fmt = style_map[method], color=color_map[method], markersize=8, capsize=5, ecolor='black')
     ax2.set_xscale('log')
     ax2.set_yscale('log')
     ax2.set_ylim(1e-6, 5000)
