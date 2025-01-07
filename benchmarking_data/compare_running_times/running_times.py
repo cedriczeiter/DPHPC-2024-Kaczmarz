@@ -19,7 +19,7 @@ file_paths = [
 
 # Method mapping
 method_mapping = {
-    "cgspecificarchitecture": "GPU iterative CARP-CG",
+    "cgspecificarchitecture": "GPU-acc. iterative CARP-CG",
     "kaczmarz": "CPU iterative Kaczmarz",
     "cgmnc": "CPU iterative CGMNC",
     "cusolverspecificarchitecture": "GPU direct NVIDIA cuDSS",
@@ -63,7 +63,7 @@ color_map = {method: palette[i] for i, method in enumerate(method_mapping.values
 for problem, data in problem_data.items():
     # Plot for Carp-CG, cuDSS, and SparseLU
     fig, ax1 = plt.subplots(figsize=(12, 6))
-    sns.scatterplot(x='Dim', y='Time_mean', hue='Method', style='Method', palette=color_map, data=data[data['Method'].isin(['GPU iterative CARP-CG', 'GPU direct NVIDIA cuDSS', 'CPU direct Eigen SparseLU'])], ax=ax1, s=100)
+    sns.scatterplot(x='Dim', y='Time_mean', hue='Method', style='Method', palette=color_map, data=data[data['Method'].isin(['GPU-acc. iterative CARP-CG', 'GPU direct NVIDIA cuDSS', 'CPU direct Eigen SparseLU'])], ax=ax1, s=100)
     ax1.set_xscale('log')
     ax1.set_yscale('log')
     ax1.set_ylim(1e-6, 5000)
@@ -78,7 +78,7 @@ for problem, data in problem_data.items():
 
     # Plot for all iterative solvers
     fig, ax2 = plt.subplots(figsize=(12, 6))
-    sns.scatterplot(x='Dim', y='Time_mean', hue='Method', style='Method', palette=color_map, data=data[data['Method'].isin(['GPU iterative CARP-CG', 'CPU iterative CGMNC', 'CPU iterative Eigen BiCGSTAB'])], ax=ax2, s=100)
+    sns.scatterplot(x='Dim', y='Time_mean', hue='Method', style='Method', palette=color_map, data=data[data['Method'].isin(['GPU-acc. iterative CARP-CG', 'CPU iterative CGMNC', 'CPU iterative Eigen BiCGSTAB'])], ax=ax2, s=100)
     ax2.set_xscale('log')
     ax2.set_yscale('log')
     ax2.set_ylim(1e-6, 5000)
