@@ -64,7 +64,7 @@ plt.figure(figsize=(10, 6))
 for key, df in data.items():
     degree = key.split(', ')[2][-1]
     complexity = key.split(', ')[1][-1]
-    if true '''not (complexity == '1' or complexity == '2' or complexity == '3')''':
+    if not (complexity == '1' or complexity == '2' or complexity == '3'):
         if degree not in degree_colors:
             degree_colors[degree] = colormap(len(degree_colors) / 10.0)
         plt.plot(df['Relaxation'], df['Carp_steps']/df['Carp_steps'].min(), marker=complexity_markers[complexity], linestyle='--', label=key, color=degree_colors[degree], linewidth=1)  # Set linewidth to 1
@@ -81,7 +81,7 @@ for key, df in data.items():
 
 
 plt.xlabel('Relaxation-Parameter')
-plt.ylabel('Iterations')
+plt.ylabel('Iterations / Minimal Number Of Iterations')
 plt.xlim(0.1352, 0.71)
 plt.ylim(0.9, 2)
 plt.title('Iterations vs Relaxation-Parameter')
@@ -125,11 +125,11 @@ color_handles = [Line2D([0], [0], color=colormap(i / 10.0), lw=4) for i in range
 minima_handle = [Line2D([0], [0], marker='o', color='w', markerfacecolor='r', markersize=20, linestyle='None')]
 
 # Combine marker and color handles
-handles = marker_handles + color_handles + minima_handle
-labels = [f'Degree n = {dimensions.get(k)}' for k in complexity_markers.keys()] + [f'Degree {k}' for k in degree_colors.keys()] + ['Minima']
+handles =  color_handles
+labels = [f'Degree p = {k}' for k in degree_colors.keys()]
 
 # Create combined legend
-#plt.legend(handles, labels, loc='upper right', title='', framealpha=1.0)
+plt.legend(handles, labels, loc='upper left', title='', framealpha=1.0)
 
 plt.savefig('lambda_experiments.eps', format='eps', bbox_inches='tight')
 plt.savefig('lambda_experiments.png', format='png', bbox_inches='tight')
