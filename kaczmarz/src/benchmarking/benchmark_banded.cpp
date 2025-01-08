@@ -100,14 +100,14 @@ static BandedBenchmarkResult benchmark(const BandedBenchmarkTask& task) {
 }
 
 std::vector<BandedBenchmarkTask> generate_benchmark_tasks() {
-  constexpr unsigned repetitions = 3;
+  constexpr unsigned repetitions = 5;
   std::vector<BandedBenchmarkTask> tasks;
   //const std::vector<unsigned> matrix_dims = { 100, 200, 500, 1000, 2000, 5000, 10'000, 20'000, 50'000 };
   //const std::vector<unsigned> matrix_dims = { 10'000, 20'000, 40'000, 60'000, 80'000, 100'000 };
   for (unsigned rep = 0; rep < repetitions; rep++) {
     for (const auto& solver : solvers) {
       //for (const unsigned matrix_dim : matrix_dims) {
-        tasks.emplace_back(solver.first, 100'000, 2, 10'000, true, 21);
+        tasks.emplace_back(solver.first, 100'000, 2, 50'000, true, 21);
       //}
     }
   }
@@ -128,7 +128,7 @@ int main() {
 
   std::ofstream ofs(outfile);
   const auto print_benchmark_result = [&ofs](const BandedBenchmarkTask& task, const BandedBenchmarkResult& result) {
-    ofs << task.solver_name << "," << task.matrix_dim << "," << task.matrix_bandwidth << "," << task.iteration_count << "," << task.double_precision << "," << task.random_seed << "," << result.running_time_ns << "," << result.error_to_eigen_L1 << "," << result.error_to_eigen_L2 << "," << result.error_to_eigen_Linf << "," << result.execution_timestamp << std::endl;
+    ofs << task.solver_name << "," << task.matrix_dim << "," << task.matrix_bandwidth << "," << task.iteration_count << "," << task.double_precision << "," << task.random_seed << "," << result.running_time_ns << "," << std::format("{},{},{}", result.error_to_eigen_L1, result.error_to_eigen_L2, result.error_to_eigen_Linf) << "," << result.execution_timestamp << std::endl;
   };
 
   ofs << "solver_name,matrix_dim,matrix_bandwidth,iteration_count,double_precision,random_seed,running_time_ns,error_to_eigen_L1,error_to_eigen_L2,error_to_eigen_Linf,execution_timestamp\n";
