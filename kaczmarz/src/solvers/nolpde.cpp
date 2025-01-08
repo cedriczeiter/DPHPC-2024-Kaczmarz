@@ -93,12 +93,17 @@ void PermutingNolPDESolver::setup(const Discretization* const d,
   double max_y_sep = 0.0;
   const SparseMatrix& A = d->sys.A();
   for (unsigned row = 0; row < dim; row++) {
+    bool hit_same = false;
     for (SparseMatrix::InnerIterator it(A, row); it; ++it) {
+      if (it.col() == row) {
+        hit_same = true;
+      }
       const PositionHint h1 = d->position_hints[it.col()];
       const PositionHint h2 = d->position_hints[it.row()];
       max_x_sep = std::max(max_x_sep, std::abs(h1.x - h2.x));
       max_y_sep = std::max(max_y_sep, std::abs(h1.y - h2.y));
     }
+    assert(!hit_same);
   }
 
   // safety margin
