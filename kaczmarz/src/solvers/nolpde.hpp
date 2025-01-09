@@ -134,9 +134,10 @@ class ShuffleSerialNolPDESolver : public NolPDESolver {
   virtual void iterate(unsigned iterations) override;
 
   virtual void cleanup() override;
- 
+
  public:
-  ShuffleSerialNolPDESolver(const unsigned shuffle_seed) : shuffle_seed(shuffle_seed) {}
+  ShuffleSerialNolPDESolver(const unsigned shuffle_seed)
+      : shuffle_seed(shuffle_seed) {}
 };
 
 #endif  // NOLPDE_HPP
