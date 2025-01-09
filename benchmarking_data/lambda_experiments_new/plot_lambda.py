@@ -84,7 +84,7 @@ plt.xlabel('Relaxation-Parameter')
 plt.ylabel('Iterations / Minimal Number Of Iterations')
 plt.xlim(0.1352, 0.71)
 plt.ylim(0.9, 2)
-plt.title('Iterations vs Relaxation-Parameter')
+#plt.title('Iterations vs Relaxation-Parameter')
 plt.grid(True)
 
 '''x_coord = 0.18
