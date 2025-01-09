@@ -20,8 +20,10 @@ int main() {
   Vector x_kaczmarz(d.sys.A().cols());
 
   const auto kaczmarz_start = hrclock::now();
-  CUDANolPDESolver(16, 128).run_iterations(d, x_kaczmarz, 1000);
-  // BasicSerialNolPDESolver().run_iterations(d, x_kaczmarz, 1000);
+  //CUDANolPDESolver(16, 128).run_iterations(d, x_kaczmarz, 2000);
+  //PermutingSerialNolPDESolver(16 * 128).run_iterations(d, x_kaczmarz, 2000);
+  //BasicSerialNolPDESolver().run_iterations(d, x_kaczmarz, 1000);
+  ShuffleSerialNolPDESolver(321).run_iterations(d, x_kaczmarz, 1000);
   const auto kaczmarz_end = hrclock::now();
 
   const Vector r = d.sys.b() - d.sys.A() * x_kaczmarz;

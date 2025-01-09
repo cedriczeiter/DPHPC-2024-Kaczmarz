@@ -96,4 +96,47 @@ class BasicSerialNolPDESolver : public NolPDESolver {
   virtual void cleanup() override;
 };
 
+class PermutingSerialNolPDESolver : public PermutingNolPDESolver {
+ private:
+  const unsigned thread_count;
+
+  virtual unsigned get_block_count_required() override;
+
+  virtual void post_permute_setup() override;
+
+  virtual void post_permute_flush_x() override;
+
+  virtual void iterate(unsigned iterations) override;
+
+  virtual void cleanup() override;
+
+ public:
+  PermutingSerialNolPDESolver(const unsigned thread_count)
+      : thread_count(thread_count) {}
+};
+
+class ShuffleSerialNolPDESolver : public NolPDESolver {
+ private:
+  const unsigned shuffle_seed;
+  const Discretization* d = nullptr;
+  Vector* x = nullptr;
+
+  std::unique_ptr<SparseLinearSystem> post_permute_sys;
+  Vector post_permute_x;
+
+  std::vector<unsigned> permutation;
+  std::vector<unsigned> inv_permutation;
+
+  virtual void setup(const Discretization* d, Vector* x) override;
+
+  virtual void flush_x() override;
+
+  virtual void iterate(unsigned iterations) override;
+
+  virtual void cleanup() override;
+ 
+ public:
+  ShuffleSerialNolPDESolver(const unsigned shuffle_seed) : shuffle_seed(shuffle_seed) {}
+};
+
 #endif  // NOLPDE_HPP
