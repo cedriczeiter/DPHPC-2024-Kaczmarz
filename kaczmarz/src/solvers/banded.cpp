@@ -91,6 +91,39 @@ void BandedSolver::run_iterations(const BandedLinearSystem& lse, Vector& x,
   this->cleanup();
 }
 
+void BandedSolver::run_iterations_with_residuals(const BandedLinearSystem& lse, Vector& x,
+std::vector<double>& residuals_L1, std::vector<double>& residuals_L2, std::vector<double>& residuals_Linf, unsigned iterations) {
+  UnpackedBandedSystem sys = unpack_banded_system(
+      lse, x, this->pad_dimension(lse.dim(), lse.bandwidth()));
+  this->setup(&sys);
+  const auto push_residual_norms = [&]() {
+    this->flush_x();
+    double l1 = 0.0, l2 = 0.0, linf = 0.0;
+    for (unsigned row_idx = 0; row_idx < sys.dim; row_idx++) {
+      const auto x_iter =
+        sys.x_padded.begin() + sys.bandwidth + row_idx - sys.bandwidth;
+      const auto row_iter = sys.A_data.begin() + (2 * sys.bandwidth + 1) * row_idx;
+      const double dot = std::inner_product(
+          row_iter, row_iter + 2 * sys.bandwidth + 1, x_iter, 0.0);
+      const double r_comp = std::abs(dot - sys.b[row_idx]);
+      l1 += r_comp;
+      l2 += r_comp * r_comp;
+      linf = std::max(r_comp, linf);
+    }
+    l2 = std::sqrt(l2);
+    residuals_L1.push_back(l1);
+    residuals_L2.push_back(l2);
+    residuals_Linf.push_back(linf);
+  };
+  push_residual_norms();
+  for (unsigned iter = 0; iter < iterations; iter++) {
+    this->iterate(1);
+    push_residual_norms();
+  }
+  write_back_solution(sys, x);
+  this->cleanup();
+}
+
 KaczmarzSolverStatus BandedSolver::solve(const BandedLinearSystem& lse,
                                          Vector& x,
                                          const unsigned iterations_step,

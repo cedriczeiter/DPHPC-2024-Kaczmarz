@@ -72,6 +72,9 @@ class BandedSolver {
   void run_iterations(const BandedLinearSystem& lse, Vector& x,
                       unsigned iterations);
 
+  void run_iterations_with_residuals(const BandedLinearSystem& lse, Vector& x,
+std::vector<double>& residuals_L1, std::vector<double>& residuals_L2, std::vector<double>& residuals_Linf, unsigned iterations);
+
   /**
    * Runs Kaczmarz iterations until the L2 norm of the residual is below
    * `abs_tolerance`; but also stops if `max_iterations` are performed before
