@@ -18,9 +18,9 @@ file_paths = [
 
 # Method mapping
 method_mapping = {
-    "cgspecificarchitecture": "GPU iterative Carp-CG",
+    "cgspecificarchitecture": "GPU-acc. iterative CARP-CG",
     "kaczmarz": "CPU iterative Kaczmarz",
-    "cgmnc": "CPU iterative cgmnc",
+    "cgmnc": "CPU iterative CGMNC",
     "cusolverspecificarchitecture": "GPU direct NVIDIA cuDSS",
     "cg": "CPU iterative Eigen CG",
     "direct": "CPU direct Eigen SparseLU",
@@ -28,7 +28,7 @@ method_mapping = {
 }
 
 # Selected methods for plotting
-selected_methods = ["GPU iterative Carp-CG", "GPU direct NVIDIA cuDSS", "CPU iterative cgmnc", "CPU direct Eigen SparseLU"]
+selected_methods = ["GPU-acc. iterative CARP-CG", "GPU direct NVIDIA cuDSS", "CPU iterative CGMNC", "CPU direct Eigen SparseLU"]
 
 # Iterate over each complexity level
 for complexity in range(1, 9):
@@ -47,25 +47,32 @@ for complexity in range(1, 9):
 
         # Check if the method is one of the selected methods
         if method in selected_methods:
-            # Filter the data to only include rows with the current complexity and status "Converged"
-            df_filtered = df[(df['Complexity'] == complexity) & (df['Status'] == 'Converged')].copy()
+            
+            #get median for each problem
+            for problem in df['Problem'].unique():
+                # Filter the data to only include rows with the current complexity and status "Converged"
+                df_filtered = df[(df['Complexity'] == complexity) & (df['Status'] == 'Converged') & (df['Problem'] == problem)].copy()
+                
+                #get median time for specific problem
+                median_time = df_filtered['Time'].median()
+                if (complexity == 6):
+                    print(df_filtered['Time'].median())
 
-            # Calculate the median time for normalization
-            median_time = df_filtered['Time'].median()
+                # Normalize the 'Time' values by the median
+                df_filtered.loc[:, 'NormalizedTime'] = df_filtered['Time'] / median_time
 
-            # Normalize the 'Time' values by the median
-            df_filtered.loc[:, 'NormalizedTime'] = df_filtered['Time'] / median_time
+                # Get the index of the subplot
+                index = selected_methods.index(method)
 
-            # Get the index of the subplot
-            index = selected_methods.index(method)
+                # Plotting the violin plot
+                sns.violinplot(x='Problem', y='NormalizedTime', data=df_filtered, ax=axes[index])
 
-            # Plotting the violin plot
-            sns.violinplot(x='Problem', y='NormalizedTime', data=df_filtered, ax=axes[index])
 
             # Customize the plot
             axes[index].set_title(f'{method}')
             axes[index].set_xlabel('Problem')
             axes[index].set_ylabel('Normalized Time by Median')
+            #axes[index].set_ylim([0.6, 2])
 
     # Set the overall title
     fig.suptitle(f'Normalized Violin Plots of Time by Problem (Complexity {complexity})')
