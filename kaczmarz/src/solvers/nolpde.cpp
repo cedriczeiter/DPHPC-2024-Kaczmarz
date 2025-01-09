@@ -20,6 +20,25 @@ void NolPDESolver::run_iterations(const Discretization& d, Vector& x,
   this->cleanup();
 }
 
+void NolPDESolver::run_iterations_with_residuals(const Discretization& d, Vector& x,
+    std::vector<double>& residuals_L1,
+    std::vector<double>& residuals_L2,
+    std::vector<double>& residuals_Linf,
+                                  const unsigned iterations) {
+  this->setup(&d, &x);
+  residuals_L1.push_back(this->residual_L1());
+    residuals_L2.push_back(this->residual_L2());
+    residuals_Linf.push_back(this->residual_Linf());
+  for (unsigned iter = 0; iter < iterations; iter++) {
+    this->iterate(1);
+    residuals_L1.push_back(this->residual_L1());
+    residuals_L2.push_back(this->residual_L2());
+    residuals_Linf.push_back(this->residual_Linf());
+  }
+  this->flush_x();
+  this->cleanup();
+}
+
 KaczmarzSolverStatus NolPDESolver::solve(const Discretization& /* lse */,
                                          Vector& /* x */,
                                          unsigned /* iterations_step */,
@@ -186,7 +205,7 @@ void PermutingNolPDESolver::setup(const Discretization* const d,
 
   this->post_permute_x = permutation_matrix * *x;
   const Vector post_permute_b = permutation_matrix * d->sys.b();
-  const SparseMatrix post_permute_A = permutation_matrix * d->sys.A();
+  const SparseMatrix post_permute_A = permutation_matrix * d->sys.A() * permutation_matrix.transpose();
   this->post_permute_sys =
       std::make_unique<SparseLinearSystem>(post_permute_A, post_permute_b);
   this->x = x;
@@ -245,6 +264,21 @@ void PermutingNolPDESolver::flush_x() {
     permutation_matrix.indices()(i) = this->permutation[i];
   }
   *this->x = permutation_matrix * this->post_permute_x;
+}
+
+double PermutingNolPDESolver::residual_L1() {
+  this->post_permute_flush_x();
+  return (this->post_permute_sys->b() - this->post_permute_sys->A() * this->post_permute_x).lpNorm<1>();
+}
+
+double PermutingNolPDESolver::residual_L2() {
+  this->post_permute_flush_x();
+  return (this->post_permute_sys->b() - this->post_permute_sys->A() * this->post_permute_x).lpNorm<2>();
+}
+
+double PermutingNolPDESolver::residual_Linf() {
+  this->post_permute_flush_x();
+  return (this->post_permute_sys->b() - this->post_permute_sys->A() * this->post_permute_x).lpNorm<Eigen::Infinity>();
 }
 
 unsigned CUDANolPDESolver::get_block_count_required() {
@@ -321,6 +355,12 @@ void BasicSerialNolPDESolver::setup(const Discretization* const d,
                                     Vector* const x) {
   this->d = d;
   this->x = x;
+  const unsigned dim = d->sys.b().size();
+  this->sq_norms = Vector(dim);
+  for (unsigned i = 0; i < dim; i++) {
+    const auto row = d->sys.A().row(i);
+    this->sq_norms[i] = row.dot(row);
+  }
 }
 
 void BasicSerialNolPDESolver::flush_x() {}
@@ -329,10 +369,6 @@ void BasicSerialNolPDESolver::iterate(const unsigned iterations) {
   const SparseMatrix& A = this->d->sys.A();
   const Vector& b = this->d->sys.b();
   const unsigned dim = b.size();
-  Vector sq_norms(dim);
-  for (unsigned i = 0; i < dim; i++) {
-    sq_norms[i] = A.row(i).dot(A.row(i));
-  }
   for (unsigned iter = 0; iter < iterations; iter++) {
     for (unsigned i = 0; i < dim; i++) {
       const auto row = A.row(i);
@@ -347,22 +383,36 @@ void BasicSerialNolPDESolver::cleanup() {
   this->x = nullptr;
 }
 
+double BasicSerialNolPDESolver::residual_L1() {
+  return (this->d->sys.b() - this->d->sys.A() * *this->x).lpNorm<1>();
+}
+
+double BasicSerialNolPDESolver::residual_L2() {
+  return (this->d->sys.b() - this->d->sys.A() * *this->x).lpNorm<2>();
+}
+
+double BasicSerialNolPDESolver::residual_Linf() {
+  return (this->d->sys.b() - this->d->sys.A() * *this->x).lpNorm<Eigen::Infinity>();
+}
+
 unsigned PermutingSerialNolPDESolver::get_block_count_required() {
   return 4 * this->thread_count;
 }
 
-void PermutingSerialNolPDESolver::post_permute_setup() {}
+void PermutingSerialNolPDESolver::post_permute_setup() {
+  const unsigned dim = this->post_permute_sys->b().size();
+  this->sq_norms = Vector(dim);
+  for (unsigned i = 0; i < dim; i++) {
+    const auto row = this->post_permute_sys->A().row(i);
+    sq_norms[i] = row.dot(row);
+  }
+}
 
 void PermutingSerialNolPDESolver::post_permute_flush_x() {}
 
 void PermutingSerialNolPDESolver::iterate(const unsigned iterations) {
   const SparseMatrix& A = this->post_permute_sys->A();
   const Vector& b = this->post_permute_sys->b();
-  const unsigned dim = b.size();
-  Vector sq_norms(dim);
-  for (unsigned i = 0; i < dim; i++) {
-    sq_norms[i] = A.row(i).dot(A.row(i));
-  }
   for (unsigned iter = 0; iter < iterations; iter++) {
     for (unsigned stage = 0; stage < 4; stage++) {
       for (unsigned tid = 0; tid < this->thread_count; tid++) {
@@ -371,7 +421,7 @@ void PermutingSerialNolPDESolver::iterate(const unsigned iterations) {
         for (unsigned row_idx = row_idx_from; row_idx < row_idx_to; row_idx++) {
           const auto row = A.row(row_idx);
           const double update_coeff =
-              (b[row_idx] - row.dot(this->post_permute_x)) / sq_norms[row_idx];
+              (b[row_idx] - row.dot(this->post_permute_x)) / this->sq_norms[row_idx];
           this->post_permute_x += update_coeff * row;
         }
       }
@@ -405,9 +455,14 @@ void ShuffleSerialNolPDESolver::setup(const Discretization* const d,
 
   this->post_permute_x = permutation_matrix * *x;
   const Vector post_permute_b = permutation_matrix * d->sys.b();
-  const SparseMatrix post_permute_A = permutation_matrix * d->sys.A();
+  const SparseMatrix post_permute_A = permutation_matrix * d->sys.A() * permutation_matrix.transpose();
   this->post_permute_sys =
       std::make_unique<SparseLinearSystem>(post_permute_A, post_permute_b);
+
+  this->sq_norms = Vector(dim);
+  for (unsigned i = 0; i < dim; i++) {
+    this->sq_norms[i] = post_permute_A.row(i).dot(post_permute_A.row(i));
+  }
 }
 
 void ShuffleSerialNolPDESolver::flush_x() {
@@ -424,18 +479,26 @@ void ShuffleSerialNolPDESolver::iterate(const unsigned iterations) {
   const SparseMatrix& A = this->post_permute_sys->A();
   const Vector& b = this->post_permute_sys->b();
   const unsigned dim = b.size();
-  Vector sq_norms(dim);
-  for (unsigned i = 0; i < dim; i++) {
-    sq_norms[i] = A.row(i).dot(A.row(i));
-  }
   for (unsigned iter = 0; iter < iterations; iter++) {
     for (unsigned i = 0; i < dim; i++) {
       const auto row = A.row(i);
       const double update_coeff =
-          (b[i] - row.dot(this->post_permute_x)) / sq_norms[i];
+          (b[i] - row.dot(this->post_permute_x)) / this->sq_norms[i];
       this->post_permute_x += update_coeff * row;
     }
   }
 }
 
 void ShuffleSerialNolPDESolver::cleanup() {}
+
+double ShuffleSerialNolPDESolver::residual_L1() {
+  return (this->post_permute_sys->b() - this->post_permute_sys->A() * this->post_permute_x).lpNorm<1>();
+}
+
+double ShuffleSerialNolPDESolver::residual_L2() {
+  return (this->post_permute_sys->b() - this->post_permute_sys->A() * this->post_permute_x).lpNorm<2>();
+}
+
+double ShuffleSerialNolPDESolver::residual_Linf() {
+  return (this->post_permute_sys->b() - this->post_permute_sys->A() * this->post_permute_x).lpNorm<Eigen::Infinity>();
+}

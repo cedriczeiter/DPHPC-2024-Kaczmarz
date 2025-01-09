@@ -16,8 +16,14 @@ class NolPDESolver {
 
   virtual void cleanup() = 0;
 
+  virtual double residual_L1() = 0;
+  virtual double residual_L2() = 0;
+  virtual double residual_Linf() = 0;
+
  public:
   void run_iterations(const Discretization& d, Vector& x, unsigned iterations);
+
+  void run_iterations_with_residuals(const Discretization& d, Vector& x, std::vector<double>& residuals_L1, std::vector<double>& residuals_L2, std::vector<double>& residuals_Linf, unsigned iterations);
 
   KaczmarzSolverStatus solve(const Discretization& lse, Vector& x,
                              unsigned iterations_step, unsigned max_iterations,
@@ -48,6 +54,10 @@ class PermutingNolPDESolver : public NolPDESolver {
   virtual void setup(const Discretization* d, Vector* x) override;
 
   virtual void flush_x() override;
+
+  virtual double residual_L1() override;
+  virtual double residual_L2() override;
+  virtual double residual_Linf() override;
 
   virtual void post_permute_setup() = 0;
 
@@ -86,6 +96,7 @@ class BasicSerialNolPDESolver : public NolPDESolver {
  private:
   const Discretization* d = nullptr;
   Vector* x = nullptr;
+  Vector sq_norms;
 
   virtual void setup(const Discretization* d, Vector* x) override;
 
@@ -94,11 +105,16 @@ class BasicSerialNolPDESolver : public NolPDESolver {
   virtual void iterate(unsigned iterations) override;
 
   virtual void cleanup() override;
+
+  virtual double residual_L1() override;
+  virtual double residual_L2() override;
+  virtual double residual_Linf() override;
 };
 
 class PermutingSerialNolPDESolver : public PermutingNolPDESolver {
  private:
   const unsigned thread_count;
+  Vector sq_norms;
 
   virtual unsigned get_block_count_required() override;
 
@@ -121,6 +137,8 @@ class ShuffleSerialNolPDESolver : public NolPDESolver {
   const Discretization* d = nullptr;
   Vector* x = nullptr;
 
+  Vector sq_norms;
+
   std::unique_ptr<SparseLinearSystem> post_permute_sys;
   Vector post_permute_x;
 
@@ -134,6 +152,10 @@ class ShuffleSerialNolPDESolver : public NolPDESolver {
   virtual void iterate(unsigned iterations) override;
 
   virtual void cleanup() override;
+
+  virtual double residual_L1() override;
+  virtual double residual_L2() override;
+  virtual double residual_Linf() override;
 
  public:
   ShuffleSerialNolPDESolver(const unsigned shuffle_seed)
