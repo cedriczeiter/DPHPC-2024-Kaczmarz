@@ -45,9 +45,11 @@ for path in file_paths:
         df_filtered = df[(df['Problem'] == problem) & (df['Status'] == 'Converged')].copy()
 
         # Group by dimension and calculate median and confidence interval
-        df_grouped = df_filtered.groupby('Dim').agg({'Time': ['median', 'var']}).reset_index()
-        df_grouped.columns = ['Dim', 'Time_mean', 'Time_var']
-        df_grouped['Time_std'] = np.sqrt(df_grouped['Time_var'])
+        # Group by dimension and calculate quantiles (25th, 50th, 75th)
+        df_grouped = df_filtered.groupby('Dim').agg({'Time': [lambda x: np.quantile(x, 0.05), 
+                                                             lambda x: np.quantile(x, 0.5), 
+                                                             lambda x: np.quantile(x, 0.95)]}).reset_index()
+        df_grouped.columns = ['Dim', 'Time_25th', 'Time_50th', 'Time_75th']
         df_grouped['Method'] = method_mapping.get(method, method)
 
         # Store the data in the dictionary
@@ -84,13 +86,14 @@ for problem, data in problem_data.items():
     #sns.scatterplot(x='Dim', y='Time_mean', hue='Method', style='Method', palette=color_map, data=data[data['Method'].isin(['GPU-acc. iterative CARP-CG', 'GPU direct NVIDIA cuDSS', 'CPU direct Eigen SparseLU'])], ax=ax1, s=200)
     for method in ['GPU-acc. iterative CARP-CG', 'GPU direct NVIDIA cuDSS', 'CPU direct Eigen SparseLU']:
         subset = data[data['Method'] == method]
-        ax1.errorbar(subset['Dim'], subset['Time_mean'], yerr=1.96 * subset['Time_std'], 
-                     label=method, fmt = style_map[method], color=color_map[method], markersize=8, capsize=5, ecolor='black')    
+        ax1.scatter(subset['Dim'], subset['Time_50th'], 
+                    label=method, color=color_map[method], marker=style_map[method], s=100)
+        ax1.errorbar(subset['Dim'], subset['Time_50th'], 
+                     yerr=[subset['Time_50th'] - subset['Time_25th'], subset['Time_75th'] - subset['Time_50th']], fmt=style_map[method], color=color_map[method], markersize=0, capsize=5, ecolor='black', zorder=2)  
     ax1.set_xscale('log')
     ax1.set_yscale('log')
     ax1.set_ylim(1e-6, 5000)
     ax1.set_xlim(10, 1e6)
-    ax1.set_title(f'Running Time vs Dimension, Problem {problem}\n(GPU-acc. CARP-CG against direct solvers)')
     ax1.set_xlabel('Dimension')
     ax1.set_ylabel('Time (seconds)')
     ax1.legend(loc='lower right')
@@ -103,13 +106,15 @@ for problem, data in problem_data.items():
     fig, ax2 = plt.subplots(figsize=(12, 6))
     for method in ['GPU-acc. iterative CARP-CG', 'CPU iterative CGMNC', 'CPU iterative Eigen BiCGSTAB']:
         subset = data[data['Method'] == method]
-        ax2.errorbar(subset['Dim'], subset['Time_mean'], yerr=1.96 * subset['Time_std'], 
-                     label=method, fmt = style_map[method], color=color_map[method], markersize=8, capsize=5, ecolor='black')
+        ax1.scatter(subset['Dim'], subset['Time_50th'], 
+                    label=method, color=color_map[method], marker=style_map[method], s=100)
+        ax1.errorbar(subset['Dim'], subset['Time_50th'], 
+                     yerr=[subset['Time_50th'] - subset['Time_25th'], subset['Time_75th'] - subset['Time_50th']], 
+                     label=method, fmt=style_map[method], color=color_map[method], markersize=0, capsize=5, ecolor='black', zorder=2)  
     ax2.set_xscale('log')
     ax2.set_yscale('log')
     ax2.set_ylim(1e-6, 5000)
     ax2.set_xlim(10, 1e6)
-    ax2.set_title(f'Running Time vs Dimension, Problem {problem}\n(GPU-acc. CARP-CG against iterative solvers)')
     ax2.set_xlabel('Dimension')
     ax2.set_ylabel('Time (seconds)')
     ax2.legend(loc='lower right')

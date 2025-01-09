@@ -75,7 +75,7 @@ for complexity in range(1, 9):
             #axes[index].set_ylim([0.6, 2])
 
     # Set the overall title
-    fig.suptitle(f'Normalized Violin Plots of Time by Problem (Complexity {complexity})')
+    #fig.suptitle(f'Normalized Violin Plots of Time by Problem (Complexity {complexity})')
 
     # Adjust layout to reduce whitespace
     plt.tight_layout(rect=[0, 0.03, 1, 0.95])
