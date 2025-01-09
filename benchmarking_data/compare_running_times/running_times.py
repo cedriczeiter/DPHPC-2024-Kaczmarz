@@ -106,11 +106,10 @@ for problem, data in problem_data.items():
     fig, ax2 = plt.subplots(figsize=(12, 6))
     for method in ['GPU-acc. iterative CARP-CG', 'CPU iterative CGMNC', 'CPU iterative Eigen BiCGSTAB']:
         subset = data[data['Method'] == method]
-        ax1.scatter(subset['Dim'], subset['Time_50th'], 
+        ax2.scatter(subset['Dim'], subset['Time_50th'], 
                     label=method, color=color_map[method], marker=style_map[method], s=100)
-        ax1.errorbar(subset['Dim'], subset['Time_50th'], 
-                     yerr=[subset['Time_50th'] - subset['Time_25th'], subset['Time_75th'] - subset['Time_50th']], 
-                     label=method, fmt=style_map[method], color=color_map[method], markersize=0, capsize=5, ecolor='black', zorder=2)  
+        ax2.errorbar(subset['Dim'], subset['Time_50th'], 
+                     yerr=[subset['Time_50th'] - subset['Time_25th'], subset['Time_75th'] - subset['Time_50th']], fmt=style_map[method], color=color_map[method], markersize=0, capsize=5, ecolor='black', zorder=2)   
     ax2.set_xscale('log')
     ax2.set_yscale('log')
     ax2.set_ylim(1e-6, 5000)
