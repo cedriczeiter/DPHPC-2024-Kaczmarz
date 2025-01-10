@@ -49,8 +49,10 @@ Alexandre Faroux, Clemens Herfarth, Zeno Hug, Cédric Zeiter
    mkdir linear_systems/build
    cd linear_systems/build
    cmake -DCMAKE_BUILD_TYPE=Release ..
+   ```
 
    The data for the mesh builder is already included in the repository (folder: generated_bvp_matrices). If you want to build the mesh builder, you need to download LehrFEM++ and build it. Then you can build the mesh builder as follows:
+   ```sh
    mkdir mesh_builder/build
    cd mesh_builder/build
    cmake -DCMAKE_BUILD_TYPE=Release ..
