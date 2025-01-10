@@ -4,7 +4,7 @@ build_directory() {
     local dir_name=$1
     mkdir -p "$dir_name/build" || exit
     cd "$dir_name/build" || exit
-    cmake ..
+    cmake -DCMAKE_BUILD_TYPE=Release ..
     make -j
     cd ../..
 }
