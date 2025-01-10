@@ -5,6 +5,13 @@ This project implements a Kaczmarz method for solving systems of linear equation
 
 The project was part of the class at ETH Zürich "263-2800-00L: Design of Parallel and High-Performance Computing" in the autumn semester 2024.
 
+## Contributors
+Department of Computer Science at ETH Zürich:
+Viktor Fukala
+
+Department of Mathematics at ETH Zürich:
+Alexandre Faroux, Clemens Herfarth, Zeno Hug, Cédric Zeiter
+
 ## Table of Contents
 - [Description](#description)
 - [Simple Setup to Build and Run](#simple-setup-to-build-and-run)
