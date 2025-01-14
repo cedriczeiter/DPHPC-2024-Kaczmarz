@@ -1,9 +1,12 @@
-# Parallel Kaczmarz PDE Solver
+# KACZMARZ-INSPIRED CUDA SOLVERS FOR LSEs ARISING FROM PDEs
 
 ## Description
 This project implements a Kaczmarz method for solving systems of linear equations, with a simple PDE solver to demonstrate its functionality. The project is organized to be built with CMake.
 
 The project was part of the class at ETH Zürich "263-2800-00L: Design of Parallel and High-Performance Computing" in the autumn semester 2024.
+
+## Report
+The report is available [here](Kaczmarz.pdf). 
 
 ## Contributors
 Department of Computer Science at ETH Zürich:
